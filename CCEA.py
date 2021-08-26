@@ -22,31 +22,119 @@ def initMLCO(bcls, size):
     """
     return b
 
-def evaluate(PopScen, ArcScen, PopMLCO, ArcMLCO):
+def collabArc(archive, population, icls):
+    """
+    
+    """
+    arc = toolbox.clone(archive)
+    pop = toolbox.clone(population)
+    
+    # icls = super(type(arc[0]), arc[0])
+    c = icls()
+    compSolSet = []
+
+
+    for i in arc:
+        for j in pop:
+            if icls == creator.Scenario:
+                c.setValues([(i.getValues())+(j.getValues())])
+            else:
+                c.setValues([(j.getValues())+(i.getValues())])
+            compSolSet = compSolSet.append(c)
+    
+    return compSolSet
+
+def collabComp(pop_A, arc_A, pop_B, numTest, icls):
+    """
+    Create collaborations between the members of {pop_A - arc_A} and pop_B.
+    """
+    if numTest <= len(arc_A):
+        return []
+
+    pA = toolbox.clone(pop_A)
+    pB = toolbox.clone(pop_B)
+    aA = toolbox.clone(arc_A)
+
+    # icls = super(type(pA[0]), pA[0])
+    c = icls()
+    compSolSet = []
+    
+    # Find {pA - aA}
+    pAComplement = [ele for ele in pA]
+    for _ in aA:
+        if _ in pAComplement:
+            pAComplement.remove(_)
+
+    # Create complete solution between all members of pB and 
+    # (numTest - len(aA)) members of pAComplement
+    while numTest - len(aA) > 0:
+        randInd = pAComplement[random.randint(0, len(pAComplement))]
+        for i in pB:
+            if icls == creator.Scenario:
+                c.setValues([(randInd.getValues())+(i.getValues())])
+            else:
+                c.setValues([(i.getValues())+(randInd.getValues())])
+            compSolSet = compSolSet.append(c)
+
+    return compSolSet
+
+def collaborate(cscls, arc1, pop1, arc2, pop2, k):
+    """
+    Creates a complete solution from two sets of individuals. It takes 
+    two sets (arc and pop) and the type of individuals as input. It
+    returns a set of complete solutions (collaborations).
+    """
+    # if arc or pop is None:
+    #     raise TypeError
+    
+    # if icls is None:
+    #     raise TypeError
+    
+    # for ind in range(arc):
+    #     if type(ind) is not icls:
+    #         raise TypeError
+    
+    # for ind in range(pop):
+    #     if type(ind) is not icls:
+    #         raise TypeError
+
+    a1 = toolbox.clone(arc1)
+    p1 = toolbox.clone(pop1)
+    a2 = toolbox.clone(arc2)
+    p2 = toolbox.clone(pop2)
+
+    # Create complete solutions from collaborations with the archives.
+    completeSolutionsSet = collabArc(a1, p2) + collabArc(a2, p1) \
+        + collabComp(p1, a1, p2, k, cscls) + collabComp(p2, a2, p1, k, cscls)
+        
+    return completeSolutionsSet
+
+def evaluate(cscls, popScen, arcScen, popMLCO, arcMLCO, k):
     """
     Forms complete solutions, evaluates their joint fitness and evaluates the
     individual fitness values.
     """
-    # Check for null inputs.
-    if PopScen or PopMLCO is None:
-        raise TypeError
+    # # Check for null inputs.
+    # if popScen or popMLCO is None:
+    #     raise TypeError
+    # if arcScen or arcMLCO is None:
+    #     raise TypeError
+    
+    # # Check whether the type of the individuals in the sets is the same.
+    # if type(popScen[0]) != type(popMLCO[0]):
+    #     raise TypeError
 
     # Deep copy the inputs
-    pScen = deepcopy(PopScen)
-    pMLCO = deepcopy(PopMLCO)
-    aScen = deepcopy(ArcScen)
-    aMLCO = deepcopy(ArcMLCO)
+    pScen = deepcopy(popScen)
+    pMLCO = deepcopy(popMLCO)
+    aScen = deepcopy(arcScen)
+    aMLCO = deepcopy(arcMLCO)
 
-    # Collaboration between pScen and aMLCO individuals.
-    for i in pScen:
-        for j in aMLCO:
-            c.setValues([(i.getValues())+(j.getValues())])
+    completeSol = collaborate(cscls, aScen, pScen, aMLCO, pMLCO, k)
+
+    for c in completeSol:
+        c.fitness.values = evaluateJFit(c)
     
-    # Collbaoration between pMLCO and aScen individuals.
-    for i in pMLCO:
-        for j in aScen:
-            c.setValues([(i.getValues())+(j.getValues())])
-
     return completeSol
 
 # Evaluate the joint fitness of a complete solution.
@@ -76,16 +164,17 @@ def evaluateMLCO(c, outputMLC):
     return outputMLC.Fitness.values
 
 # Breed scenarios.
-def breedScen(scenario):
+def breedScen(popScen):
     
     """
     Breeds, i.e., performs selection, crossover (exploitation) and mutation
     (exploration) on individuals of the Scenarios population. It takes an old 
     generation of scenarios as input and returns an evolved generation.
     """
-    scenario=sorted(scenario, reverse=True)
+    pScen = toolbox.clone(popScen)
+    pScen=sorted(pScen, key=(_.fitness for _ in pScen), reverse=True)
     
-    return scenario
+    return pScen
 
 # Breed MLC outputs.
 def breedMLCO(outputMLC):
@@ -145,6 +234,8 @@ def updateArc_MLCO(archive, pop):
 # Create fitness and individual datatypes.
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
+creator.create("Scenario", creator.Individual)
+creator.create("OutputMLC", creator.Individual)
 
 SCEN_IND_SIZE = 10  # Size of a scenario individual
 MLCO_IND_SIZE = 30  # Size of an MLC output individual
@@ -167,6 +258,8 @@ def main():
     # Instantiate individuals and populations
     popScen = toolbox.popScen()
     popMLCO = toolbox.popMLCO()
+    arcScen = toolbox.clone(popScen)
+    arcMLCO = toolbox.clone(popMLCO)
 
     # Create complete solutions and evaluate individuals
     completeSol = evaluate(popScen, arcScen, popMLCO, arcMLCO)
