@@ -26,29 +26,30 @@ def initializeMLCO(bcls, size):
     # return b
     return print("initializeMLCO() returned.\n")
 
-def collabArc(archive, population, icls):
+def collaborateArchive(archive, population, icls):
     """
     Create collaborations between individuals of archive and population.
     The complete solutions (collaborations) are of class icls.
-    """
-    # arc = toolbox.clone(archive)
-    # pop = toolbox.clone(population)
-
-    # c = icls()
-    # compSolSet = []
-
-    # for i in arc:
-    #     for j in pop:
-    #         if icls == creator.Scenario:
-    #             c.setValues([(i.getValues())+(j.getValues())])
-    #         else:
-    #             c.setValues([(j.getValues())+(i.getValues())])
-    #         compSolSet = compSolSet.append(c)
     
-    # return compSolSet
-    return print("collabArc() returned.\n")
+    """
+    assert archive and population and icls, "Input to collaborateArchive cannot be None."
 
-def collabComp(pop_A, arc_A, pop_B, numTest, icls):
+    arc = copy.deepcopy(archive)
+    pop = copy.deepcopy(population)
+
+    compSolSet = []
+    for i in arc:
+        for j in pop:
+            if type(i) == creator.Scenario:
+                c = [i, j]
+            else:
+                c = [j, i]
+            compSolSet = compSolSet + icls([c])
+    
+    return compSolSet
+    # return print("collabArc() returned.\n")
+
+def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
     """
     Create collaborations between the members of {pop_A - arc_A} and pop_B.
     """
@@ -109,8 +110,8 @@ def collaborate(cscls, arc1, pop1, arc2, pop2, k):
         
     # return completeSolutionsSet
 
-    collabArc(arc1, pop1, cscls)
-    collabComp(pop1, arc2, pop2, k, cscls)
+    collaborateArchive(arc1, pop1, cscls)
+    collaborateComplement(pop1, arc2, pop2, k, cscls)
     return print("collaborate() returned.\n")
 
 def evaluate(cscls, popScen, arcScen, popMLCO, arcMLCO, k):
