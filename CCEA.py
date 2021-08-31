@@ -29,17 +29,29 @@ def initializeMLCO(bcls, size):
 def collaborateArchive(archive, population, icls):
     """
     Create collaborations between individuals of archive and population.
-    The complete solutions (collaborations) are of class icls.
-    
-    """
-    assert archive and population and icls, "Input to collaborateArchive cannot be None."
+    The complete solutions (collaborations) are of class icls. Output
+    is the list of complete solutions `compSolSet`. 
 
-    arc = copy.deepcopy(archive)
-    pop = copy.deepcopy(population)
+    :param archive: the archive (set) of individuals with which every 
+                    memeber of population should collaborate.
+    :param population: the set of individuals that should collaborate
+                       with the memebers of the archive.
+    :param icls: the name of the class into which a complete solution
+                 or `c` would be typecasted into.
+    """
+    # Ensure that the input is not None. Exception handling should be added.
+    assert archive and population and icls, "Input to collaborateArchive \
+        cannot be None."
+
+    # Deepcopy the lists.
+    arc = deepcopy(archive)
+    pop = deepcopy(population)
 
     compSolSet = []
+
     for i in arc:
         for j in pop:
+            # This line makes the function casestudy-dependant.
             if type(i) == creator.Scenario:
                 c = [i, j]
             else:
@@ -48,44 +60,56 @@ def collaborateArchive(archive, population, icls):
     
     return compSolSet
     # return print("collabArc() returned.\n")
-
+#%%
 def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
     """
-    Create collaborations between the members of {pop_A - arc_A} and pop_B.
+    Create collaborations between the members of (pop_A - arc_A) and 
+    pop_B. It returns a complete solutions set `compSolSet` which has
+    collaborations between the members of pop_B and (pop_A - arc_A) or
+    `pAComplement`.
+
+    :param pop_A: population A which is a list of individuals.
+    :param arc_A: an archive (set) of individuals, also a subset of
+                  pop_A.
+    :param pop_B: the set of individuals that should collaborate
+                       with the memebers of the pop_A - arc_A.
+    :param numTest: the number of collaborations that each individual
+                    in pop_B should participate in. Note that they have
+                    already participated `len(arc_A)` times.
+    :param icls: the name of the class into which a complete solution
+                 or `c` would be typecasted into.
     """
-    # if numTest <= len(arc_A):
-    #     return []
+    if numTest <= len(arc_A):
+        return []
 
-    # pA = toolbox.clone(pop_A)
-    # pB = toolbox.clone(pop_B)
-    # aA = toolbox.clone(arc_A)
+    pA = deepcopy(pop_A)
+    pB = deepcopy(pop_B)
+    aA = deepcopy(arc_A)
 
-    # # icls = super(type(pA[0]), pA[0])
-    # c = icls()
-    # compSolSet = []
+    compSolSet = []
     
-    # # Find {pA - aA}
-    # pAComplement = [ele for ele in pA]
-    # for _ in aA:
-    #     if _ in pAComplement:
-    #         pAComplement.remove(_)
+    # Find {pA - aA}
+    pAComplement = [ele for ele in pA]
+    for _ in aA:
+        if _ in pAComplement:
+            pAComplement.remove(_)
 
-    # # Create complete solution between all members of pB and 
-    # # (numTest - len(aA)) members of pAComplement
-    # while numTest - len(aA) > 0:
-    #     randInd = pAComplement[random.randint(0, len(pAComplement))]
-    #     for i in pB:
-    #         if icls == creator.Scenario:
-    #             # c.setValues([(randInd.getValues())+(i.getValues())])
-    #             c.setValues([randInd,i])
-    #         else:
-    #             # c.setValues([(i.getValues())+(randInd.getValues())])
-    #             c.setValues([i, randInd])
-    #         compSolSet = compSolSet.append(c)
+    # Create complete solution between all members of pB and 
+    # (numTest - len(aA)) members of pAComplement
+    while numTest - len(aA) > 0:
+        randInd = pAComplement[random.randint(0, len(pAComplement)-1)]
+        for i in pB:
+            # This line makes the function casestudy-dependant.
+            if type(i) == creator.Scenario:
+                c = [i, randInd]
+            else:
+                c = [randInd, i]
+            compSolSet = compSolSet + icls([c])
+        numTest = numTest - 1
 
-    # return compSolSet
-    return print("collbaComp() returned.\n")
-
+    return compSolSet
+    # return print("collbaComp() returned.\n")
+#%%
 def collaborate(cscls, arc1, pop1, arc2, pop2, k):
     """
     Creates a complete solution from two sets of individuals. It takes 
