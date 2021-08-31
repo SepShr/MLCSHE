@@ -1,4 +1,3 @@
-import copy
 import random
 from copy import deepcopy
 
@@ -59,8 +58,11 @@ def collaborateArchive(archive, population, icls):
             compSolSet = compSolSet + icls([c])
     
     return compSolSet
+
+    # Uncomment the following line while commenting the rest to have a
+    # minimally executable code skeleton.
     # return print("collabArc() returned.\n")
-#%%
+
 def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
     """
     Create collaborations between the members of (pop_A - arc_A) and 
@@ -86,6 +88,9 @@ def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
     pB = deepcopy(pop_B)
     aA = deepcopy(arc_A)
 
+    # Ensure that arc_A is a subset of pop_A
+    assert all(x in pA for x in aA), "arc_A is not a subset of pop_A"
+
     compSolSet = []
     
     # Find {pA - aA}
@@ -108,37 +113,61 @@ def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
         numTest = numTest - 1
 
     return compSolSet
+
+    # Uncomment the following line while commenting the rest to have a
+    # minimally executable code skeleton.
     # return print("collbaComp() returned.\n")
-#%%
-def collaborate(cscls, arc1, pop1, arc2, pop2, k):
+
+def collaborate(arc1, pop1, arc2, pop2, cscls, k):
     """
     Creates a complete solution from two sets of individuals. It takes 
     two sets (arc and pop) and the type of individuals as input. It
     returns a set of complete solutions (collaborations).
+
+    :param arc1: an archive (list) of individuals. It is a subset of pop1.
+    :param pop1: a list of individuals that have to collaborate with members
+                 of arc2 and possibly some members of `(pop2 - arc2)`.
+    :param arc2: an archive (list) of individuals. It is a subset of pop2.
+    :param pop2: a list of individuals that have to collaborate with members
+                 of arc1 and possibly some members of `(pop1 - arc1)`.
+    :param cscls: the name of the class into which a complete solution
+                  would be typecasted into.
+    :param k: the number of collaborations that each individual
+                    in a population should participate in. Note that they have
+                    already participated with every member of the archive of 
+                    the other population (`len(arc)` times).
     """
-    # # Exeption handling needs to be implemented.
-    # assert arc1 or arc2 or pop1 or pop2 is not None, \
-    #     "Populations or archives cannot be None."
-    # assert arc1 or arc2 or pop1 or pop2 != [], \
-    #     "Populations or archives cannot be empty."
+    # Exeption handling needs to be implemented.
+    assert arc1 or arc2 or pop1 or pop2 is not None, \
+        "Populations or archives cannot be None."
+    assert arc1 or arc2 or pop1 or pop2 != [], \
+        "Populations or archives cannot be empty."
+    
+    # Ensure that arc_A is a subset of pop_A
+    assert all(x in pop1 for x in arc1), "arc1 is not a subset of pop1"
+    assert all(x in pop2 for x in arc2), "arc1 is not a subset of pop1"
 
-    # # Deepcopy archives and populations.
-    # a1 = toolbox.clone(arc1)
-    # p1 = toolbox.clone(pop1)
-    # a2 = toolbox.clone(arc2)
-    # p2 = toolbox.clone(pop2)
+    # Deepcopy archives and populations.
+    a1 = deepcopy(arc1)
+    p1 = deepcopy(pop1)
+    a2 = deepcopy(arc2)
+    p2 = deepcopy(pop2)
 
-    # # Create complete solutions from collaborations with the archives.
-    # completeSolutionsSet = collabArc(a1, p2) + collabArc(a2, p1) \
-    #     + collabComp(p1, a1, p2, k, cscls) + collabComp(p2, a2, p1, k, cscls)
+    # Create complete solutions from collaborations with the archives.
+    completeSolutionsSet = collaborateArchive(a1, p2, cscls) \
+        + collaborateArchive(a2, p1, cscls) \
+            + collaborateComplement(p1, a1, p2, k, cscls) \
+                + collaborateComplement(p2, a2, p1, k, cscls)
         
-    # return completeSolutionsSet
+    return completeSolutionsSet
 
-    collaborateArchive(arc1, pop1, cscls)
-    collaborateComplement(pop1, arc2, pop2, k, cscls)
-    return print("collaborate() returned.\n")
+    # Uncomment the following line while commenting the rest to have a
+    # minimally executable code skeleton.
+    # collaborateArchive(arc1, pop1, cscls)
+    # collaborateComplement(pop1, arc2, pop2, k, cscls)
+    # return print("collaborate() returned.\n")
 
-def evaluate(cscls, popScen, arcScen, popMLCO, arcMLCO, k):
+def evaluate(popScen, arcScen, popMLCO, arcMLCO, cscls, k):
     """
     Forms complete solutions, evaluates their joint fitness and evaluates the
     individual fitness values.
@@ -159,7 +188,7 @@ def evaluate(cscls, popScen, arcScen, popMLCO, arcMLCO, k):
     # aScen = deepcopy(arcScen)
     # aMLCO = deepcopy(arcMLCO)
 
-    # completeSol = collaborate(cscls, aScen, pScen, aMLCO, pMLCO, k)
+    # completeSol = collaborate(aScen, pScen, aMLCO, pMLCO, cscls, k)
 
     # for c in completeSol:
     #     c.fitness.values = evaluateJFit(c)
@@ -326,7 +355,7 @@ def main():
     solutionArchive = []
 
     # Create complete solutions and evaluate individuals
-    completeSolSet = evaluate(creator.Individual, popScen, arcScen, popMLCO, arcMLCO, 1)
+    completeSolSet = evaluate(popScen, arcScen, popMLCO, arcMLCO, creator.Individual, 1)
 
     # # Record the complete solutions that violate the requirement r
     # for c in completeSolSet:
