@@ -12,7 +12,7 @@ class Test_TestCollaborateComplement(unittest.TestCase):
         complete_solution_set = collaborateComplement(p1, a1, p2, numTest, icls)
         self.assertEqual(complete_solution_set, [[[2.5], [3]]])
     
-    def test_collaborateComplement_testInput2(self):
+    def test_collaborateComplement_numTest(self):
         p1 = [creator.Scenario([1]), creator.Scenario([2.5])]
         a1 = [creator.Scenario([1])]
         p2 = [[3]]
