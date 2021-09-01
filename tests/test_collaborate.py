@@ -9,8 +9,9 @@ class Test_TestCollaborate(unittest.TestCase):
         p2 = [[3], creator.OutputMLC(["a"])]
         a2 = [creator.OutputMLC(["a"])]
         cls = creator.Individual
+        fcls = creator.Scenario
         k = 2
-        complete_solution_set = collaborate(a1, p1, a2, p2, cls, k)
+        complete_solution_set = collaborate(a1, p1, a2, p2, cls, fcls, k)
         expected_solution = [[[1], [3]], [[1], ['a']], [[1], ['a']],
                         [[2.5], ['a']], [[2.5], [3]], [[2.5], ['a']],
                         [[1], [3]], [[2.5], [3]]]
@@ -22,10 +23,11 @@ class Test_TestCollaborate(unittest.TestCase):
         p2 = [[3], creator.OutputMLC(["a"])]
         a2 = [creator.OutputMLC(["a"])]
         cls = creator.Individual
+        fcls = creator.Scenario
         k = 1
         expected_solution = [[[1], [3]], [[1], ['a']],
                             [[1], ['a']], [[2.5], ['a']]]
-        complete_solution_set = collaborate(a1, p1, a2, p2, cls, k)
+        complete_solution_set = collaborate(a1, p1, a2, p2, cls, fcls, k)
         self.assertEqual(complete_solution_set, expected_solution)
 
 if __name__=='__main__':
