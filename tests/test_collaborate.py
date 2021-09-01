@@ -12,9 +12,8 @@ class Test_TestCollaborate(unittest.TestCase):
         fcls = creator.Scenario
         k = 2
         complete_solution_set = collaborate(a1, p1, a2, p2, cls, fcls, k)
-        expected_solution = [[[1], [3]], [[1], ['a']], [[1], ['a']],
-                        [[2.5], ['a']], [[2.5], [3]], [[2.5], ['a']],
-                        [[1], [3]], [[2.5], [3]]]
+        expected_solution = [[[1], [3]], [[1], ['a']],
+                        [[2.5], ['a']], [[2.5], [3]]]
         self.assertEqual(complete_solution_set, expected_solution)
     
     def test_collaborate_numTest(self):
@@ -25,8 +24,7 @@ class Test_TestCollaborate(unittest.TestCase):
         cls = creator.Individual
         fcls = creator.Scenario
         k = 1
-        expected_solution = [[[1], [3]], [[1], ['a']],
-                            [[1], ['a']], [[2.5], ['a']]]
+        expected_solution = [[[1], [3]], [[1], ['a']], [[2.5], ['a']]]
         complete_solution_set = collaborate(a1, p1, a2, p2, cls, fcls, k)
         self.assertEqual(complete_solution_set, expected_solution)
 
