@@ -25,7 +25,7 @@ def initializeMLCO(bcls, size):
     # return b
     return print("initializeMLCO() returned.\n")
 
-def collaborateArchive(archive, population, icls):
+def collaborateArchive(archive, population, icls, ficls):
     """
     Create collaborations between individuals of archive and population.
     The complete solutions (collaborations) are of class icls. Output
@@ -37,6 +37,9 @@ def collaborateArchive(archive, population, icls):
                        with the memebers of the archive.
     :param icls: the name of the class into which a complete solution
                  or `c` would be typecasted into.
+    :param ficls: the name of the first individual's class to be included 
+                  in the complete solution. Defines the format of a complete
+                  solution including 2 individuals of different types.
     """
     # Ensure that the input is not None. Exception handling should be added.
     assert archive and population and icls, "Input to collaborateArchive \
@@ -51,7 +54,7 @@ def collaborateArchive(archive, population, icls):
     for i in arc:
         for j in pop:
             # This line makes the function casestudy-dependant.
-            if type(i) == creator.Scenario:
+            if type(i) == ficls:
                 c = [i, j]
             else:
                 c = [j, i]
@@ -63,7 +66,7 @@ def collaborateArchive(archive, population, icls):
     # minimally executable code skeleton.
     # return print("collabArc() returned.\n")
 
-def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
+def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls, ficls):
     """
     Create collaborations between the members of (pop_A - arc_A) and 
     pop_B. It returns a complete solutions set `compSolSet` which has
@@ -80,6 +83,9 @@ def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
                     already participated `len(arc_A)` times.
     :param icls: the name of the class into which a complete solution
                  or `c` would be typecasted into.
+    :param ficls: the name of the first individual's class to be included 
+                  in the complete solution. Defines the format of a complete
+                  solution including 2 individuals of different types.
     """
     if numTest <= len(arc_A):
         return []
@@ -102,13 +108,13 @@ def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
     # Create complete solution between all members of pB and 
     # (numTest - len(aA)) members of pAComplement
     while numTest - len(aA) > 0:
-        randInd = pAComplement[random.randint(0, len(pAComplement)-1)]
+        random_individual = pAComplement[random.randint(0, len(pAComplement)-1)]
         for i in pB:
             # This line makes the function casestudy-dependant.
-            if type(i) == creator.Scenario:
-                c = [i, randInd]
+            if type(i) == ficls:
+                c = [i, random_individual]
             else:
-                c = [randInd, i]
+                c = [random_individual, i]
             compSolSet = compSolSet + icls([c])
         numTest = numTest - 1
 
@@ -118,7 +124,7 @@ def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls):
     # minimally executable code skeleton.
     # return print("collbaComp() returned.\n")
 
-def collaborate(arc1, pop1, arc2, pop2, cscls, k):
+def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
     """
     Creates a complete solution from two sets of individuals. It takes 
     two sets (arc and pop) and the type of individuals as input. It
@@ -136,6 +142,9 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, k):
                     in a population should participate in. Note that they have
                     already participated with every member of the archive of 
                     the other population (`len(arc)` times).
+    :param fcls: the name of the first individual's class to be included 
+                  in the complete solution. Defines the format of a complete
+                  solution including 2 individuals of different types.
     """
     # Exeption handling needs to be implemented.
     assert arc1 or arc2 or pop1 or pop2 is not None, \
@@ -153,11 +162,14 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, k):
     a2 = deepcopy(arc2)
     p2 = deepcopy(pop2)
 
+    # REMOVE REDUNDANT COMPLETE SOLUTIONS FROM THE COMPLETE SOLUTIONS SET.
+    # set --> list
+
     # Create complete solutions from collaborations with the archives.
-    completeSolutionsSet = collaborateArchive(a1, p2, cscls) \
-        + collaborateArchive(a2, p1, cscls) \
-            + collaborateComplement(p1, a1, p2, k, cscls) \
-                + collaborateComplement(p2, a2, p1, k, cscls)
+    completeSolutionsSet = collaborateArchive(a1, p2, cscls, fcls) \
+        + collaborateArchive(a2, p1, cscls, fcls) \
+            + collaborateComplement(p1, a1, p2, k, cscls, fcls) \
+                + collaborateComplement(p2, a2, p1, k, cscls, fcls)
         
     return completeSolutionsSet
 
@@ -250,7 +262,7 @@ def breedScen(popScen, enumLimits):
     # pScen=sorted(pScen, key=(_.fitness for _ in pScen), reverse=True)
     
     # return pScen
-    mutateScen(popScen, enumLimits)
+    mutateScenario(popScen, enumLimits)
     return print("breedScen() returned.\n")
 
 # Breed MLC outputs.
@@ -263,40 +275,63 @@ def breedMLCO(outputMLC):
     # return outputMLC
     return print("breedMLCO() returned.\n")
 
+#%%
 # Mutate scenarios
-def mutateScen(scenario, intLimits):
+def mutateScenario(scenario, intLimits, mutbpb, mutgmu, mutgsig, mutgpb, mutipb):
     """
     Mutates a scenario individual. Input is an unmutated scenario, while the
     output is a mutated scenario. The function applies one of the 3 mutators
-    to the elements depending on their type, i.e., Guassian to Floats, bitflip
-    to Booleans and integer-randomization to Integers.
+    to the elements depending on their type, i.e., `mutGaussian()` (Guass distr)
+    to Floats, `mutFlipBit()` (bitflip) to Booleans and `mutUniformInt()` 
+    (integer-randomization) to Integers.
+
+    :param scenario: a scenario type individual to be mutated by the function.
+    :param intLimits: a 2D list that contains a lower and upper limits for 
+                      the mutatio of elements in a scenario that are of type int. 
+    :param mutbpb: the probability that a binary element might be mutated by the 
+                   tools.mutFlipBit() function.
+    :param mutgmu: the normal distribution mean used in tools.mutGaussian().
+    :param mutgsig: the normal distribution standard deviation used in 
+                    tools.mutGaussian().
+    :param mutgpb: the probability that a real element might be mutated by the
+                   tools.mutGaussian() function.
+    :param mutipb: the probability that a integer element might be mutated by
+                   the mutUniformInt() function.
     """
-    # toolbox.register("mutateScenBool", tools.mutFlipBit, indpb=0.05)
-    # toolbox.register("mutateScenFlt", tools.mutGaussian, mu=0, sigma=1, indpb=0.05)
-    # # toolbox.register("mutateScenInt", tools.mutUniformInt, low=lowerLim, up=UpperLim, indpb=0.05)
+    toolbox.register("mutateScenBool", tools.mutFlipBit, indpb=mutbpb)
+    toolbox.register("mutateScenFlt", tools.mutGaussian, mu=mutgmu, sigma=mutgsig, indpb=mutgpb)
     
-    # mutatedScen = []
-    # limits = deepcopy(intLimits)
+    # Limitation: assumes a special format for intLimits.
 
-    # # Check every element and apply the appropriate mutator to it. 
-    # for i in range(len(scenario)):
-    #     buffer = scenario.getValues()[i]
-        
+    cls = type(scenario)
+    mutatedScen = []
 
-    #     if type(buffer) is int:
-    #         buffer = tools.mutUniformInt(list(buffer), low= limits[i][0], up=limits[i][1], indpb=0.05)
-        
-    #     if type(buffer) is bool:
-    #         buffer = toolbox.mutateScenBool(list(buffer))
-        
-    #     if type(buffer) is float:
-    #         buffer = toolbox.mutateScenFlt(list(buffer))
-        
-    #     mutatedScen.append(buffer[0])
+    for i in range(len(scenario)):
+    # buffer = scenario.getValues()[i]
+        buffer = [scenario[i]]
+        print(buffer)
 
-    # return mutatedScen
-    return print("mutate_MLCO() returned.\n")
+        if type(buffer[0]) is int:
+            buffer = tools.mutUniformInt(buffer, low= intLimits[i][0],\
+                up=intLimits[i][1], indpb=mutipb)
+            buffer = list(buffer[0])
+        
+        if type(buffer[0]) is bool:
+            buffer = toolbox.mutateScenBool(buffer)
+            buffer = list(buffer[0])
 
+        if type(buffer[0]) is float:
+            buffer = toolbox.mutateScenFlt(buffer)
+            buffer = list(buffer[0])
+        
+        mutatedScen += buffer
+
+    return cls(mutatedScen)
+
+    # Uncomment the following line while commenting the rest to have a
+    # minimally executable code skeleton.
+    # return print("mutate_MLCO() returned.\n")
+#%%
 def updateArc_Scen(archive, pop):
     """
     Updates the archive of scenarios for the next generation.
