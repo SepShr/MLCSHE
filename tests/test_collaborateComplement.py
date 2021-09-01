@@ -8,8 +8,9 @@ class Test_TestCollaborateComplement(unittest.TestCase):
         a1 = [creator.Scenario([1])]
         p2 = [[3]]
         icls = creator.Individual
+        fcls = creator.Scenario
         numTest = 2
-        complete_solution_set = collaborateComplement(p1, a1, p2, numTest, icls)
+        complete_solution_set = collaborateComplement(p1, a1, p2, numTest, icls, fcls)
         self.assertEqual(complete_solution_set, [[[2.5], [3]]])
     
     def test_collaborateComplement_numTest(self):
@@ -17,8 +18,9 @@ class Test_TestCollaborateComplement(unittest.TestCase):
         a1 = [creator.Scenario([1])]
         p2 = [[3]]
         icls = creator.Individual
+        fcls = creator.Scenario
         numTest = 1
-        complete_solution_set = collaborateComplement(p1, a1, p2, numTest, icls)
+        complete_solution_set = collaborateComplement(p1, a1, p2, numTest, icls, fcls)
         self.assertEqual(complete_solution_set, [])
 
 if __name__=='__main__':
