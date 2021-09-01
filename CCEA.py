@@ -128,7 +128,7 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
     """
     Creates a complete solution from two sets of individuals. It takes 
     two sets (arc and pop) and the type of individuals as input. It
-    returns a set of complete solutions (collaborations).
+    returns a set of unique complete solutions (collaborations).
 
     :param arc1: an archive (list) of individuals. It is a subset of pop1.
     :param pop1: a list of individuals that have to collaborate with members
