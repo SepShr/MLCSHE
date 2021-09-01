@@ -166,12 +166,18 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
     # set --> list
 
     # Create complete solutions from collaborations with the archives.
-    completeSolutionsSet = collaborateArchive(a1, p2, cscls, fcls) \
+    complete_solutions_set = collaborateArchive(a1, p2, cscls, fcls) \
         + collaborateArchive(a2, p1, cscls, fcls) \
             + collaborateComplement(p1, a1, p2, k, cscls, fcls) \
                 + collaborateComplement(p2, a2, p1, k, cscls, fcls)
-        
-    return completeSolutionsSet
+    
+    # Remove repetitive complete solutions.
+    complete_solutions_set_unique = []
+    for x in complete_solutions_set:
+        if x not in complete_solutions_set_unique:
+            complete_solutions_set_unique.append(x)
+
+    return complete_solutions_set_unique
 
     # Uncomment the following line while commenting the rest to have a
     # minimally executable code skeleton.
@@ -307,9 +313,7 @@ def mutateScenario(scenario, intLimits, mutbpb, mutgmu, mutgsig, mutgpb, mutipb)
     mutatedScen = []
 
     for i in range(len(scenario)):
-    # buffer = scenario.getValues()[i]
         buffer = [scenario[i]]
-        print(buffer)
 
         if type(buffer[0]) is int:
             buffer = tools.mutUniformInt(buffer, low= intLimits[i][0],\
