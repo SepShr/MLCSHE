@@ -2,8 +2,8 @@ from deap import creator
 from CCEA import initializeScenario
 import unittest
 
-class Test_TestMutateScenario(unittest.TestCase):
-    def test_mutateScenario_testInput1(self):
+class Test_TestInitializeScenario(unittest.TestCase):
+    def test_initializeScenario_testInput1(self):
         lmt = ['bool', [1, 5], 'bool', [1.35, 276.87]]
         c = creator.Scenario
         scenario = initializeScenario(c, lmt)
