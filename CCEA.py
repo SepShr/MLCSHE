@@ -7,15 +7,42 @@ from deap import creator
 from deap import base
 from deap import tools
 
-    
+#%%
 # Sample initalization function for Scenarios
-def initializeScenario(scls, size):
+def initializeScenario(cls, limits):
     """
-    Initializes an individual of the Scenario population.
+    Initializes a heterogeneous vector of type `cls` based on the values
+    in `limits`.
+
+    :param cls: the class into which the final list would be typecasted into.
+    :param limits: a list that determines whether an element of the individual
+                   is a bool, int or float. It also provides lower and upper 
+                   limits for the int and float elements.
+    :returns: a heterogeneous vector of type `cls`.
+
+    Furthermore, it assumes that `limits` is a list and it elements have 
+    the folowing format:
+    `['float', min_flt, max_flt]` for float values;
+    `['int', min_int, max_int]` for int values; and
+    `'bool'` for boolean values.
     """
-    # x = scls()
-    # return x
-    return print("initializeScenario() returned.\n")
+
+    x = []
+    for i in range(0, len(limits)):
+        if limits[i] == 'bool':
+            x += [bool(random.getrandbits(1))]
+        else:
+            if type(limits[i][0]) == float:
+                x += [random.uniform(limits[i][0], limits[i][1])]
+            if type(limits[i][0]) == int:
+                x += [random.randint(limits[i][0], limits[i][1])]
+    
+    return cls(x)
+#%%
+            
+    # Uncomment the following line while commenting the rest to have a
+    # minimally executable code skeleton.
+    # return print("initializeScenario() returned.\n")
 
 # Sample initialization function for MLC Outputs
 def initializeMLCO(bcls, size):
@@ -162,9 +189,6 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
     a2 = deepcopy(arc2)
     p2 = deepcopy(pop2)
 
-    # REMOVE REDUNDANT COMPLETE SOLUTIONS FROM THE COMPLETE SOLUTIONS SET.
-    # set --> list
-
     # Create complete solutions from collaborations with the archives.
     complete_solutions_set = collaborateArchive(a1, p2, cscls, fcls) \
         + collaborateArchive(a2, p1, cscls, fcls) \
@@ -196,10 +220,6 @@ def evaluate(popScen, arcScen, popMLCO, arcMLCO, cscls, k):
     # # if arcScen or arcMLCO is None:
     # #     raise TypeError
     
-    # # # Check whether the type of the individuals in the sets is the same.
-    # # if type(popScen[0]) != type(popMLCO[0]):
-    # #     raise TypeError
-
     # # Deep copy the inputs
     # pScen = deepcopy(popScen)
     # pMLCO = deepcopy(popMLCO)
@@ -211,7 +231,7 @@ def evaluate(popScen, arcScen, popMLCO, arcMLCO, cscls, k):
     # for c in completeSol:
     #     c.fitness.values = evaluateJFit(c)
     
-    # return completeSol
+    # return completeSol, pScen, pMLCO
 
     # Uncomment the following line while commenting the rest of the method to
     # have a minimally executable code skeleton.
