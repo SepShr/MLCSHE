@@ -7,15 +7,42 @@ from deap import creator
 from deap import base
 from deap import tools
 
-    
+#%%
 # Sample initalization function for Scenarios
-def initializeScenario(scls, size):
+def initializeScenario(cls, limits):
     """
-    Initializes an individual of the Scenario population.
+    Initializes a heterogeneous vector of type `cls` based on the values
+    in `limits`.
+
+    :param cls: the class into which the final list would be typecasted into.
+    :param limits: a list that determines whether an element of the individual
+                   is a bool, int or float. It also provides lower and upper 
+                   limits for the int and float elements.
+    :returns: a heterogeneous vector of type `cls`.
+
+    Furthermore, it assumes that `limits` is a list and it elements have 
+    the folowing format:
+    `['float', min_flt, max_flt]` for float values;
+    `['int', min_int, max_int]` for int values; and
+    `'bool'` for boolean values.
     """
-    # x = scls()
-    # return x
-    return print("initializeScenario() returned.\n")
+
+    x = []
+    for i in range(0, len(limits)):
+        if limits[i] == 'bool':
+            x += [bool(random.getrandbits(1))]
+        else:
+            if type(limits[i][0]) == float:
+                x += [random.uniform(limits[i][0], limits[i][1])]
+            if type(limits[i][0]) == int:
+                x += [random.randint(limits[i][0], limits[i][1])]
+    
+    return cls(x)
+#%%
+            
+    # Uncomment the following line while commenting the rest to have a
+    # minimally executable code skeleton.
+    # return print("initializeScenario() returned.\n")
 
 # Sample initialization function for MLC Outputs
 def initializeMLCO(bcls, size):
@@ -162,9 +189,6 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
     a2 = deepcopy(arc2)
     p2 = deepcopy(pop2)
 
-    # REMOVE REDUNDANT COMPLETE SOLUTIONS FROM THE COMPLETE SOLUTIONS SET.
-    # set --> list
-
     # Create complete solutions from collaborations with the archives.
     complete_solutions_set = collaborateArchive(a1, p2, cscls, fcls) \
         + collaborateArchive(a2, p1, cscls, fcls) \
@@ -190,33 +214,43 @@ def evaluate(popScen, arcScen, popMLCO, arcMLCO, cscls, k):
     Forms complete solutions, evaluates their joint fitness and evaluates the
     individual fitness values.
     """
-    # # # Check for null inputs.
-    # # if popScen or popMLCO is None:
-    # #     raise TypeError
-    # # if arcScen or arcMLCO is None:
-    # #     raise TypeError
+    # Exception handling must be added.
     
-    # # # Check whether the type of the individuals in the sets is the same.
-    # # if type(popScen[0]) != type(popMLCO[0]):
-    # #     raise TypeError
+    # Deep copy the inputs
+    population_scenarios = deepcopy(popScen)
+    population_outputsMLC = deepcopy(popMLCO)
+    archive_scenarios = deepcopy(arcScen)
+    archive_outputsMLC = deepcopy(arcMLCO)
 
-    # # Deep copy the inputs
-    # pScen = deepcopy(popScen)
-    # pMLCO = deepcopy(popMLCO)
-    # aScen = deepcopy(arcScen)
-    # aMLCO = deepcopy(arcMLCO)
+    fcls = type(population_scenarios[0])
+    complete_solutions_set = collaborate(archive_scenarios, population_scenarios,\
+         archive_outputsMLC, population_outputsMLC, cscls, fcls, k)
 
-    # completeSol = collaborate(aScen, pScen, aMLCO, pMLCO, cscls, k)
-
-    # for c in completeSol:
-    #     c.fitness.values = evaluateJFit(c)
+    # Evaluate joint fitness and record its value.
+    for c in complete_solutions_set:
+        c.fitness.values = evaluateJFit(c)
+        print("the joint fitness value for %s is : %s" % c, c.fitness.values)
     
-    # return completeSol
+    # Evaluate individual fitness values.
+    for individual in population_scenarios:
+        individual.fitness.values = evaluateIndividual(individual,\
+            complete_solutions_set, 0)
+        print("the individual fitness value for %s is : %s" % individual, \
+            individual.fitness.values)
 
+    for individual in population_outputsMLC:
+        individual.fitness.values = evaluateScenario(individual,\
+            complete_solutions_set, 1)
+        print("the individual fitness value for %s is : %s" % individual, \
+            individual.fitness.values)
+
+    return complete_solutions_set, population_scenarios, population_outputsMLC
+
+    
     # Uncomment the following line while commenting the rest of the method to
     # have a minimally executable code skeleton.
-    collaborate(cscls, popScen, arcScen, popMLCO, arcMLCO, k)
-    return print("evaluate() returned.\n")
+    # collaborate(popScen, arcScen, popMLCO, arcMLCO, cscls, fcls, k)
+    # return print("evaluate() returned.\n")
 
 # Evaluate the joint fitness of a complete solution.
 def evaluateJFit(c):
@@ -224,11 +258,15 @@ def evaluateJFit(c):
     Evaluates the joint fitness of a complete solution. It takes the complete
     solution as input and returns its joint fitness as output.
     """
-    # return c
-    return print("evaluateJFit() returned.\n")
+    # Returns a random value for now.
+    return random.uniform(-5.0, 5.0)
+
+    # Uncomment the following line while commenting the rest of the method to
+    # have a minimally executable code skeleton.
+    # return print("evaluateJFit() returned.\n")
 
 # Evaluate scenario individuals.
-def evaluateScen(compSolSet, scenario):
+def evaluateScenario(compSolSet, scenario):
     """
     Aggreagates the joint fitness values that a scenario has been invovled in.
     It takes a list of all the complete solutions that include scenario x with
@@ -247,6 +285,28 @@ def evaluateScen(compSolSet, scenario):
 
     # return scenarioFitValue
     return print("evaluateScen() returned.\n")
+
+def evaluateIndividual(individual, completeSolSet, index):
+    weights_joint_fitness_involved = []
+    values_joint_fitness_involved = []
+
+    # Add the joint fitness values of complete solutions in which individual
+    # has been a part of.
+    for cs in completeSolSet:
+        print("selected complete solution is: %s" % cs)
+        if cs[index] == individual:
+            weights_joint_fitness_involved += [cs.fitness.values]
+            print("jFitValueSet is: %s" % weights_joint_fitness_involved)
+    
+    for i in weights_joint_fitness_involved:
+        values_joint_fitness_involved += list([i[0]])
+        print("jFit value list is: %s" % values_joint_fitness_involved)
+
+    
+    # Aggregate the joint fitness values. For now, maximum values is used.
+    individual_fitness_value = max(values_joint_fitness_involved)
+
+    return individual_fitness_value
 
 # Evaluate MLC output individuals.
 def evaluateMLCO(csSet, outputMLC):
@@ -270,7 +330,7 @@ def breedScenario(popScen, arcScen, enumLimits, tournSize, cxpb,  mutbpb,\
     :param popScen: the population of scenarios.
     :param arcScen: the list of all memebrs of the archive.
     :param enumLimits: a 2D list that contains a lower and upper limits for 
-                      the mutatio of elements in a scenario that are of type int.
+                      the mutation of elements in a scenario of type int.
     :param tournSize: the size of the tournament to be used by the tournament 
                       selection algorithm.
     :param cxpb: the probability that a crossover happens between two individuals.
