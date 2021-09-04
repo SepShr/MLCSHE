@@ -4,7 +4,7 @@ This repository contains the ML-Component Systemic Hazard Envelope project, or *
 ## Authors
 - Sepehr Sharifi (sshar190@uottawa.ca)
 - Donghwan Shin (donghwan.shin@uni.lu)
-- Lionel Briand (lionel.briand@uni.lu)
+- Lionel Briand (lbriand@uottawa.ca)
 
 ## Prerequisites
 - Python 3.7 or higher is recommended.
