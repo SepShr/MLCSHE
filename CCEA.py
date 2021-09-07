@@ -7,7 +7,6 @@ from deap import creator
 from deap import base
 from deap import tools
 
-#%%
 # Sample initalization function for Scenarios
 def initializeScenario(cls, limits):
     """
@@ -38,7 +37,6 @@ def initializeScenario(cls, limits):
                 x += [random.randint(limits[i][0], limits[i][1])]
     
     return cls(x)
-#%%
             
     # Uncomment the following line while commenting the rest to have a
     # minimally executable code skeleton.
@@ -93,7 +91,7 @@ def collaborateArchive(archive, population, icls, ficls):
     # minimally executable code skeleton.
     # return print("collabArc() returned.\n")
 
-def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls, ficls):
+def collaborate_complement(pop_A, arc_A, pop_B, numTest, icls, ficls):
     """
     Create collaborations between the members of (pop_A - arc_A) and 
     pop_B. It returns a complete solutions set `compSolSet` which has
@@ -151,7 +149,8 @@ def collaborateComplement(pop_A, arc_A, pop_B, numTest, icls, ficls):
     # have a minimally executable code skeleton.
     # return print("collbaComp() returned.\n")
 
-def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
+def collaborate(first_archive, first_population, second_archive, \
+    second_population, joint_class, first_component_class, min_num_evals):
     """
     Creates a complete solution from two sets of individuals. It takes 
     two sets (arc and pop) and the type of individuals as input. It
@@ -174,26 +173,33 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
                   solution including 2 individuals of different types.
     """
     # Exeption handling needs to be implemented.
-    assert arc1 or arc2 or pop1 or pop2 is not None, \
+    assert first_archive or second_archive or first_population \
+        or second_population is not None, \
         "Populations or archives cannot be None."
-    assert arc1 or arc2 or pop1 or pop2 != [], \
+    assert first_archive or second_archive or first_population \
+        or second_population != [], \
         "Populations or archives cannot be empty."
     
     # Ensure that arc_A is a subset of pop_A
-    assert all(x in pop1 for x in arc1), "arc1 is not a subset of pop1"
-    assert all(x in pop2 for x in arc2), "arc1 is not a subset of pop1"
+    assert all(x in first_population for x in first_archive), \
+        "first_archive is not a subset of first_population"
+    assert all(x in second_population for x in second_archive), \
+        "second_archive is not a subset of pop2"
 
     # Deepcopy archives and populations.
-    a1 = deepcopy(arc1)
-    p1 = deepcopy(pop1)
-    a2 = deepcopy(arc2)
-    p2 = deepcopy(pop2)
+    a1 = deepcopy(first_archive)
+    p1 = deepcopy(first_population)
+    a2 = deepcopy(second_archive)
+    p2 = deepcopy(second_population)
 
     # Create complete solutions from collaborations with the archives.
-    complete_solutions_set = collaborateArchive(a1, p2, cscls, fcls) \
-        + collaborateArchive(a2, p1, cscls, fcls) \
-            + collaborateComplement(p1, a1, p2, k, cscls, fcls) \
-                + collaborateComplement(p2, a2, p1, k, cscls, fcls)
+    complete_solutions_set = \
+        collaborateArchive(a1, p2, joint_class, first_component_class) \
+        + collaborateArchive(a2, p1, joint_class, first_component_class) \
+            + collaborate_complement(p1, a1, p2, min_num_evals, joint_class, \
+                first_component_class) \
+                + collaborate_complement(p2, a2, p1, min_num_evals, \
+                    joint_class, first_component_class)
     
     # Remove repetitive complete solutions.
     complete_solutions_set_unique = []
@@ -201,7 +207,13 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
         if x not in complete_solutions_set_unique:
             complete_solutions_set_unique.append(x)
 
-    return complete_solutions_set_unique
+    # Typcast every complete solution into cscls
+    complete_solutions_set_unique_typecasted = []
+    for c in complete_solutions_set_unique:
+        c = joint_class(c)
+        complete_solutions_set_unique_typecasted.append(c)
+
+    return complete_solutions_set_unique_typecasted
 
     # Uncomment the following line while commenting the rest of the method to
     # have a minimally executable code skeleton.
@@ -209,43 +221,50 @@ def collaborate(arc1, pop1, arc2, pop2, cscls, fcls, k):
     # collaborateComplement(pop1, arc2, pop2, k, cscls)
     # return print("collaborate() returned.\n")
 
-def evaluate(popScen, arcScen, popMLCO, arcMLCO, cscls, k):
+def evaluate(first_population, first_archive, second_population, second_archive,\
+     joint_class, min_num_evals):
     """
     Forms complete solutions, evaluates their joint fitness and evaluates the
     individual fitness values.
+
+    :param first_population: the population (list) of scenarios.
+    :param arcScen: the archive (list) of scenarios.
+    :param popMLCO: the population of MLC outputs.
+    :param arcMLCO: the archive of MLC outputs.
+    :param cscls: the type that each complete solution should be typecasted into.
+    :param k: the minimum number of collaborations and thus, joint fitness 
+              evaluations per individual.
+    :returns: set of complete solutions with their fitness values, set of 
+              scenarios with their individual fitness values, and the set of
+              MLC outputs with their individual fitness values.
     """
     # Exception handling must be added.
     
     # Deep copy the inputs
-    population_scenarios = deepcopy(popScen)
-    population_outputsMLC = deepcopy(popMLCO)
-    archive_scenarios = deepcopy(arcScen)
-    archive_outputsMLC = deepcopy(arcMLCO)
+    population_one = deepcopy(first_population)
+    population_two = deepcopy(second_population)
+    archive_one = deepcopy(first_archive)
+    archive_two = deepcopy(second_archive)
 
-    fcls = type(population_scenarios[0])
-    complete_solutions_set = collaborate(archive_scenarios, population_scenarios,\
-         archive_outputsMLC, population_outputsMLC, cscls, fcls, k)
+    first_component_class = type(population_one[0])
+    complete_solutions_set = collaborate(archive_one, population_one,\
+         archive_two, population_two, joint_class, first_component_class, \
+             min_num_evals)
 
     # Evaluate joint fitness and record its value.
     for c in complete_solutions_set:
         c.fitness.values = evaluateJFit(c)
-        print("the joint fitness value for %s is : %s" % c, c.fitness.values)
-    
+  
     # Evaluate individual fitness values.
-    for individual in population_scenarios:
+    for individual in population_one:
         individual.fitness.values = evaluateIndividual(individual,\
             complete_solutions_set, 0)
-        print("the individual fitness value for %s is : %s" % individual, \
-            individual.fitness.values)
-
-    for individual in population_outputsMLC:
-        individual.fitness.values = evaluateScenario(individual,\
+  
+    for individual in population_two:
+        individual.fitness.values = evaluateIndividual(individual,\
             complete_solutions_set, 1)
-        print("the individual fitness value for %s is : %s" % individual, \
-            individual.fitness.values)
-
-    return complete_solutions_set, population_scenarios, population_outputsMLC
-
+        
+    return complete_solutions_set, population_one, population_two
     
     # Uncomment the following line while commenting the rest of the method to
     # have a minimally executable code skeleton.
@@ -259,64 +278,36 @@ def evaluateJFit(c):
     solution as input and returns its joint fitness as output.
     """
     # Returns a random value for now.
-    return random.uniform(-5.0, 5.0)
+    return (random.uniform(-5.0, 5.0),)
 
     # Uncomment the following line while commenting the rest of the method to
     # have a minimally executable code skeleton.
     # return print("evaluateJFit() returned.\n")
 
-# Evaluate scenario individuals.
-def evaluateScenario(compSolSet, scenario):
-    """
-    Aggreagates the joint fitness values that a scenario has been invovled in.
-    It takes a list of all the complete solutions that include scenario x with
-    their jFit values and returns the fitness value of x.
-    """
-    # csSet = copy.deepcopy(compSolSet)
-    # scen = copy.deepcopy(scenario)
-
-    # jFitInvolved = []
-
-    # for i in csSet:
-    #     if i[1] == scen:
-    #         jFitInvolved.append(i.Fitness.values)
-    
-    # scenarioFitValue = max(jFitInvolved)
-
-    # return scenarioFitValue
-    return print("evaluateScen() returned.\n")
-
 def evaluateIndividual(individual, completeSolSet, index):
+    """
+    Aggreagates joint fitness values that an individual has been invovled in.
+    It takes an individual, a list of all complete solutions, `completeSolSet`,
+    that include the `individual` at the `index` of the complete solution; it 
+    returns the aggregate fitness value for `individual` as a real value.
+    """
     weights_joint_fitness_involved = []
     values_joint_fitness_involved = []
 
     # Add the joint fitness values of complete solutions in which individual
     # has been a part of.
     for cs in completeSolSet:
-        print("selected complete solution is: %s" % cs)
         if cs[index] == individual:
             weights_joint_fitness_involved += [cs.fitness.values]
-            print("jFitValueSet is: %s" % weights_joint_fitness_involved)
     
     for i in weights_joint_fitness_involved:
         values_joint_fitness_involved += list([i[0]])
-        print("jFit value list is: %s" % values_joint_fitness_involved)
 
     
     # Aggregate the joint fitness values. For now, maximum values is used.
     individual_fitness_value = max(values_joint_fitness_involved)
 
-    return individual_fitness_value
-
-# Evaluate MLC output individuals.
-def evaluateMLCO(csSet, outputMLC):
-    """
-    Aggreagates the joint fitness values that an MLC output sequence has been 
-    invovled in. It takes a list of all the complete solutions that include 
-    MLC output b with their jFit values and returns the fitness value of x.
-    """
-    # return outputMLC.fitness.values
-    return print("evaluateMLCO() returned.\n")
+    return (individual_fitness_value,)
 
 # Breed scenarios.
 def breedScenario(popScen, arcScen, enumLimits, tournSize, cxpb,  mutbpb,\
@@ -522,3 +513,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# %%
