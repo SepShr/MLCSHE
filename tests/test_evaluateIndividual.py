@@ -15,4 +15,5 @@ class Test_TestEvaluateIndividual(unittest.TestCase):
         css = [cs1, cs2, cs3]
         index = 0
         
-        self.assertEqual(evaluateIndividual(ind1, css, index), 2.5)
+        expected_value = (2.5,)
+        self.assertEqual(evaluateIndividual(ind1, css, index), expected_value)
