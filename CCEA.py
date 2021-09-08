@@ -239,12 +239,12 @@ def evaluate(first_population, first_archive, second_population, second_archive,
     individual fitness values.
 
     :param first_population: the population (list) of scenarios.
-    :param arcScen: the archive (list) of scenarios.
-    :param popMLCO: the population of MLC outputs.
-    :param arcMLCO: the archive of MLC outputs.
-    :param cscls: the type that each complete solution should be typecasted into.
-    :param k: the minimum number of collaborations and thus, joint fitness 
-              evaluations per individual.
+    :param first_archive: the archive (list) of scenarios.
+    :param second_population: the population of MLC outputs.
+    :param second_archive: the archive of MLC outputs.
+    :param joint_class: type into which each complete solution will be typecasted.
+    :param min_num_evals: the minimum number of collaborations and thus, 
+                          joint fitness evaluations per individual.
     :returns: set of complete solutions with their fitness values, set of 
               scenarios with their individual fitness values, and the set of
               MLC outputs with their individual fitness values.
@@ -461,16 +461,25 @@ def updateArc_MLCO(archive, pop):
     # return archive
     return print("updateArc_MLCO() returned.\n")
 
-def violateSafetyReq(completeSolution):
+def violate_safety_requirement(complete_solution):
     """
-    Checks whether a completeSolution violates a safety requirement.
-    """
-    # if completeSolution.fitness.values > 0:
-    #     return True
-    # else:
-    #     return False
+    Checks whether a complete_solution violates a safety requirement. In case
+    of violation, the function returns `True`, otherwise it returns `False`.
+    Since the definition of fitness function is based on the safety requirement
+    and it is defined in a way that its positive sign indicates a violation and
+    vice versa.
 
-    return True
+    :param complete_solution: a complete solution that has a fitness value. 
+    """
+    assert complete_solution is not None, "complete_solution cannot be None."
+
+    assert complete_solution.fitness.values is not None, \
+        "complete_solution must have a real value."
+
+    if complete_solution.fitness.values[0] > 0:
+        return True
+    else:
+        return False
 
 # Create fitness and individual datatypes.
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
