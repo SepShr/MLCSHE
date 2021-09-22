@@ -6,6 +6,7 @@ import numpy as np
 from deap import creator
 from deap import base
 from deap import tools
+from numpy.core.fromnumeric import argmax
 
 # Sample initalization function for Scenarios
 def initialize_scenario(class_, limits):
@@ -50,6 +51,17 @@ def initializeMLCO(class_, size):
     # return b
     return print("initializeMLCO() returned.\n")
 
+def create_complete_solution(element, other_element, first_component_class):
+    """
+    Creates a complete solution from two elements such that the one with the 
+    type `first_component_class` is the first component of the complete solution.
+    """
+    if type(element) == first_component_class:
+        c = [element, other_element]
+    else:
+        c = [other_element, element]
+    return c
+
 def collaborate_archive(archive, population, joint_class, ficls):
     """
     Create collaborations between individuals of archive and population.
@@ -78,11 +90,7 @@ def collaborate_archive(archive, population, joint_class, ficls):
 
     for i in arc:
         for j in pop:
-            # This line makes the function casestudy-dependant.
-            if type(i) == ficls:
-                c = [i, j]
-            else:
-                c = [j, i]
+            c = create_complete_solution(i, j, ficls)
             complete_solution_set = complete_solution_set + joint_class([c])
     
     return complete_solution_set
@@ -141,11 +149,7 @@ def collaborate_complement(first_population, first_archive, second_population,
     while min_num_evals - len(aA) > 0:
         random_individual = pAComplement[random.randint(0, len(pAComplement)-1)]
         for i in pB:
-            # This line makes the function casestudy-dependant.
-            if type(i) == first_component_class:
-                c = [i, random_individual]
-            else:
-                c = [random_individual, i]
+            c = create_complete_solution(random_individual, i, first_component_class)
             complete_solution_set = complete_solution_set + joint_class([c])
         min_num_evals = min_num_evals - 1
 
@@ -461,6 +465,267 @@ def updateArc_MLCO(archive, pop):
     # return archive
     return print("updateArc_MLCO() returned.\n")
 
+def is_similar(candidate, collaborator, archive, \
+                  archive_members_and_collaborators_dictionary, min_distance):
+  """
+  The algorithm evaluates if a `candidate` and its `collaborator` are similar to 
+  the memebrs of an `archive` and their collaborators (recorded in 
+  `archive_members_and_collaborators_dictionary`). Similarity uses the criteria
+  `min_distance` to decide.
+  """
+  rand_bool = bool(random.getrandbits(1))
+  print('is similar? %s' % rand_bool)
+  return rand_bool
+
+def update_archive(population, other_population, \
+    complete_solutions_set, joint_class, min_distance):
+    """
+    Updates the archive according to iCCEA updateArchive algorithm. It starts
+    with an empty archive for p, i.e., `archive_p` and adds informative members
+    to it. The initial member is the individual with the highest fitness value.
+    Individuals that: 1. change the fitness ranking of the other population, 
+    2. are not similar to existing members of `archive_p`, and 3. have the
+    highest fitness ranking will be added to the `archive_p` for the next
+    generation of the coevolutionary search.
+    """
+    # VALUES FOR TESTING
+    # scen1 = creator.Scenario([1, False, 5.0])
+    # scen1.fitness.values = (random.randint(-10, 10),)
+    # print('the fitness value of ' +  str(scen1) + ' is: ' + str(scen1.fitness.values))
+    # mlco1 = creator.OutputMLC([[8, 'a'], [2, 'b']])
+    # mlco1.fitness.values = (random.randint(-10, 10),)
+    # print('the fitness value of ' +  str(mlco1) + ' is: ' + str(mlco1.fitness.values))
+    # scen2 = creator.Scenario([4, True, -7.8])
+    # scen2.fitness.values = (random.randint(-10, 10),)
+    # print('the fitness value of ' +  str(scen2) + ' is: ' + str(scen2.fitness.values))
+    # scen3 = creator.Scenario([-2, False, 4.87])
+    # scen3.fitness.values = (random.randint(-10,10),)
+    # print('the fitness value of ' +  str(scen3) + ' is: ' + str(scen3.fitness.values))
+    # mlco2 = creator.OutputMLC([[1, 'a'], [21, 'd']])
+    # mlco2.fitness.values = (random.randint(-10, 10),)
+    # print('the fitness value of ' +  str(mlco2) + ' is: ' + str(mlco2.fitness.values))
+    # mlco3 = creator.OutputMLC([[-2, 'e'], [10, 'f']])
+    # mlco3.fitness.values = (random.randint(-10,10),)
+    # print('the fitness value of ' +  str(mlco3) + ' is: ' + str(mlco3.fitness.values))
+    # scen4 = creator.Scenario([2, True, 0.24])
+    # scen4.fitness.values = (random.randint(-10,10),)
+    # print('the fitness value of ' +  str(scen4) + ' is: ' + str(scen4.fitness.values))
+    # mlco4 = creator.OutputMLC([[4, 'g'], [-1, 'h']])
+    # mlco4.fitness.values = (random.randint(-10,10),)
+    # print('the fitness value of ' +  str(mlco4) + ' is: ' + str(mlco4.fitness.values))
+    # pScen = [scen1, scen2, scen3, scen4]
+    # pMLCO = [mlco1, mlco2, mlco3, mlco4]
+    # cls = creator.Individual
+    # cs1 = creator.Individual([scen1, mlco1])
+    # cs1.fitness.values = (random.randint(-10, 10),)
+    # print('the fitness value of ' +  str(cs1) + ' is: ' + str(cs1.fitness.values))
+    # cs2 = creator.Individual([scen1, mlco2])
+    # cs2.fitness.values = (random.randint(-10, 10),)
+    # print('the fitness value of ' +  str(cs2) + ' is: ' + str(cs2.fitness.values))
+    # cs3 = creator.Individual([scen2, mlco1])
+    # cs3.fitness.values = (random.randint(-10, 10),)
+    # print('the fitness value of ' +  str(cs3) + ' is: ' + str(cs3.fitness.values))
+    # cs4 = creator.Individual([scen2, mlco2])
+    # cs4.fitness.values = (random.randint(-10, 10),)
+    # print('the fitness value of ' +  str(cs4) + ' is: ' + str(cs4.fitness.values))
+    # css = [cs1, cs2, cs3, cs4]
+
+def update_archive(population, other_population, \
+    complete_solutions_set, joint_class, min_distance):
+    """
+    Updates the archive according to iCCEA updateArchive algorithm.
+    """
+    pop = deepcopy(population)
+    pop_prime = deepcopy(other_population)
+    complete_solutions_set_internal = deepcopy(complete_solutions_set)
+
+    archive_p =[]
+    ineligible_p =[]
+
+    # Add the first individual to the archive_p, which has the highest
+    # fitness value
+    values = []
+    for ind in pop:
+        individual_fitness_value = ind.fitness.values[0]
+        values.append(individual_fitness_value)
+    max_fitness_value = max(values)
+    index_max_fitness_value = values.index(max_fitness_value)
+    max_fitness_value_individual = pop[index_max_fitness_value]
+    archive_p.append(max_fitness_value_individual)
+    print('the first individual that is added to the archive_p is: %s' % \
+          max_fitness_value_individual)
+
+    # INITIALIZE THE DICT OF ARCHIVE MEMEBERS AND THE HIGHEST COLLABORATOR
+    dict_archive_memebers_and_collaborators = {}
+
+    exit_condition = False
+    # counter = 0
+    # while counter < 3:
+    while exit_condition == False:
+        # print('This is loop number: %s' % counter)  # counter loop
+        dict_fit_1 = {}
+        dict_fit_2_i = {}
+        dict_fit_3_xy_i = {}
+        max_fit_i = []
+        dict_max_fit_i = {}
+        
+        pop_minus_archive = pop
+        for _ in archive_p:
+          print('in for 0')
+          if _ in pop_minus_archive:
+            pop_minus_archive.remove(_)
+        print('pop - archive_p is: %s' % pop_minus_archive)
+        
+        pop_minus_archive_and_ineligible = pop_minus_archive
+        for _ in ineligible_p:
+          if _ in pop_minus_archive_and_ineligible:
+            pop_minus_archive_and_ineligible.remove(_)
+        print('pop - archive_p - ineligible_p is: %s' % pop_minus_archive_and_ineligible)
+
+        # Line 6 - 12
+        fit_1 = []
+        fit_2_i = []
+
+        for x in pop_prime:
+            print('Calculating fit_1')
+            print('in for 1')
+            comp_sol_set_archive = []
+            for ind in archive_p:
+                c = create_complete_solution(ind, x, type(complete_solutions_set[0][0]))
+                print('the created complete solution is: %s' % c)
+                print('in for 3')
+                if c not in complete_solutions_set:
+                    c = joint_class(c)
+                    c.fitness.values = evaluate_joint_fitness(c)
+                    comp_sol_set_archive.append(c)
+                    print('type of the first element of comp_sol_set_archive is: %s' % type(comp_sol_set_archive[0]) )
+                    print('the fitness value for c is: %s' % \
+                          c.fitness.values[0])
+                    print(str(comp_sol_set_archive))
+                    complete_solutions_set_internal.append(c)
+                else:
+                    for cs in complete_solutions_set_internal:
+                        print('in for 6')
+                        if c == cs:
+                            comp_sol_set_archive.append(cs)
+                            print('the complete solution already exists')
+                            break
+                
+            print('set considered for evaluateIndividual is: %s' % comp_sol_set_archive)
+            fit_1 += [evaluateIndividual(x, comp_sol_set_archive, 1)[0]]
+            print('fit_1 is: %s' % fit_1)
+            string_x = deepcopy(x)
+            string_x = str(string_x)
+            dict_fit_1[string_x] = evaluateIndividual(x, comp_sol_set_archive, 1)[0]
+            print(str(dict_fit_1))
+
+        for i in pop_minus_archive:
+            print('in for 2')
+            fit_2_i_x =[]
+            # FIT1 EVALUATION WAS HERE
+            
+            archive_p_incl_i = []
+            archive_p_incl_i = deepcopy(archive_p)
+            archive_p_incl_i.append(i)
+            print(str(archive_p_incl_i))
+            print('the i under consideration is: %s' % i)
+
+            for x in pop_prime:
+                print('Calculating fit_2')
+                c = create_complete_solution(i, x, type(complete_solutions_set[0][0]))
+                print('the created complete solution is: %s' % c)
+
+                if c not in complete_solutions_set_internal:
+                        c = joint_class(c)
+                        c.fitness.values = evaluate_joint_fitness(c)
+                        print('the fitness value for c is: %s' % c.fitness.values[0])
+                        complete_solutions_set_internal.append(c)
+                        fit_2_i_x_value = max(fit_1[pop_prime.index(x)], c.fitness.values[0])
+                        fit_2_i_x.append(fit_2_i_x_value)
+                else:
+                    for cs in complete_solutions_set_internal:
+                        print('in for 6')
+                        if c == cs:
+                            fit_2_i_x_value = max(fit_1[pop_prime.index(x)], cs.fitness.values[0])
+                            fit_2_i_x.append(fit_2_i_x_value)
+                            print('the complete solution already existed')
+                            break
+
+            fit_2_i.append(fit_2_i_x)
+            print('fit_2_i is: %s' % fit_2_i)
+            dict_fit_2_i[str(i)] = fit_2_i_x
+            print(str(dict_fit_2_i))
+
+            # Create a dictionary that records fit_3 values for each i
+            row, col = len(pop_prime), len(pop_prime)
+            fit_3_i = [[0 for _ in range(col)] for _ in range(row)]
+            index_i = pop_minus_archive.index(i)
+            for x in pop_prime:
+                for y in pop_prime:
+                    index_x = pop_prime.index(x)
+                    index_y = pop_prime.index(y)
+                    if ((fit_1[index_x] <= fit_1[index_y]) and (fit_2_i[index_i][index_x] > fit_2_i[index_i][index_y])):
+                        fit_3_i[index_x][index_y] = fit_2_i[index_i][index_x]
+                    else:
+                        fit_3_i[index_x][index_y] = (-1 * np.inf)
+            
+            print('fit_3_i is: %s' % fit_3_i)
+
+            dict_fit_3_xy_i[str(i)] = fit_3_i
+            # max_fit_i = [max(fit_3_i)]  # not sure, might have to remove
+            # max_fit += max_fit_i  # not sure, might have to remove
+        print('dict_fit_3_xy is: %s' % dict_fit_3_xy_i)
+        # Find maximum of fit_3_xy for each i
+
+        for i in pop_minus_archive_and_ineligible:
+            max_fit_i_x = []
+            fit_3_xy = dict_fit_3_xy_i[str(i)]
+            print('fit_3_xy is: %s' % fit_3_xy)
+            for j in range(len(fit_3_xy)):
+                fit_3_x = fit_3_xy[j]
+                print('fit_3_x is: %s' % fit_3_x)
+                max_fit_i_x.append(max(fit_3_x))
+            max_fit_i.append(max(max_fit_i_x))
+            print('max_fit_i is: %s' % max_fit_i)
+        
+        # Find the maximum of all max_fit_i values and its corresponding i
+        max_fit = max(max_fit_i)
+        print('max_fit is: %s' % max_fit)
+        # print(list(dict_max_fit_i.keys())[list(dict_max_fit_i.values()).index(max_fit)])
+        if max_fit != -1 * np.inf:
+            # Find a, i.e., the candidate member to be added to archive_p
+            index_a = max_fit_i.index(max_fit)
+            a = pop_minus_archive_and_ineligible[index_a]
+            print('a is: %s' % a)
+
+            # Find a's collaborator that has maximum fitness value
+            max_fit_3_a = dict_fit_3_xy_i[str(a)]
+            for x in range(row):
+                ## IT DOES NOT GO INSIDE THE IF!!!
+                if max_fit in max_fit_3_a[x]:
+                    x_a = pop_prime[max_fit_3_a[x].index(max_fit)]
+            print('x_a is: %s' % x_a)      
+
+            # Check the distance between a and other members of archive_p
+            if is_similar(a, x_a, archive_p, \
+                            dict_archive_memebers_and_collaborators, min_distance):
+                ineligible_p.append(a)
+            else:
+                archive_p.append(a)
+                dict_archive_memebers_and_collaborators[str(a)] = x_a
+        ## IT DOES NOT EXECUTE THE ELSE TO EXIT THE LOOP!
+        else:
+            # REMEMBER TO REMOVE PASS AND UNCOMMENT THE BELOW LINE
+            # REMEMBER TO SWITCH THE WHILE TO EVALUATE exit_condition
+            exit_condition = True
+            # pass
+
+        # counter += 1
+        print('archive_p is: %s' % archive_p)
+        print('ineligible_p is: %s' % ineligible_p)
+
+    return archive_p, ineligible_p
+        
 def violate_safety_requirement(complete_solution):
     """
     Checks whether a complete_solution violates a safety requirement. In case
