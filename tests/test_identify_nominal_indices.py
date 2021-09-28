@@ -1,4 +1,3 @@
-from deap import creator
 from CCEA import identify_nominal_indices
 import unittest
 
