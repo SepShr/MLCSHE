@@ -465,17 +465,209 @@ def updateArc_MLCO(archive, pop):
     # return archive
     return print("updateArc_MLCO() returned.\n")
 
+def flatten(list_of_lists):
+    """
+    Flattens a list of lists. It returns the `flattened_list` and
+    the list of nominal indexes, `index_nominals`.
+    """
+    if len(list_of_lists) == 0:
+        return list_of_lists
+    if isinstance(list_of_lists[0], list) or isinstance(list_of_lists[0], creator.Individual) or \
+                    isinstance(list_of_lists[0], creator.Scenario) or isinstance(list_of_lists[0], creator.OutputMLC):
+        return flatten(list_of_lists[0]) + flatten(list_of_lists[1:])
+    return list_of_lists[:1] + flatten(list_of_lists[1:])
+
+def prepare_for_distance_evaluation(irregular_nested_list):
+    """
+    Prepares an irregular nested list for distance evaluation. It returns the
+    flattened list and the list of indexes for nominal values.
+    """
+    index_nominals = []
+    flattened_list = flatten(irregular_nested_list)
+    for i in range(len(flattened_list)):
+        if isinstance(flattened_list[i], int):
+            index_nominals.append(i)
+        else:
+            if isinstance(flattened_list[i], str):
+                index_nominals.append(i)
+            if isinstance(flattened_list[i], bool):
+                if flattened_list[i]:
+                    element = 1
+                    index_nominals.append(i)
+                else:
+                    element = 0
+                    index_nominals.append(i)
+    return flattened_list, index_nominals
+
+def gather_values_in_np_array(two_d_list, numeric_value_index):
+    """
+    Gathers all the numeric values from a 2D list, located at a specific column.
+    """
+    numeric_values_array = np.zeros(len(two_d_list))
+
+    for i in range(len(two_d_list)):
+        numeric_values_array[i] = two_d_list[i][numeric_value_index]
+    
+    return numeric_values_array
+
+def gather_values_in_list(two_d_list, numeric_value_index):
+    """
+    Gathers all the numeric values from a 2D list, located at a specific column.
+    """
+    numeric_values_list = []
+
+    for i in range(len(two_d_list)):
+        numeric_values_list.append(two_d_list[i][numeric_value_index])
+    
+    return numeric_values_list
+
+def calculate_std(two_d_list, numeric_value_index):
+    """
+    Calculates the standard deviation for the numeric values whose index is
+    provided. The values are in a 2D list.
+    """
+    X = gather_values_in_np_array(two_d_list, numeric_value_index)
+
+    return np.std(X)
+
+def calculate_max(two_d_list, numeric_value_index):
+    """
+    Calculates the maximum value along a column of a 2D list.
+    """
+    X = gather_values_in_list(two_d_list, numeric_value_index)
+    
+    return max(X)
+
+def calculate_min(two_d_list, numeric_value_index):
+    """
+    Calculates the minimum value along a column of a 2D list.
+    """
+    X = gather_values_in_list(two_d_list, numeric_value_index)
+    
+    return min(X)
+
+def measure_heom_distance(X, cat_ix, nan_equivalents=[np.nan, 0], normalised="normal"):
+    """
+    Calculate the HEOM difference between a list located at X[0] and the rest
+    of the lists of similar size.
+
+    :param X: X is a 2D list of flattened heterogeneuous lists.
+    """
+    nan_eqvs = nan_equivalents
+    cat_ix = cat_ix
+    row_x = len(X)
+    col_x = len(X[0])
+
+    # Initialize numeric_range list.
+    numeric_range = []
+    for i in range(len(X[0])):
+        numeric_range.append(1)
+    
+    # Initialize the results array
+    results_array = np.zeros((row_x, col_x))
+    
+    # Get indices for missing values, if any
+
+    # Calculate the distance for missing values elements
+    # Hint: the distance for missing values is equal to one!
+
+    # Get categorical indices without missing values elements
+
+    # Calculate the distance for categorical elements
+    for index in cat_ix:
+        for row in range(1, row_x):
+            if X[0][index] != X[row][index]:
+                results_array[row][index] = 1
+    
+    # Get numerical indices without missing values elements
+    num_ix = []
+    for i in range(col_x):  # The assumption is that there are no missing values
+        if i not in cat_ix:
+            num_ix.append(i)
+    print(num_ix)
+
+    print(len(X))
+    # Calculate range for numeric values.
+    for i in range(len(X[0])):
+        if i in num_ix:
+            if normalised == "std":
+                numeric_range[i] = 4 * calculate_std(X, i)
+            else:
+                numeric_range[i] = calculate_max(X, i) - calculate_min(X, i)
+                if numeric_range[i] == 0 or numeric_range[i] == 0.0:
+                    numeric_range[i] = 0.0001  ## To avoid divide by zero in case of similar values.
+
+    print(numeric_range)
+    
+    # Calculate the distance for numerical elements
+    for index in num_ix:
+        for row in range(1, row_x):  ## DOUBLE-CHECK THE RANGE VALUES
+            column_difference = X[0][index] - X[row][index]
+            results_array[row, index] = np.sqrt(np.square(column_difference)) / numeric_range[index]  ## USE THE ABSOLUTE VALUE FOR DIFFERENCE
+
+    heom_distance_values = list(np.sqrt(np.sum(np.square(results_array), axis = 1)))
+    return heom_distance_values
+
 def is_similar(candidate, collaborator, archive, \
-                  archive_members_and_collaborators_dictionary, min_distance):
-  """
-  The algorithm evaluates if a `candidate` and its `collaborator` are similar to 
-  the memebrs of an `archive` and their collaborators (recorded in 
-  `archive_members_and_collaborators_dictionary`). Similarity uses the criteria
-  `min_distance` to decide.
-  """
-  rand_bool = bool(random.getrandbits(1))
-  print('is similar? %s' % rand_bool)
-  return rand_bool
+            archive_members_and_collaborators_dictionary, \
+               min_distance, first_item_class):
+    """
+    The algorithm evaluates if a `candidate` and its `collaborator` are similar to 
+    the memebrs of an `archive` and their collaborators (recorded in 
+    `archive_members_and_collaborators_dictionary`). Similarity uses the criteria
+    `min_distance` to decide.
+    """
+    cand = deepcopy(candidate)
+    collab = deepcopy(collaborator)
+    flat_complete_solutions_list = []
+    ficls = first_item_class
+    archive_dict = archive_members_and_collaborators_dictionary
+    # Create the complete solution of cand and collab
+    main_complete_solution = create_complete_solution(cand, collab, ficls)
+
+    # # Determine the nan equivalent value
+    # nan_eqv = np.Nan
+
+    # Prepare main_complete_solution for similarity assessment
+    main_complete_solution_flat, nominal_values_indices = \
+        prepare_for_distance_evaluation(main_complete_solution)
+    # Add main_complete_solution_flat to the list of flat complete solutions
+    flat_complete_solutions_list.append(main_complete_solution_flat)
+
+    # Create the list of complete solutions that are to be used for distance
+    # evaluations.
+    for i in range(len(archive)):
+        arc_nom_indices = []
+        archive_complete_solution = create_complete_solution(archive[i], archive_dict[str(archive[i])], ficls)
+        archive_complete_solution_flat, arc_nom_indices = \
+            prepare_for_distance_evaluation(archive_complete_solution)
+        if arc_nom_indices != nominal_values_indices:
+            print('The nominal values between ' + str(archive_complete_solution) \
+                 + ' and ' + str(main_complete_solution) + ' do not match!')
+        flat_complete_solutions_list.append(archive_complete_solution_flat)
+
+    distance_values = measure_heom_distance(flat_complete_solutions_list, \
+                                            nominal_values_indices)
+    distance_values.pop(0)
+    print(str(distance_values))
+
+    # Assess similarity between the main_complete_solution and the rest.
+    similarity_list = []
+    for i in range(len(distance_values)):
+        if distance_values[i] <= min_distance:
+            similarity_list.append(1)
+        else:
+            similarity_list.append(0)
+    
+    if sum(similarity_list) == len(distance_values):
+        return True
+    else:
+        return False
+    
+    # # MINIMALLY OPERATIONAL ALTERNATIVE
+    # rand_bool = bool(random.getrandbits(1))
+    # print('is similar? %s' % rand_bool)
+    # return rand_bool
 
 def update_archive(population, other_population, \
     complete_solutions_set, joint_class, min_distance):
@@ -555,7 +747,7 @@ def update_archive(population, other_population, \
     print('the first individual that is added to the archive_p is: %s' % \
           max_fitness_value_individual)
 
-    # INITIALIZE THE DICT OF ARCHIVE MEMEBERS AND THE HIGHEST COLLABORATOR
+    ## INITIALIZE THE DICT OF ARCHIVE MEMEBERS AND THE HIGHEST COLLABORATOR
     dict_archive_memebers_and_collaborators = {}
 
     exit_condition = False
@@ -598,9 +790,10 @@ def update_archive(population, other_population, \
                     c = joint_class(c)
                     c.fitness.values = evaluate_joint_fitness(c)
                     comp_sol_set_archive.append(c)
-                    print('type of the first element of comp_sol_set_archive is: %s' % type(comp_sol_set_archive[0]) )
+                    print('type of the first element of comp_sol_set_archive is: %s' % \
+                        type(comp_sol_set_archive[0]) )
                     print('the fitness value for c is: %s' % \
-                          c.fitness.values[0])
+                        c.fitness.values[0])
                     print(str(comp_sol_set_archive))
                     complete_solutions_set_internal.append(c)
                 else:
@@ -664,19 +857,18 @@ def update_archive(population, other_population, \
                 for y in pop_prime:
                     index_x = pop_prime.index(x)
                     index_y = pop_prime.index(y)
-                    if ((fit_1[index_x] <= fit_1[index_y]) and (fit_2_i[index_i][index_x] > fit_2_i[index_i][index_y])):
+                    if ((fit_1[index_x] <= fit_1[index_y]) and \
+                        (fit_2_i[index_i][index_x] > fit_2_i[index_i][index_y])):
                         fit_3_i[index_x][index_y] = fit_2_i[index_i][index_x]
                     else:
                         fit_3_i[index_x][index_y] = (-1 * np.inf)
             
             print('fit_3_i is: %s' % fit_3_i)
-
             dict_fit_3_xy_i[str(i)] = fit_3_i
-            # max_fit_i = [max(fit_3_i)]  # not sure, might have to remove
-            # max_fit += max_fit_i  # not sure, might have to remove
-        print('dict_fit_3_xy is: %s' % dict_fit_3_xy_i)
-        # Find maximum of fit_3_xy for each i
 
+        print('dict_fit_3_xy is: %s' % dict_fit_3_xy_i)
+        
+        # Find maximum of fit_3_xy for each i
         for i in pop_minus_archive_and_ineligible:
             max_fit_i_x = []
             fit_3_xy = dict_fit_3_xy_i[str(i)]
@@ -691,7 +883,6 @@ def update_archive(population, other_population, \
         # Find the maximum of all max_fit_i values and its corresponding i
         max_fit = max(max_fit_i)
         print('max_fit is: %s' % max_fit)
-        # print(list(dict_max_fit_i.keys())[list(dict_max_fit_i.values()).index(max_fit)])
         if max_fit != -1 * np.inf:
             # Find a, i.e., the candidate member to be added to archive_p
             index_a = max_fit_i.index(max_fit)
@@ -701,7 +892,6 @@ def update_archive(population, other_population, \
             # Find a's collaborator that has maximum fitness value
             max_fit_3_a = dict_fit_3_xy_i[str(a)]
             for x in range(row):
-                ## IT DOES NOT GO INSIDE THE IF!!!
                 if max_fit in max_fit_3_a[x]:
                     x_a = pop_prime[max_fit_3_a[x].index(max_fit)]
             print('x_a is: %s' % x_a)      
@@ -713,14 +903,9 @@ def update_archive(population, other_population, \
             else:
                 archive_p.append(a)
                 dict_archive_memebers_and_collaborators[str(a)] = x_a
-        ## IT DOES NOT EXECUTE THE ELSE TO EXIT THE LOOP!
         else:
-            # REMEMBER TO REMOVE PASS AND UNCOMMENT THE BELOW LINE
-            # REMEMBER TO SWITCH THE WHILE TO EVALUATE exit_condition
             exit_condition = True
-            # pass
 
-        # counter += 1
         print('archive_p is: %s' % archive_p)
         print('ineligible_p is: %s' % ineligible_p)
 
