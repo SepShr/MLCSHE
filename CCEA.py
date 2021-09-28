@@ -507,7 +507,6 @@ def identify_nominal_indices(flat_list):
     
     return nominal_values_indices
 
-
 def prepare_for_distance_evaluation(irregular_nested_list):
     """
     Prepares an irregular nested list for distance evaluation. It returns the
@@ -527,8 +526,16 @@ def prepare_for_distance_evaluation(irregular_nested_list):
 
 def gather_values_in_np_array(two_d_list, numeric_value_index):
     """
-    Gathers all the numeric values from a 2D list, located at a specific column.
+    Gathers all numeric values from a 2D list, located at a specific column.
+
+    :param two_d_list: a 2D list. 
+    :param numeric_value_index: the index of a numeric value, i.e., a coloumn 
+                                in the 2D array.
+
+    :returns: a numpy array.
     """
+    ## DOES NOT HANDLE NOMINAL VALUE INPUTS.
+    ## DOES NOT HANDLE CASES WERE THE NUMERIC VALUE INDEX IS OUT OF RANGE.
     numeric_values_array = np.zeros(len(two_d_list))
 
     for i in range(len(two_d_list)):
@@ -539,7 +546,15 @@ def gather_values_in_np_array(two_d_list, numeric_value_index):
 def gather_values_in_list(two_d_list, numeric_value_index):
     """
     Gathers all the numeric values from a 2D list, located at a specific column.
+
+    :param two_d_list: a 2D list. 
+    :param numeric_value_index: the index of a numeric value, i.e., a coloumn 
+                                in the 2D array.
+
+    :returns: a list.
     """
+    ## DOES NOT HANDLE NOMINAL VALUE INPUTS.
+    ## DOES NOT HANDLE CASES WERE THE NUMERIC VALUE INDEX IS OUT OF RANGE.
     numeric_values_list = []
 
     for i in range(len(two_d_list)):
@@ -547,6 +562,7 @@ def gather_values_in_list(two_d_list, numeric_value_index):
     
     return numeric_values_list
 
+## NO TESTCASE
 def calculate_std(two_d_list, numeric_value_index):
     """
     Calculates the standard deviation for the numeric values whose index is
@@ -556,6 +572,7 @@ def calculate_std(two_d_list, numeric_value_index):
 
     return np.std(X)
 
+## NO TESTCASE
 def calculate_max(two_d_list, numeric_value_index):
     """
     Calculates the maximum value along a column of a 2D list.
@@ -564,6 +581,7 @@ def calculate_max(two_d_list, numeric_value_index):
     
     return max(X)
 
+## NO TESTCASE
 def calculate_min(two_d_list, numeric_value_index):
     """
     Calculates the minimum value along a column of a 2D list.
@@ -578,7 +596,11 @@ def measure_heom_distance(X, cat_ix, nan_equivalents=[np.nan, 0], normalised="no
     of the lists of similar size.
 
     :param X: X is a 2D list of flattened heterogeneuous lists.
+    :param cat_ix: is a list of indices of the categorical values.
+    :param nan_equivalents: list of values that are considered as missing values.
+    :param normalised: normalization method, can be "normal" or "std".
     """
+    ## ASSUMPTIONS: X HAS NO MISSING VALUES. IMPLEMENTATION SHOULD BE IMPROVED.
     nan_eqvs = nan_equivalents
     cat_ix = cat_ix
     row_x = len(X)
@@ -610,9 +632,7 @@ def measure_heom_distance(X, cat_ix, nan_equivalents=[np.nan, 0], normalised="no
     for i in range(col_x):  # The assumption is that there are no missing values
         if i not in cat_ix:
             num_ix.append(i)
-    print(num_ix)
 
-    print(len(X))
     # Calculate range for numeric values.
     for i in range(len(X[0])):
         if i in num_ix:
@@ -623,8 +643,6 @@ def measure_heom_distance(X, cat_ix, nan_equivalents=[np.nan, 0], normalised="no
                 if numeric_range[i] == 0 or numeric_range[i] == 0.0:
                     numeric_range[i] = 0.0001  ## To avoid divide by zero in case of similar values.
 
-    print(numeric_range)
-    
     # Calculate the distance for numerical elements
     for index in num_ix:
         for row in range(1, row_x):  ## DOUBLE-CHECK THE RANGE VALUES
@@ -634,6 +652,7 @@ def measure_heom_distance(X, cat_ix, nan_equivalents=[np.nan, 0], normalised="no
     heom_distance_values = list(np.sqrt(np.sum(np.square(results_array), axis = 1)))
     return heom_distance_values
 
+## DOCSTRING INCOMPLETE
 def is_similar(candidate, collaborator, archive, \
             archive_members_and_collaborators_dictionary, \
                min_distance, first_item_class):
@@ -675,7 +694,6 @@ def is_similar(candidate, collaborator, archive, \
     distance_values = measure_heom_distance(flat_complete_solutions_list, \
                                             nominal_values_indices)
     distance_values.pop(0)
-    print(str(distance_values))
 
     # Assess similarity between the main_complete_solution and the rest.
     similarity_list = []
@@ -689,12 +707,8 @@ def is_similar(candidate, collaborator, archive, \
         return True
     else:
         return False
-    
-    # # MINIMALLY OPERATIONAL ALTERNATIVE
-    # rand_bool = bool(random.getrandbits(1))
-    # print('is similar? %s' % rand_bool)
-    # return rand_bool
 
+## NO TESTCASE
 def update_archive(population, other_population, \
     complete_solutions_set, joint_class, min_distance):
     """
@@ -748,11 +762,6 @@ def update_archive(population, other_population, \
     # print('the fitness value of ' +  str(cs4) + ' is: ' + str(cs4.fitness.values))
     # css = [cs1, cs2, cs3, cs4]
 
-def update_archive(population, other_population, \
-    complete_solutions_set, joint_class, min_distance):
-    """
-    Updates the archive according to iCCEA updateArchive algorithm.
-    """
     pop = deepcopy(population)
     pop_prime = deepcopy(other_population)
     complete_solutions_set_internal = deepcopy(complete_solutions_set)
