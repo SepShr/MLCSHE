@@ -467,8 +467,11 @@ def updateArc_MLCO(archive, pop):
 
 def flatten(list_of_lists):
     """
-    Flattens a list of lists. It returns the `flattened_list` and
-    the list of nominal indexes, `index_nominals`.
+    Flattens a list of lists. It returns the `flattened_list`. Note that this
+    function is recursive.
+
+    :param list_of_lists: a list of lists. It can be an irregular nested list.
+    :returns: flattened list.
     """
     if len(list_of_lists) == 0:
         return list_of_lists
@@ -477,27 +480,50 @@ def flatten(list_of_lists):
         return flatten(list_of_lists[0]) + flatten(list_of_lists[1:])
     return list_of_lists[:1] + flatten(list_of_lists[1:])
 
+def identify_nominal_indices(flat_list):
+    """
+    Identifies nominal values and returns their index in a list.
+
+    :param flat_list: a flat list that contains elements of type `int`, `str`,
+                      `bool`, or `float`. The first 3 types are considered as
+                      nominal values.
+    :returns: a list of the nominal values indices, `nominal_values_indices`.
+    """
+    nominal_values_indices = []
+
+    for i in range(len(flat_list)):
+        if isinstance(flat_list[i], int):
+            nominal_values_indices.append(i)
+        else:
+            if isinstance(flat_list[i], str):
+                nominal_values_indices.append(i)
+            if isinstance(flat_list[i], bool):
+                if flat_list[i]:
+                    element = 1
+                    nominal_values_indices.append(i)
+                else:
+                    element = 0
+                    nominal_values_indices.append(i)
+    
+    return nominal_values_indices
+
+
 def prepare_for_distance_evaluation(irregular_nested_list):
     """
     Prepares an irregular nested list for distance evaluation. It returns the
-    flattened list and the list of indexes for nominal values.
+    flattened list and the list of indices for nominal values.
+
+    :param irregular_nested_list: an irregular nested list, i.e., a list that
+                                  that may have lists or other types such as 
+                                  `int`, `str`, or `flt` as elements.
+    :returns: a flattened list and the list of indices that correspond to the
+              nominal values.
     """
-    index_nominals = []
     flattened_list = flatten(irregular_nested_list)
-    for i in range(len(flattened_list)):
-        if isinstance(flattened_list[i], int):
-            index_nominals.append(i)
-        else:
-            if isinstance(flattened_list[i], str):
-                index_nominals.append(i)
-            if isinstance(flattened_list[i], bool):
-                if flattened_list[i]:
-                    element = 1
-                    index_nominals.append(i)
-                else:
-                    element = 0
-                    index_nominals.append(i)
-    return flattened_list, index_nominals
+
+    nominal_values_indices = identify_nominal_indices(flattened_list)
+
+    return flattened_list, nominal_values_indices
 
 def gather_values_in_np_array(two_d_list, numeric_value_index):
     """
