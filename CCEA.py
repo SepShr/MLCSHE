@@ -590,6 +590,7 @@ def calculate_min(two_d_list, numeric_value_index):
     
     return min(X)
 
+## ASSUMPTIONS: X HAS NO MISSING VALUES. IMPLEMENTATION SHOULD BE IMPROVED.
 def measure_heom_distance(X, cat_ix, nan_equivalents=[np.nan, 0], normalised="normal"):
     """
     Calculate the HEOM difference between a list located at X[0] and the rest
@@ -600,7 +601,6 @@ def measure_heom_distance(X, cat_ix, nan_equivalents=[np.nan, 0], normalised="no
     :param nan_equivalents: list of values that are considered as missing values.
     :param normalised: normalization method, can be "normal" or "std".
     """
-    ## ASSUMPTIONS: X HAS NO MISSING VALUES. IMPLEMENTATION SHOULD BE IMPROVED.
     nan_eqvs = nan_equivalents
     cat_ix = cat_ix
     row_x = len(X)
@@ -708,6 +708,77 @@ def is_similar(candidate, collaborator, archive, \
     else:
         return False
 
+## NO TESTCASE, NO DOCSTRING
+def individual_is_equal(base_individual, target_individual):
+    base = deepcopy(base_individual)
+    target = deepcopy(target_individual)
+
+    base = flatten(base)
+    target = flatten(target)
+    
+    if base == target:
+        return True
+    else:
+        return False
+
+## NO TESTCASE, NO DOCSTRING
+def individual_in_list(individual, individuals_list):
+    for cs in individuals_list:
+        if individual_is_equal(individual, cs):
+            return True
+        else:
+            return False
+
+## NO TESTCASE, INCOMPLETE DOCSTRING
+## POPULATION HAS ONLY ONE TYPE OF INDIVIDUAL
+def find_max_fv_individual(population):
+    """
+    Finds the indiviudal with the maximum indiviudal fitness value.
+    """
+    values = []
+
+    for ind in population:
+        individual_fitness_value = ind.fitness.values[0]
+        values.append(individual_fitness_value)
+
+    max_fitness_value = max(values)
+    index_max_fitness_value = values.index(max_fitness_value)
+
+    return population[index_max_fitness_value]
+
+## NO TESTCASE, NO DOCSTRING
+def index_in_complete_solution(individual, complete_solution):
+    """
+    Returns the index of an individual in a complete solution based on its type.
+    """
+    for i in range(len(complete_solution)):
+        if type(complete_solution[i]) == type(individual):
+            return i
+        # else:
+        #     return None
+
+## NO TESTCASE, NO DOCSTRING
+def subtract_list(minuend_list, subtrahend_list):
+    """
+    """
+    difference_list = deepcopy(minuend_list)
+    for _ in subtrahend_list:
+        if _ in difference_list:
+            difference_list.remove(_)
+    return difference_list
+
+## NO TESTCASE, NO DOCSTRING
+def find_individual_collaborator(individual, complete_solutions_set):
+    index_in_cs = index_in_complete_solution(individual, \
+        complete_solutions_set[0])
+    for cs in complete_solutions_set:
+        if cs[index_in_cs] == individual:
+            if cs.fitness.values == individual.fitness.values:
+                cs_deepcopy = deepcopy(cs)
+                cs_deepcopy.pop(index_in_cs)
+                return cs_deepcopy[0]
+
+
 ## NO TESTCASE
 def update_archive(population, other_population, \
     complete_solutions_set, joint_class, min_distance):
@@ -769,120 +840,83 @@ def update_archive(population, other_population, \
     archive_p =[]
     ineligible_p =[]
 
-    # Add the first individual to the archive_p, which has the highest
-    # fitness value
-    values = []
-    for ind in pop:
-        individual_fitness_value = ind.fitness.values[0]
-        values.append(individual_fitness_value)
-    max_fitness_value = max(values)
-    index_max_fitness_value = values.index(max_fitness_value)
-    max_fitness_value_individual = pop[index_max_fitness_value]
+    first_item_class = type(complete_solutions_set[0][0])
+
+    max_fitness_value_individual = find_max_fv_individual(pop)
     archive_p.append(max_fitness_value_individual)
-    print('the first individual that is added to the archive_p is: %s' % \
-          max_fitness_value_individual)
-
-    ## INITIALIZE THE DICT OF ARCHIVE MEMEBERS AND THE HIGHEST COLLABORATOR
+    
+    # INITIALIZE THE DICT OF ARCHIVE MEMEBERS AND THE HIGHEST COLLABORATOR
     dict_archive_memebers_and_collaborators = {}
-
+    dict_archive_memebers_and_collaborators[str(max_fitness_value_individual)] = \
+        find_individual_collaborator(max_fitness_value_individual, \
+            complete_solutions_set_internal)
+    
     exit_condition = False
-    # counter = 0
-    # while counter < 3:
     while exit_condition == False:
-        # print('This is loop number: %s' % counter)  # counter loop
+        fit_1 = []
+        fit_2_i = []
         dict_fit_1 = {}
         dict_fit_2_i = {}
         dict_fit_3_xy_i = {}
         max_fit_i = []
         dict_max_fit_i = {}
         
-        pop_minus_archive = pop
-        for _ in archive_p:
-          print('in for 0')
-          if _ in pop_minus_archive:
-            pop_minus_archive.remove(_)
-        print('pop - archive_p is: %s' % pop_minus_archive)
+        pop_minus_archive = subtract_list(pop, archive_p)
         
-        pop_minus_archive_and_ineligible = pop_minus_archive
-        for _ in ineligible_p:
-          if _ in pop_minus_archive_and_ineligible:
-            pop_minus_archive_and_ineligible.remove(_)
-        print('pop - archive_p - ineligible_p is: %s' % pop_minus_archive_and_ineligible)
-
-        # Line 6 - 12
-        fit_1 = []
-        fit_2_i = []
-
+        if pop_minus_archive == []:
+            print('No individual left to be evaluated.')
+            break
+        
+        pop_minus_archive_and_ineligible = subtract_list(pop_minus_archive, ineligible_p)
+        
+        # Line 6 - 12 of psuedo code
         for x in pop_prime:
-            print('Calculating fit_1')
-            print('in for 1')
             comp_sol_set_archive = []
             for ind in archive_p:
-                c = create_complete_solution(ind, x, type(complete_solutions_set[0][0]))
-                print('the created complete solution is: %s' % c)
-                print('in for 3')
-                if c not in complete_solutions_set:
-                    c = joint_class(c)
+                c = create_complete_solution(ind, x, first_item_class)
+                c = joint_class(c)
+                if c not in complete_solutions_set_internal:
                     c.fitness.values = evaluate_joint_fitness(c)
                     comp_sol_set_archive.append(c)
-                    print('type of the first element of comp_sol_set_archive is: %s' % \
-                        type(comp_sol_set_archive[0]) )
-                    print('the fitness value for c is: %s' % \
-                        c.fitness.values[0])
-                    print(str(comp_sol_set_archive))
                     complete_solutions_set_internal.append(c)
                 else:
-                    for cs in complete_solutions_set_internal:
-                        print('in for 6')
-                        if c == cs:
-                            comp_sol_set_archive.append(cs)
-                            print('the complete solution already exists')
+                    for cs in range(len(complete_solutions_set_internal)):
+                        if c == complete_solutions_set_internal[cs]:
+                            comp_sol_set_archive.append( \
+                                complete_solutions_set_internal[cs])
                             break
                 
-            print('set considered for evaluateIndividual is: %s' % comp_sol_set_archive)
             fit_1 += [evaluateIndividual(x, comp_sol_set_archive, 1)[0]]
-            print('fit_1 is: %s' % fit_1)
-            string_x = deepcopy(x)
-            string_x = str(string_x)
-            dict_fit_1[string_x] = evaluateIndividual(x, comp_sol_set_archive, 1)[0]
-            print(str(dict_fit_1))
+            dict_fit_1[str(x)] = \
+                evaluateIndividual(x, comp_sol_set_archive, 1)[0]
 
         for i in pop_minus_archive:
-            print('in for 2')
             fit_2_i_x =[]
-            # FIT1 EVALUATION WAS HERE
-            
+
             archive_p_incl_i = []
             archive_p_incl_i = deepcopy(archive_p)
             archive_p_incl_i.append(i)
-            print(str(archive_p_incl_i))
-            print('the i under consideration is: %s' % i)
 
             for x in pop_prime:
-                print('Calculating fit_2')
-                c = create_complete_solution(i, x, type(complete_solutions_set[0][0]))
-                print('the created complete solution is: %s' % c)
+                c = create_complete_solution(i, x, first_item_class)
+                c = joint_class(c)
 
                 if c not in complete_solutions_set_internal:
-                        c = joint_class(c)
                         c.fitness.values = evaluate_joint_fitness(c)
-                        print('the fitness value for c is: %s' % c.fitness.values[0])
                         complete_solutions_set_internal.append(c)
-                        fit_2_i_x_value = max(fit_1[pop_prime.index(x)], c.fitness.values[0])
+                        fit_2_i_x_value = max(fit_1[pop_prime.index(x)], \
+                            c.fitness.values[0])
                         fit_2_i_x.append(fit_2_i_x_value)
                 else:
                     for cs in complete_solutions_set_internal:
-                        print('in for 6')
                         if c == cs:
-                            fit_2_i_x_value = max(fit_1[pop_prime.index(x)], cs.fitness.values[0])
+                            fit_2_i_x_value = max(fit_1[pop_prime.index(x)], \
+                                cs.fitness.values[0])
                             fit_2_i_x.append(fit_2_i_x_value)
-                            print('the complete solution already existed')
                             break
 
             fit_2_i.append(fit_2_i_x)
-            print('fit_2_i is: %s' % fit_2_i)
             dict_fit_2_i[str(i)] = fit_2_i_x
-            print(str(dict_fit_2_i))
 
             # Create a dictionary that records fit_3 values for each i
             row, col = len(pop_prime), len(pop_prime)
@@ -892,48 +926,39 @@ def update_archive(population, other_population, \
                 for y in pop_prime:
                     index_x = pop_prime.index(x)
                     index_y = pop_prime.index(y)
-                    if ((fit_1[index_x] <= fit_1[index_y]) and \
-                        (fit_2_i[index_i][index_x] > fit_2_i[index_i][index_y])):
+                    if ((fit_1[index_x] <= fit_1[index_y]) and (fit_2_i[index_i][index_x] > fit_2_i[index_i][index_y])):
                         fit_3_i[index_x][index_y] = fit_2_i[index_i][index_x]
                     else:
                         fit_3_i[index_x][index_y] = (-1 * np.inf)
-            
-            print('fit_3_i is: %s' % fit_3_i)
+
             dict_fit_3_xy_i[str(i)] = fit_3_i
 
-        print('dict_fit_3_xy is: %s' % dict_fit_3_xy_i)
-        
         # Find maximum of fit_3_xy for each i
         for i in pop_minus_archive_and_ineligible:
             max_fit_i_x = []
             fit_3_xy = dict_fit_3_xy_i[str(i)]
-            print('fit_3_xy is: %s' % fit_3_xy)
             for j in range(len(fit_3_xy)):
                 fit_3_x = fit_3_xy[j]
-                print('fit_3_x is: %s' % fit_3_x)
                 max_fit_i_x.append(max(fit_3_x))
             max_fit_i.append(max(max_fit_i_x))
-            print('max_fit_i is: %s' % max_fit_i)
         
         # Find the maximum of all max_fit_i values and its corresponding i
         max_fit = max(max_fit_i)
-        print('max_fit is: %s' % max_fit)
         if max_fit != -1 * np.inf:
             # Find a, i.e., the candidate member to be added to archive_p
             index_a = max_fit_i.index(max_fit)
             a = pop_minus_archive_and_ineligible[index_a]
-            print('a is: %s' % a)
 
             # Find a's collaborator that has maximum fitness value
             max_fit_3_a = dict_fit_3_xy_i[str(a)]
             for x in range(row):
                 if max_fit in max_fit_3_a[x]:
-                    x_a = pop_prime[max_fit_3_a[x].index(max_fit)]
-            print('x_a is: %s' % x_a)      
+                    x_a = pop_prime[max_fit_3_a[x].index(max_fit)]  
 
             # Check the distance between a and other members of archive_p
             if is_similar(a, x_a, archive_p, \
-                            dict_archive_memebers_and_collaborators, min_distance):
+                        dict_archive_memebers_and_collaborators, \
+                            min_distance, first_item_class):
                 ineligible_p.append(a)
             else:
                 archive_p.append(a)
@@ -941,10 +966,7 @@ def update_archive(population, other_population, \
         else:
             exit_condition = True
 
-        print('archive_p is: %s' % archive_p)
-        print('ineligible_p is: %s' % ineligible_p)
-
-    return archive_p, ineligible_p
+    return archive_p
         
 def violate_safety_requirement(complete_solution):
     """
