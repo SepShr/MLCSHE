@@ -2,7 +2,7 @@ from deap import creator
 from CCEA import evaluate
 import unittest
 
-class Test_TestEvaluate(unittest.TestCase):
+class TestEvaluate(unittest.TestCase):
     def test_evaluate_testInput1(self):
         scen1 = creator.Scenario([1, False, 5.0])
         mlco1 = creator.OutputMLC([[8, 'a'], [2, 'b']])
@@ -22,8 +22,8 @@ class Test_TestEvaluate(unittest.TestCase):
         a, b, c = evaluate(pScen, aScen, pMLCO, aMLCO, cls, k)
         self.assertEqual((a, b, c), (css, pScen, pMLCO))
         
-        # Check whether fitness values for complete solutions and individuals
-        # has been recorded.
+        # Check whether fitness values for complete solutions and 
+        # individuals have been recorded.
         for cs in a:
             self.assertIsNotNone(cs.fitness.values)
         

@@ -1,9 +1,9 @@
 from deap import creator
-from CCEA import evaluateIndividual
+from CCEA import evaluate_individual
 import unittest
 
-class Test_TestEvaluateIndividual(unittest.TestCase):
-    def test_evaluateIndividual_testInput1(self):
+class TestEvaluateIndividual(unittest.TestCase):
+    def test_evaluate_individual_testInput1(self):
         ind1 = creator.Scenario([1, False, 5.0])
         cs1 = creator.Individual([ind1, 8])
         cs1.fitness.values = (2.5,)
@@ -14,6 +14,8 @@ class Test_TestEvaluateIndividual(unittest.TestCase):
         cs3.fitness.values = (-7.5,)
         css = [cs1, cs2, cs3]
         index = 0
+        output_value = evaluate_individual(ind1, css, index)
         
         expected_value = (2.5,)
-        self.assertEqual(evaluateIndividual(ind1, css, index), expected_value)
+
+        self.assertEqual(output_value, expected_value)
