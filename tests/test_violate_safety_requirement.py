@@ -2,7 +2,7 @@ from deap import creator
 from CCEA import violate_safety_requirement
 import unittest
 
-class Test_TestViolateSafetyRequirement(unittest.TestCase):
+class TestViolateSafetyRequirement(unittest.TestCase):
     def test_violate_safety_requirement_testInput1(self):
         c1 = creator.Individual([1, 'a', 2.7])
         c1.fitness.values = (2,)

@@ -2,7 +2,7 @@ from deap import creator
 from CCEA import collaborate
 import unittest
 
-class Test_TestCollaborate(unittest.TestCase):
+class TestCollaborate(unittest.TestCase):
     def test_collaborate_testInput1(self):
         p1 = [creator.Scenario([1]), creator.Scenario([2.5])]
         a1 = [creator.Scenario([1])]

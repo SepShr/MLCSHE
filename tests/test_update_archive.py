@@ -3,7 +3,7 @@ from CCEA import update_archive
 import random
 import unittest
 
-class Test_TestUpdateArchive(unittest.TestCase):
+class TestUpdateArchive(unittest.TestCase):
     def test_update_archive_testInput1(self):
         scen1 = creator.Scenario([1, False, 5.0])
         scen1.fitness.values = (10.0,)
@@ -35,6 +35,8 @@ class Test_TestUpdateArchive(unittest.TestCase):
         css = [cs1, cs2, cs3, cs4]
         min_dist = 1
 
-        output_archive = update_archive(pScen, pMLCO, css, cls, min_dist)
+        output_archive = update_archive(
+            pScen, pMLCO, css, cls, min_dist
+        )
 
         self.assertIn(scen1, output_archive)

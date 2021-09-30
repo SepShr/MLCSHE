@@ -2,7 +2,7 @@ from deap import creator
 from CCEA import is_similar
 import unittest
 
-class Test_TestIsSimilar(unittest.TestCase):
+class TestIsSimilar(unittest.TestCase):
     def test_is_similar_testInput1(self):
         # Test values
         scen1 = creator.Scenario([1, False, 5.0])
@@ -16,7 +16,8 @@ class Test_TestIsSimilar(unittest.TestCase):
         min_dist = 1
         ficls = type(scen1)
 
-        output_value = is_similar(scen1, mlco1, arc, arc_collab_dict, \
-            min_dist, ficls)
+        output_value = is_similar(
+            scen1, mlco1, arc, arc_collab_dict, min_dist, ficls
+        )
         
         self.assertFalse(output_value)
