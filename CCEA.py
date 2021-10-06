@@ -523,9 +523,9 @@ def flatten(list_of_lists):
     if len(list_of_lists) == 0:
         return list_of_lists
     if isinstance(list_of_lists[0], list) or \
-        isinstance(list_of_lists[0], creator.Individual) or \
+            isinstance(list_of_lists[0], creator.Individual) or \
             isinstance(list_of_lists[0], creator.Scenario) or \
-        isinstance(list_of_lists[0], creator.OutputMLC):
+            isinstance(list_of_lists[0], creator.OutputMLC):
         return flatten(list_of_lists[0]) + flatten(list_of_lists[1:])
     return list_of_lists[:1] + flatten(list_of_lists[1:])
 
@@ -649,17 +649,29 @@ def calculate_min(two_d_list, numeric_value_index):
 
 
 def measure_heom_distance(
-        X, cat_ix, nan_equivalents=[np.nan, 0], normalised="normal"):
+        X: list,
+        cat_ix: list,
+        nan_equivalents: list = [np.nan, 0],
+        normalised: str = "normal"
+) -> list:
     """Calculate the Heterogeneous Euclidean-Overlap Metric (HEOM)- difference
     between a list located at X[0] and the rest of the lists of similar size.
+    (TODO: what do you mean by the lists of 'similar' size?)
 
     :param X: X is a 2D list of flattened heterogeneuous lists.
     :param cat_ix: is a list of indices of the categorical values.
     :param nan_equivalents: list of values that are considered as
                             missing values.
     :param normalised: normalization method, can be "normal" or "std".
+    :return: a list of normalized distance (TODO: is this correct?)
     """
-    nan_eqvs = nan_equivalents
+
+    assert len(X) > 1  # measure distance between at least two lists
+    for col in range(1, len(X)):
+        # the length of each list must be the same
+        assert len(X[col-1]) == len(X[col])
+
+    nan_eqvs = nan_equivalents  # FIXME: `nan_eqvs` is never used later
     cat_ix = cat_ix
     row_x = len(X)
     col_x = len(X[0])
@@ -686,26 +698,26 @@ def measure_heom_distance(
                 results_array[row][index] = 1
 
     # Get numerical indices without missing values elements
-    num_ix = []
-    for i in range(
-            col_x):  # The assumption is that there are no missing values
-        if i not in cat_ix:
-            num_ix.append(i)
+    num_ix = [i for i in range(col_x) if i not in cat_ix]
 
     # Calculate range for numeric values.
+    # TODO: check issue #8
     for i in range(len(X[0])):
         if i in num_ix:
             if normalised == "std":
-                numeric_range[i] = 4 * calculate_std(X, i)
+                numeric_range[i] = 4 * calculate_std(X, i)  # ???: why multiply by 4?
             else:
                 numeric_range[i] = calculate_max(X, i) - calculate_min(X, i)
-                if numeric_range[i] == 0 or numeric_range[i] == 0.0:
+                if numeric_range[i] == 0.0:
                     numeric_range[i] = 0.0001
                     # To avoid division by zero in case of similar values.
 
     # Calculate the distance for numerical elements
     for index in num_ix:
-        for row in range(1, row_x):  # DOUBLE-CHECK THE RANGE VALUES
+        for row in range(1, row_x):
+            # FIXME: this is strange; check the formula again
+            # FIXME: for example, np.sqrt(np.square(column_difference)) == abs(column_difference)
+            # FIXME: the corresponding test case must be updated too
             column_difference = X[0][index] - X[row][index]
             results_array[row, index] = \
                 np.sqrt(np.square(column_difference)) / numeric_range[index]
@@ -975,6 +987,12 @@ def update_archive(population, other_population,
     3. have the highest fitness ranking will be added to the
     `archive_p` for the next generation of the coevolutionary search.
     """
+
+    # ???: Don't we have a specific type for each input?
+    # for example, when `test_update_archive.py` is executed
+    # population is `1D-list` and other_population is `2D-list`.
+    # Is this always the case? or are they flexible?
+
     # Initialization of variables.
     pop = deepcopy(population)
     pop_prime = deepcopy(other_population)
@@ -996,11 +1014,11 @@ def update_archive(population, other_population,
     )
 
     exit_condition = False
-    while exit_condition == False:
+    while not exit_condition:
         fit_2_i = []
         dict_fit_2_i = {}
         dict_fit_3_xy_i = {}
-        max_fit_i = []
+        max_fit_i = []  # FIXME: never used
 
         pop_minus_archive = [ele for ele in pop if ele not in archive_p]
 
@@ -1008,7 +1026,7 @@ def update_archive(population, other_population,
                                             if ele not in ineligible_p]
 
         # Check if all individuals of pop have been considered archive.
-        if pop_minus_archive_and_ineligible == []:
+        if not pop_minus_archive_and_ineligible:
             print('No individual left to be considered for archive memebership.')
             break
 
