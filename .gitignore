@@ -137,4 +137,4 @@ __pycache__
 *.pyc
 
 # Github workflows and actions
-.github
+.github*
