@@ -135,6 +135,3 @@ dmypy.json
 # pycache
 __pycache__
 *.pyc
-
-# Github workflows and actions
-.github*
