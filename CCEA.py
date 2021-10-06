@@ -48,10 +48,27 @@ def initialize_scenario(class_, limits):
 # Sample initialization function for MLC Outputs
 
 
-def initializeMLCO(class_, size):
-    """Initializes an individual of the MLCO population."""
-    # return b
-    return print("initializeMLCO() returned.\n")
+def initialize_mlco(class_, size):
+    """
+    Initializes an individual of the MLCO population. Currently, the 
+    mlc is a lane detection system that outputs LanesMessage to the 
+    erdos stack. LaneMessage consists of a timestamp which is a 
+    sequence of int and Lane datatype which consists of an id, left
+    and right lane transforms. Transforms are primitive datatypes
+    used in pylot. Each transform can be specified using a location, 
+    rotation and forward_vector. Alternatively, they can also be 
+    expressed using a 4*4 NumPy matrix.
+
+    mlco[i] = [timestamp_i, lanes_i] = 
+                [sequence[int], [id, 4*4 matrix, 4*4 matrix]]
+    """
+    mlco = []
+
+    return class_(mlco)
+
+    # Uncomment the following line while commenting the rest to have a
+    # minimally executable code skeleton.
+    # return print("initializeMLCO() returned.\n")
 
 
 def create_complete_solution(element, other_element, first_component_class):
@@ -508,7 +525,7 @@ def flatten(list_of_lists):
     if isinstance(list_of_lists[0], list) or \
         isinstance(list_of_lists[0], creator.Individual) or \
             isinstance(list_of_lists[0], creator.Scenario) or \
-    isinstance(list_of_lists[0], creator.OutputMLC):
+        isinstance(list_of_lists[0], creator.OutputMLC):
         return flatten(list_of_lists[0]) + flatten(list_of_lists[1:])
     return list_of_lists[:1] + flatten(list_of_lists[1:])
 
@@ -1090,7 +1107,7 @@ toolbox.register(
     creator.Individual, SCEN_IND_SIZE
 )
 toolbox.register(
-    "outputMLC", initializeMLCO,
+    "outputMLC", initialize_mlco,
     creator.Individual, MLCO_IND_SIZE
 )
 toolbox.register(
