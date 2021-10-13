@@ -824,22 +824,6 @@ def individual_in_list(individual, individuals_list):
 # POPULATION HAS ONLY ONE TYPE OF INDIVIDUAL
 
 
-def find_max_fv_individual(population):
-    """Finds the indiviudal with the maximum indiviudal fitness value."""
-    values = []
-
-    for ind in population:
-        individual_fitness_value = ind.fitness.values[0]
-        values.append(individual_fitness_value)
-
-    max_fitness_value = max(values)
-    index_max_fitness_value = values.index(max_fitness_value)
-
-    return population[index_max_fitness_value]
-
-# NO TESTCASE, NO DOCSTRING
-
-
 def index_in_complete_solution(individual, complete_solution):
     """Returns the index of an individual in a complete solution based on its
     type."""
@@ -853,6 +837,9 @@ def index_in_complete_solution(individual, complete_solution):
 
 
 def find_individual_collaborator(individual, complete_solutions_set):
+    # ???: not clear what does this function do.
+    # Is it okay to return only one of all collaborators?
+
     index_in_cs = index_in_complete_solution(
         individual, complete_solutions_set[0]
     )
@@ -988,6 +975,8 @@ def update_archive(population, other_population,
     `archive_p` for the next generation of the coevolutionary search.
     """
 
+    # FIXME: `joint_class` is never used
+
     # ???: Don't we have a specific type for each input?
     # for example, when `test_update_archive.py` is executed
     # population is `1D-list` and other_population is `2D-list`.
@@ -1002,16 +991,17 @@ def update_archive(population, other_population,
 
     first_item_class = type(complete_solutions_set[0][0])
 
-    max_fitness_value_individual = find_max_fv_individual(pop)
+    # archive_p starts with an individual with the maximum fitness value
+    max_fitness_value_individual = max(pop, key=lambda ind: ind.fitness.values[0])
     archive_p.append(max_fitness_value_individual)
 
-    # INITIALIZE THE DICT OF ARCHIVE MEMEBERS AND THE HIGHEST COLLABORATOR
-    dict_archive_memebers_and_collaborators = {}
-    dict_archive_memebers_and_collaborators[str(max_fitness_value_individual)] = \
-        find_individual_collaborator(
+    # INITIALIZE THE DICT OF ARCHIVE MEMBERS AND THE HIGHEST COLLABORATOR
+    dict_archive_members_and_collaborators = {
+        str(max_fitness_value_individual): find_individual_collaborator(
             max_fitness_value_individual,
             complete_solutions_set_internal
-    )
+        )
+    }
 
     exit_condition = False
     while not exit_condition:
@@ -1020,14 +1010,14 @@ def update_archive(population, other_population,
         dict_fit_3_xy_i = {}
         max_fit_i = []  # FIXME: never used
 
-        pop_minus_archive = [ele for ele in pop if ele not in archive_p]
+        pop_minus_archive = [i_c for i_c in pop if i_c not in archive_p]
 
-        pop_minus_archive_and_ineligible = [ele for ele in pop_minus_archive
-                                            if ele not in ineligible_p]
+        pop_minus_archive_and_ineligible = [i_c for i_c in pop_minus_archive
+                                            if i_c not in ineligible_p]
 
         # Check if all individuals of pop have been considered archive.
         if not pop_minus_archive_and_ineligible:
-            print('No individual left to be considered for archive memebership.')
+            print('No individual left to be considered for archive membership.')
             break
 
         # Line 6 - 12 of psuedo code
@@ -1068,12 +1058,12 @@ def update_archive(population, other_population,
 
             # Check the distance between a and other members of archive_p
             if is_similar(a, x_a, archive_p,
-                          dict_archive_memebers_and_collaborators,
+                          dict_archive_members_and_collaborators,
                           min_distance, first_item_class):
                 ineligible_p.append(a)
             else:
                 archive_p.append(a)
-                dict_archive_memebers_and_collaborators[str(a)] = x_a
+                dict_archive_members_and_collaborators[str(a)] = x_a
         else:
             exit_condition = True
 
