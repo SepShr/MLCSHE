@@ -705,7 +705,8 @@ def measure_heom_distance(
     for i in range(len(X[0])):
         if i in num_ix:
             if normalised == "std":
-                numeric_range[i] = 4 * calculate_std(X, i)  # ???: why multiply by 4?
+                # ???: why multiply by 4?
+                numeric_range[i] = 4 * calculate_std(X, i)
             else:
                 numeric_range[i] = calculate_max(X, i) - calculate_min(X, i)
                 if numeric_range[i] == 0.0:
