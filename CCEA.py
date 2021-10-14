@@ -705,7 +705,8 @@ def measure_heom_distance(
     for i in range(len(X[0])):
         if i in num_ix:
             if normalised == "std":
-                numeric_range[i] = 4 * calculate_std(X, i)  # ???: why multiply by 4?
+                # ???: why multiply by 4?
+                numeric_range[i] = 4 * calculate_std(X, i)
             else:
                 numeric_range[i] = calculate_max(X, i) - calculate_min(X, i)
                 if numeric_range[i] == 0.0:
@@ -715,12 +716,11 @@ def measure_heom_distance(
     # Calculate the distance for numerical elements
     for index in num_ix:
         for row in range(1, row_x):
-            # FIXME: this is strange; check the formula again
-            # FIXME: for example, np.sqrt(np.square(column_difference)) == abs(column_difference)
-            # FIXME: the corresponding test case must be updated too
             column_difference = X[0][index] - X[row][index]
             results_array[row, index] = \
-                np.sqrt(np.square(column_difference)) / numeric_range[index]
+                np.abs(column_difference) / \
+                numeric_range[index]
+
             # USE THE ABSOLUTE VALUE FOR DIFFERENCE
 
     heom_distance_values = \
@@ -963,7 +963,7 @@ def max_rank_change_fitness(population, fitness_dict):
 
 
 def update_archive(population, other_population,
-                   complete_solutions_set, joint_class, min_distance):
+                   complete_solutions_set, min_distance):
     """Updates the archive according to iCCEA updateArchive algorithm.
 
     It starts with an empty archive for p, i.e., `archive_p` and
@@ -974,9 +974,6 @@ def update_archive(population, other_population,
     3. have the highest fitness ranking will be added to the
     `archive_p` for the next generation of the coevolutionary search.
     """
-
-    # FIXME: `joint_class` is never used
-
     # ???: Don't we have a specific type for each input?
     # for example, when `test_update_archive.py` is executed
     # population is `1D-list` and other_population is `2D-list`.
@@ -992,7 +989,8 @@ def update_archive(population, other_population,
     first_item_class = type(complete_solutions_set[0][0])
 
     # archive_p starts with an individual with the maximum fitness value
-    max_fitness_value_individual = max(pop, key=lambda ind: ind.fitness.values[0])
+    max_fitness_value_individual = max(
+        pop, key=lambda ind: ind.fitness.values[0])
     archive_p.append(max_fitness_value_individual)
 
     # INITIALIZE THE DICT OF ARCHIVE MEMBERS AND THE HIGHEST COLLABORATOR
@@ -1008,7 +1006,6 @@ def update_archive(population, other_population,
         fit_2_i = []
         dict_fit_2_i = {}
         dict_fit_3_xy_i = {}
-        max_fit_i = []  # FIXME: never used
 
         pop_minus_archive = [i_c for i_c in pop if i_c not in archive_p]
 
