@@ -892,7 +892,6 @@ def calculate_fit_given_archive(archive, population, complete_solutions_set):
             if not individual_in_list(c, complete_solutions_set):
                 c.fitness.values = evaluate_joint_fitness(c)
                 # counter_jfe += 1
-                print('Joint fitness evaluation performed!')
                 # print(counter_jfe)
                 comp_sol_set_archive.append(c)
                 complete_solutions_set.append(c)

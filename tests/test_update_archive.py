@@ -35,8 +35,13 @@ class TestUpdateArchive(unittest.TestCase):
         css = [cs1, cs2, cs3, cs4]
         min_dist = 1
 
-        output_archive = update_archive(
+        output_archive_1 = update_archive(
             pScen, pMLCO, css, min_dist
         )
 
-        self.assertIn(scen1, output_archive)
+        output_archive_2 = update_archive(
+            pMLCO, pScen, css, min_dist
+        )
+
+        self.assertIn(scen1, output_archive_1)
+        self.assertIn(mlco1, output_archive_2)
