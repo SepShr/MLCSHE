@@ -878,7 +878,6 @@ def rank_change(population, fit_no_i, fit_with_i, index_i):
 def calculate_fit_given_archive(archive, population, complete_solutions_set):
     # Initialization of variables
     fit_1 = []
-    dict_fit_1 = {}
     joint_class = type(complete_solutions_set[0])
     first_item_class = type(complete_solutions_set[0][0])
 
@@ -905,11 +904,8 @@ def calculate_fit_given_archive(archive, population, complete_solutions_set):
             # print('set considered for evaluateIndividual is: %s' % comp_sol_set_archive)
             fit_1.append(evaluate_individual(
                 x, comp_sol_set_archive, x_index_in_cs)[0])
-        # print('fit_1 is: %s' % fit_1)
-        dict_fit_1[str(x)] = evaluate_individual(
-            x, comp_sol_set_archive, x_index_in_cs)[0]
-        # print(str(dict_fit_1))
-    return fit_1, dict_fit_1
+
+    return fit_1
 
 # NO TESTCASE, NO DOCSTRING
 
@@ -1002,9 +998,9 @@ def update_archive(population, other_population,
 
     exit_condition = False
     while not exit_condition:
-        fit_2_i = []
-        dict_fit_2_i = {}
-        dict_fit_3_xy_i = {}
+        fit_incl_i = []  # A list of individual fitness values incl i
+        dict_fit_incl_i = {}  # A dict of fit_incl_i with str(i) as keys
+        dict_fit_rank_change_incl_i = {}  #
 
         pop_minus_archive = [i_c for i_c in pop if i_c not in archive_p]
 
@@ -1016,28 +1012,28 @@ def update_archive(population, other_population,
             print('No individual left to be considered for archive membership.')
             break
 
-        # Line 6 - 12 of psuedo code
-
         # Calculate the individual fitness of pop_prime individuals,
         # given the collaborations made only with the members of archive_p
-        fit_1, dict_fit_1 = calculate_fit_given_archive(
+        fit_excl_i = calculate_fit_given_archive(
             archive_p, pop_prime, complete_solutions_set_internal)
 
         for i in pop_minus_archive:
             # Calculate fitness of pop_prime individuals given archive and i
-            fit_2_i_x = calculate_fit_given_archive_and_i(
-                i, pop_prime, complete_solutions_set_internal, fit_1)
+            fit_incl_i_for_x = calculate_fit_given_archive_and_i(
+                i, pop_prime, complete_solutions_set_internal, fit_excl_i)
 
-            fit_2_i.append(fit_2_i_x)
-            dict_fit_2_i[str(i)] = fit_2_i_x
+            fit_incl_i.append(fit_incl_i_for_x)
+            dict_fit_incl_i[str(i)] = fit_incl_i_for_x
 
-            # Create a dictionary that records fit_3 values for each i
+            # Create a dictionary that records rank change fitness values
+            # for each i
             index_i = pop_minus_archive.index(i)
-            dict_fit_3_xy_i[str(i)] = rank_change(
-                pop_prime, fit_1, fit_2_i, index_i)
+            dict_fit_rank_change_incl_i[str(i)] = rank_change(
+                pop_prime, fit_excl_i, fit_incl_i, index_i)
 
+        # Calculate the max rank change fitness for each i
         max_fit_i = max_rank_change_fitness(
-            pop_minus_archive_and_ineligible, dict_fit_3_xy_i)
+            pop_minus_archive_and_ineligible, dict_fit_rank_change_incl_i)
 
         # Find the maximum of all max_fit_i values and its corresponding i
         max_fit = max(max_fit_i)
@@ -1047,10 +1043,10 @@ def update_archive(population, other_population,
             a = pop_minus_archive_and_ineligible[index_a]
 
             # Find a's collaborator that has maximum fitness value
-            max_fit_3_a = dict_fit_3_xy_i[str(a)]
+            max_fit_rank_change_a = dict_fit_rank_change_incl_i[str(a)]
             for x in range(len(pop_prime)):
-                if max_fit in max_fit_3_a[x]:
-                    x_a = pop_prime[max_fit_3_a[x].index(max_fit)]
+                if max_fit in max_fit_rank_change_a[x]:
+                    x_a = pop_prime[max_fit_rank_change_a[x].index(max_fit)]
 
             # Check the distance between a and other members of archive_p
             if is_similar(a, x_a, archive_p,
