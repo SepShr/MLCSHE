@@ -10,7 +10,7 @@ from deap import tools
 # Sample initalization function for Scenarios
 
 
-def initialize_scenario(class_, limits):
+def initialize_hetero_vector(class_, limits):
     """Initializes a heterogeneous vector of type `class_` based on the values
     in `limits`.
 
@@ -41,34 +41,28 @@ def initialize_scenario(class_, limits):
 
     return class_(x)
 
-    # Uncomment the following line while commenting the rest to have a
-    # minimally executable code skeleton.
-    # return print("initializeScenario() returned.\n")
 
-# Sample initialization function for MLC Outputs
+# def initialize_mlco(class_, size):
+#     """
+#     Initializes an individual of the MLCO population. Currently, the
+#     mlc is a lane detection system that outputs LanesMessage to the
+#     erdos stack. LaneMessage consists of a timestamp which is a
+#     sequence of int and Lane datatype which consists of an id, left
+#     and right lane transforms. Transforms are primitive datatypes
+#     used in pylot. Each transform can be specified using a location,
+#     rotation and forward_vector. Alternatively, they can also be
+#     expressed using a 4*4 NumPy matrix.
 
+#     mlco[i] = [timestamp_i, lanes_i] =
+#                 [sequence[int], [id, 4*4 matrix, 4*4 matrix]]
+#     """
+#     mlco = []
 
-def initialize_mlco(class_, size):
-    """
-    Initializes an individual of the MLCO population. Currently, the 
-    mlc is a lane detection system that outputs LanesMessage to the 
-    erdos stack. LaneMessage consists of a timestamp which is a 
-    sequence of int and Lane datatype which consists of an id, left
-    and right lane transforms. Transforms are primitive datatypes
-    used in pylot. Each transform can be specified using a location, 
-    rotation and forward_vector. Alternatively, they can also be 
-    expressed using a 4*4 NumPy matrix.
+#     return class_(mlco)
 
-    mlco[i] = [timestamp_i, lanes_i] = 
-                [sequence[int], [id, 4*4 matrix, 4*4 matrix]]
-    """
-    mlco = []
-
-    return class_(mlco)
-
-    # Uncomment the following line while commenting the rest to have a
-    # minimally executable code skeleton.
-    # return print("initializeMLCO() returned.\n")
+#     # Uncomment the following line while commenting the rest to have a
+#     # minimally executable code skeleton.
+#     # return print("initializeMLCO() returned.\n")
 
 
 def create_complete_solution(element, other_element, first_component_class):
@@ -114,10 +108,6 @@ def collaborate_archive(archive, population, joint_class, ficls):
             complete_solution_set = complete_solution_set + joint_class([c])
 
     return complete_solution_set
-
-    # Uncomment the following line while commenting the rest to have a
-    # minimally executable code skeleton.
-    # return print("collabArc() returned.\n")
 
 
 def collaborate_complement(
@@ -179,10 +169,6 @@ def collaborate_complement(
         min_num_evals = min_num_evals - 1
 
     return complete_solution_set
-
-    # Uncomment the following line while commenting the rest of the method to
-    # have a minimally executable code skeleton.
-    # return print("collbaComp() returned.\n")
 
 
 def collaborate(
@@ -259,12 +245,6 @@ def collaborate(
 
     return complete_solutions_set_unique_typecasted
 
-    # Uncomment the following line while commenting the rest of the method to
-    # have a minimally executable code skeleton.
-    # collaborate_archive(arc1, pop1, cscls)
-    # collaborateComplement(pop1, arc2, pop2, k, cscls)
-    # return print("collaborate() returned.\n")
-
 
 def evaluate(
         first_population, first_archive,
@@ -319,10 +299,6 @@ def evaluate(
 
     return complete_solutions_set, population_one, population_two
 
-    # Uncomment the following line while commenting the rest of the method to
-    # have a minimally executable code skeleton.
-    # collaborate(popScen, arcScen, popMLCO, arcMLCO, cscls, fcls, k)
-    # return print("evaluate() returned.\n")
 
 # Evaluate the joint fitness of a complete solution.
 
@@ -335,10 +311,6 @@ def evaluate_joint_fitness(c):
     """
     # Returns a random value for now.
     return (random.uniform(-5.0, 5.0),)
-
-    # Uncomment the following line while commenting the rest of the method to
-    # have a minimally executable code skeleton.
-    # return print("evaluateJFit() returned.\n")
 
 
 def evaluate_individual(individual, complete_solution_set, index):
@@ -430,10 +402,6 @@ def breed_scenario(
 
     return offspring_list
 
-    # Uncomment the following line while commenting the rest of the method to
-    # have a minimally executable code skeleton.
-    # mutate_scenario(popScen, enumLimits)
-    # return print("breedScen() returned.\n")
 
 # Breed MLC outputs.
 
@@ -506,10 +474,6 @@ def mutate_scenario(
         mutatedScen += buffer
 
     return cls(mutatedScen)
-
-    # Uncomment the following line while commenting the rest to have a
-    # minimally executable code skeleton.
-    # return print("mutate_MLCO() returned.\n")
 
 
 def flatten(list_of_lists):
@@ -954,6 +918,19 @@ def max_rank_change_fitness(population, fitness_dict):
         max_fitness_list.append(max(max_fit_i_x))
     return max_fitness_list
 
+
+def find_max_fv_individual(population):
+    """
+    Finds the indiviudal with the maximum indiviudal fitness value.
+    """
+    values = []
+    for ind in population:
+        individual_fitness_value = ind.fitness.values[0]
+        values.append(individual_fitness_value)
+    max_fitness_value = max(values)
+    index_max_fitness_value = values.index(max_fitness_value)
+    return population[index_max_fitness_value]
+
 # NO TESTCASE
 
 
@@ -984,8 +961,9 @@ def update_archive(population, other_population,
     first_item_class = type(complete_solutions_set[0][0])
 
     # archive_p starts with an individual with the maximum fitness value
-    max_fitness_value_individual = max(
-        pop, key=lambda ind: ind.fitness.values[0])
+    max_fitness_value_individual = find_max_fv_individual(pop)
+    # max(
+    # pop, key=lambda ind: ind.fitness.values[0])
     archive_p.append(max_fitness_value_individual)
 
     # INITIALIZE THE DICT OF ARCHIVE MEMBERS AND THE HIGHEST COLLABORATOR
@@ -1092,23 +1070,26 @@ creator.create("OutputMLC", creator.Individual)
 
 SCEN_IND_SIZE = 1  # Size of a scenario individual
 MLCO_IND_SIZE = 2  # Size of an MLC output individual
-SCEN_POP_SIZE = 1  # Size of the scenario population
-MLCO_POP_SIZE = 1  # Size of the MLC output population
+SCEN_POP_SIZE = 2  # Size of the scenario population
+MLCO_POP_SIZE = 2  # Size of the MLC output population
 MIN_DISTANCE = 1  # Minimum distance between members of an archive
 
 # The list of lower and upper limits for enumerationed types in sceanrio.
-enumLimits = [np.nan, np.nan, (1, 6)]
+enumLimits = ['bool', [1, 5], 'bool', [1.35, 276.87]]
+# [np.nan, np.nan, (1, 6)]
 
 toolbox = base.Toolbox()
 
 # Define functions and register them in toolbox.
 toolbox.register(
-    "scenario", initialize_scenario,
-    creator.Individual, SCEN_IND_SIZE
+    "scenario", initialize_hetero_vector,
+    creator.Scenario, enumLimits
 )
+
+# enum_limits is different for the two types of individuals
 toolbox.register(
-    "outputMLC", initialize_mlco,
-    creator.Individual, MLCO_IND_SIZE
+    "mlco", initialize_hetero_vector,
+    creator.OutputMLC, enumLimits
 )
 toolbox.register(
     "popScen", tools.initRepeat, list,
@@ -1116,7 +1097,7 @@ toolbox.register(
 )
 toolbox.register(
     "popMLCO", tools.initRepeat, list,
-    toolbox.outputMLC, n=MLCO_POP_SIZE
+    toolbox.mlco, n=MLCO_POP_SIZE
 )
 
 # ----------------------
@@ -1125,7 +1106,11 @@ toolbox.register(
 def main():
     # Instantiate individuals and populations
     popScen = toolbox.popScen()
+    print(str(popScen))
+    print('type of of scenario ind is: ' + str(type(popScen[0])))
     popMLCO = toolbox.popMLCO()
+    print(str(popMLCO))
+    print('type of of mlco ind is: ' + str(type(popMLCO[0])))
     arcScen = toolbox.clone(popScen)
     arcMLCO = toolbox.clone(popMLCO)
     solutionArchive = []
@@ -1133,7 +1118,13 @@ def main():
     # Create complete solutions and evaluate individuals
     completeSolSet = evaluate(
         popScen, arcScen, popMLCO, arcMLCO, creator.Individual, 1)
+    print(str(completeSolSet))
 
+    for ind in popScen:
+        evaluate_individual(ind, completeSolSet, 0)
+
+    for ind in popMLCO:
+        evaluate_individual(ind, completeSolSet, 1)
     # # Record the complete solutions that violate the requirement r
     # for c in completeSolSet:
     #     if violateSafetyReq(c) is True:
@@ -1142,12 +1133,10 @@ def main():
     # Evolve archives and populations for the next generation
     min_distance = 1
     arcScen = update_archive(
-        popScen, popMLCO, completeSolSet,
-        creator.Individual, min_distance
+        popScen, popMLCO, completeSolSet, min_distance
     )
     arcMLCO = update_archive(
-        popMLCO, popScen, completeSolSet,
-        creator.Individual, min_distance
+        popMLCO, popScen, completeSolSet, min_distance
     )
 
     # Select, mate (crossover) and mutate individuals that are not in archives.
