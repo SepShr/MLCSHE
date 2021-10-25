@@ -1,6 +1,8 @@
 from deap import creator
 from src.utils.utility import evaluate_individual
+import problem
 import unittest
+
 
 class TestEvaluateIndividual(unittest.TestCase):
     def test_evaluate_individual_testInput1(self):
@@ -15,7 +17,7 @@ class TestEvaluateIndividual(unittest.TestCase):
         css = [cs1, cs2, cs3]
         index = 0
         output_value = evaluate_individual(ind1, css, index)
-        
+
         expected_value = (2.5,)
 
         self.assertEqual(output_value, expected_value)

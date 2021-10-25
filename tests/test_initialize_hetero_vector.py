@@ -1,6 +1,7 @@
 from deap import creator
 from src.utils.utility import initialize_hetero_vector
 import unittest
+import problem
 
 
 class TestInitializeHeteroVector(unittest.TestCase):

@@ -1,9 +1,18 @@
 from deap import creator
-from src.main.ICCEA import is_similar
+from src.main.ICCEA import ICCEA
 import unittest
+import problem
+
 
 class TestIsSimilar(unittest.TestCase):
     def test_is_similar_testInput1(self):
+        # make a solver instance
+        solver = ICCEA(
+            creator=problem.creator,
+            toolbox=problem.toolbox,
+            enumLimits=problem.enumLimits
+        )
+
         # Test values
         scen1 = creator.Scenario([1, False, 5.0])
         mlco1 = creator.OutputMLC([[8, 'a'], [2, 'b']])
@@ -16,8 +25,8 @@ class TestIsSimilar(unittest.TestCase):
         min_dist = 1
         ficls = type(scen1)
 
-        output_value = is_similar(
+        output_value = solver.is_similar(
             scen1, mlco1, arc, arc_collab_dict, min_dist, ficls
         )
-        
+
         self.assertFalse(output_value)

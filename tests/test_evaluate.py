@@ -1,6 +1,8 @@
 from deap import creator
 from src.utils.utility import evaluate
+import problem
 import unittest
+
 
 class TestEvaluate(unittest.TestCase):
     def test_evaluate_testInput1(self):
@@ -15,20 +17,20 @@ class TestEvaluate(unittest.TestCase):
         cls = creator.Individual
         k = 2
         css = [[[1, False, 5.0], [[8, 'a'], [2, 'b']]],
-            [[1, False, 5.0], [[1, 'a'], [21, 'd']]],
-            [[4, True, -7.8], [[8, 'a'], [2, 'b']]],
-            [[4, True, -7.8], [[1, 'a'], [21, 'd']]]]
-        
+               [[1, False, 5.0], [[1, 'a'], [21, 'd']]],
+               [[4, True, -7.8], [[8, 'a'], [2, 'b']]],
+               [[4, True, -7.8], [[1, 'a'], [21, 'd']]]]
+
         a, b, c = evaluate(pScen, aScen, pMLCO, aMLCO, cls, k)
         self.assertEqual((a, b, c), (css, pScen, pMLCO))
-        
-        # Check whether fitness values for complete solutions and 
+
+        # Check whether fitness values for complete solutions and
         # individuals have been recorded.
         for cs in a:
             self.assertIsNotNone(cs.fitness.values)
-        
+
         for scen in b:
             self.assertIsNotNone(scen.fitness.values)
-        
+
         for mlco in b:
             self.assertIsNotNone(mlco.fitness.values)

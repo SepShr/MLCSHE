@@ -3,6 +3,7 @@ from src.main.ICCEA import ICCEA
 import unittest
 import problem
 
+
 class TestBreedScenario(unittest.TestCase):
     def test_breed_scenario_testInput1(self):
         # make a solver instance
@@ -14,7 +15,7 @@ class TestBreedScenario(unittest.TestCase):
 
         # prepare test input
         p = [
-            creator.Scenario([1, 2.0, False]), 
+            creator.Scenario([1, 2.0, False]),
             creator.Scenario([8, 3.5, True]),
             creator.Scenario([70])
         ]

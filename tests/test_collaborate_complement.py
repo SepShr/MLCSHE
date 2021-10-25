@@ -1,6 +1,8 @@
 from deap import creator
 from src.utils.utility import collaborate_complement
+import problem
 import unittest
+
 
 class TestCollaborateComplement(unittest.TestCase):
     def test_collaborate_complement_testInput1(self):
@@ -13,7 +15,7 @@ class TestCollaborateComplement(unittest.TestCase):
         complete_solution_set = collaborate_complement(
             p1, a1, p2, numTest, icls, fcls)
         self.assertEqual(complete_solution_set, [[[2.5], [3]]])
-    
+
     def test_collaborate_complement_numTest(self):
         p1 = [creator.Scenario([1]), creator.Scenario([2.5])]
         a1 = [creator.Scenario([1])]
@@ -25,5 +27,6 @@ class TestCollaborateComplement(unittest.TestCase):
             p1, a1, p2, numTest, icls, fcls)
         self.assertEqual(complete_solution_set, [])
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     unittest.main()

@@ -1,11 +1,20 @@
 from deap import creator
-from src.main.ICCEA import update_archive
+from src.main.ICCEA import ICCEA
 import random
 import unittest
+import problem
 
 
 class TestUpdateArchive(unittest.TestCase):
     def test_update_archive_testInput1(self):
+        # make a solver instance
+        solver = ICCEA(
+            creator=problem.creator,
+            toolbox=problem.toolbox,
+            enumLimits=problem.enumLimits
+        )
+
+        # prepare test input
         scen1 = creator.Scenario([1, False, 5.0])
         scen1.fitness.values = (10.0,)
         mlco1 = creator.OutputMLC([[8, 'a'], [2, 'b']])
@@ -35,11 +44,11 @@ class TestUpdateArchive(unittest.TestCase):
         css = [cs1, cs2, cs3, cs4]
         min_dist = 1
 
-        output_archive_1 = update_archive(
+        output_archive_1 = solver.update_archive(
             pScen, pMLCO, css, min_dist
         )
 
-        output_archive_2 = update_archive(
+        output_archive_2 = solver.update_archive(
             pMLCO, pScen, css, min_dist
         )
 
