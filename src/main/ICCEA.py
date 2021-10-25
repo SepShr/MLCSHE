@@ -9,7 +9,7 @@ from src.utils.utility import create_complete_solution, evaluate, \
     evaluate_joint_fitness, evaluate_individual, breed_mlco, \
     identify_nominal_indices, measure_heom_distance, \
     index_in_complete_solution, find_individual_collaborator, rank_change, \
-    max_rank_change_fitness, find_max_fv_individual
+    max_rank_change_fitness, find_max_fv_individual, violate_safety_requirement
 
 
 class ICCEA:
@@ -18,45 +18,58 @@ class ICCEA:
         self.creator = creator
         self.enumLimits = enumLimits
 
-    def solve(self):
+    def solve(self, max_gen):
         # Instantiate individuals and populations
         popScen = self.toolbox.popScen()
-        print(str(popScen))
-        print('type of of scenario ind is: ' + str(type(popScen[0])))
         popMLCO = self.toolbox.popMLCO()
-        print(str(popMLCO))
-        print('type of of mlco ind is: ' + str(type(popMLCO[0])))
         arcScen = self.toolbox.clone(popScen)
         arcMLCO = self.toolbox.clone(popMLCO)
         solutionArchive = []
 
-        # Create complete solutions and evaluate individuals
-        completeSolSet = evaluate(
-            popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
-        print(str(completeSolSet))
+        # Cooperative Coevolutionary Search
+        for num_gen in range(max_gen):
+            print('the current generation is: ' + str(num_gen))
+            # Create complete solutions and evaluate individuals
+            completeSolSet, popScen, popMLCO = evaluate(
+                popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
 
-        for ind in popScen:
-            evaluate_individual(ind, completeSolSet, 0)
+            # Record the complete solutions that violate the requirement r
+            # solutionArchive.append(
+            #     cs for cs in completeSolSet if violate_safety_requirement(cs))
+            for cs in completeSolSet:
+                if violate_safety_requirement(cs):
+                    solutionArchive.append(cs)
 
-        for ind in popMLCO:
-            evaluate_individual(ind, completeSolSet, 1)
-        # # Record the complete solutions that violate the requirement r
-        # for c in completeSolSet:
-        #     if violateSafetyReq(c) is True:
-        #         solutionArchive = solutionArchive + c
+            # Evolve archives and populations for the next generation
+            min_distance = 1
+            arcScen = self.update_archive(
+                popScen, popMLCO, completeSolSet, min_distance
+            )
+            arcMLCO = self.update_archive(
+                popMLCO, popScen, completeSolSet, min_distance
+            )
 
-        # Evolve archives and populations for the next generation
-        min_distance = 1
-        arcScen = self.update_archive(
-            popScen, popMLCO, completeSolSet, min_distance
-        )
-        arcMLCO = self.update_archive(
-            popMLCO, popScen, completeSolSet, min_distance
-        )
+            # Select, mate (crossover) and mutate individuals that are not in archives.
+            ts = 2
+            cxpb = 1
+            mut_bit_pb = 1
+            mut_guass_mu = 0
+            mut_guass_sig = 1
+            mut_guass_pb = 1
+            mut_int_pb = 1
+            popScen = self.breed_scenario(
+                popScen, arcScen, self.enumLimits, ts, cxpb, mut_bit_pb,
+                mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
+            popMLCO = self.breed_scenario(
+                popMLCO, arcMLCO, self.enumLimits, ts, cxpb, mut_bit_pb,
+                mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
 
-        # Select, mate (crossover) and mutate individuals that are not in archives.
-        popScen = self.breed_scenario(popScen, self.enumLimits)
-        popMLCO = breed_mlco(popMLCO)
+            popScen += arcScen
+            popMLCO += arcMLCO
+            # popScen.append(x for x in arcScen)
+            # popMLCO.append(x for x in arcMLCO)
+
+        return solutionArchive
 
     def breed_scenario(
             self, popScen, arcScen, enumLimits, tournSize, cxpb,
@@ -107,14 +120,15 @@ class ICCEA:
             parents = self.toolbox.select(breeding_population, k=2)
             # Perform crossover.
             offspring_pair = self.toolbox.crossover(parents[0], parents[1])
-            # Choose a random offspring and typecast it into list.
-            offspring = list(offspring_pair[random.getrandbits(1)])
+            # # Choose a random offspring and typecast it into list.
+            # offspring = list(offspring_pair[random.getrandbits(1)])
+            offspring = offspring_pair[random.getrandbits(1)]
             # Mutate the offspring.
             offspring = self.mutate_scenario(
                 offspring, enumLimits, mutbpb, mutgmu,
                 mutgsig, mutgpb, mutipb
             )
-            offspring_list += [offspring]
+            offspring_list.append(offspring)
             size = size - 1
 
         return offspring_list

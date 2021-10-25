@@ -9,6 +9,7 @@ solve.
 from deap import creator, base, tools
 from src.utils.utility import initialize_hetero_vector
 
+
 SCEN_IND_SIZE = 1  # Size of a scenario individual
 MLCO_IND_SIZE = 2  # Size of an MLC output individual
 SCEN_POP_SIZE = 2  # Size of the scenario population
