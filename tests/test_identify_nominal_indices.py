@@ -1,5 +1,7 @@
-from CCEA import identify_nominal_indices
+from src.utils.utility import identify_nominal_indices
 import unittest
+import problem
+
 
 class TestIdentifyNominalIndices(unittest.TestCase):
     def test_identify_nominal_indices_testInput1(self):

@@ -1,5 +1,7 @@
-from CCEA import measure_heom_distance
+from src.utils.utility import measure_heom_distance
 import unittest
+import problem
+
 
 class TestMeasureHeomDistance(unittest.TestCase):
     def test_measure_heom_distance_testInput1(self):
