@@ -1,5 +1,5 @@
 from deap import creator
-from CCEA import evaluate_individual
+from src.utils.utility import evaluate_individual
 import unittest
 
 class TestEvaluateIndividual(unittest.TestCase):

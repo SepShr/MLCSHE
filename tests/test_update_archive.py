@@ -1,5 +1,5 @@
 from deap import creator
-from CCEA import update_archive
+from src.main.ICCEA import update_archive
 import random
 import unittest
 

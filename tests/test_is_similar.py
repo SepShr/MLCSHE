@@ -1,5 +1,5 @@
 from deap import creator
-from CCEA import is_similar
+from src.main.ICCEA import is_similar
 import unittest
 
 class TestIsSimilar(unittest.TestCase):

@@ -1,5 +1,5 @@
 from deap import creator
-from CCEA import mutate_scenario
+from src.main.ICCEA import mutate_scenario
 import unittest
 
 class TestMutateScenario(unittest.TestCase):

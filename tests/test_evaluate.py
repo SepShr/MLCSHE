@@ -1,5 +1,5 @@
 from deap import creator
-from CCEA import evaluate
+from src.utils.utility import evaluate
 import unittest
 
 class TestEvaluate(unittest.TestCase):

@@ -1,5 +1,5 @@
 from deap import creator
-from CCEA import violate_safety_requirement
+from src.utils.utility import violate_safety_requirement
 import unittest
 
 class TestViolateSafetyRequirement(unittest.TestCase):

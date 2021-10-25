@@ -1,5 +1,5 @@
 from deap import creator
-from CCEA import initialize_hetero_vector
+from src.utils.utility import initialize_hetero_vector
 import unittest
 
 

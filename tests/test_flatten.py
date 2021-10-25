@@ -1,5 +1,4 @@
-from deap import creator
-from CCEA import flatten
+from src.main.ICCEA import flatten
 import unittest
 
 class TestFlatten(unittest.TestCase):

@@ -1,5 +1,4 @@
-from deap import creator
-from CCEA import prepare_for_distance_evaluation
+from src.main.ICCEA import prepare_for_distance_evaluation
 import unittest
 
 class TestPrepareForDistanceEvaluation(unittest.TestCase):

@@ -1,4 +1,4 @@
-from CCEA import gather_values_in_list
+from src.utils.utility import gather_values_in_list
 import unittest
 
 class TestGatherValuesInList(unittest.TestCase):

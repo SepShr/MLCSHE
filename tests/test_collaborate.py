@@ -1,5 +1,5 @@
 from deap import creator
-from CCEA import collaborate
+from src.utils.utility import collaborate
 import unittest
 
 class TestCollaborate(unittest.TestCase):

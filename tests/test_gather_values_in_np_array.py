@@ -1,5 +1,5 @@
 import numpy as np
-from CCEA import gather_values_in_np_array
+from src.utils.utility import gather_values_in_np_array
 import unittest
 
 class Test_TestGatherValuesInNpArray(unittest.TestCase):

@@ -1,4 +1,4 @@
-from CCEA import individual_in_list
+from src.main.ICCEA import individual_in_list
 from deap import creator
 import unittest
 

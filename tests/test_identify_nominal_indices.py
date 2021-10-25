@@ -1,4 +1,4 @@
-from CCEA import identify_nominal_indices
+from src.utils.utility import identify_nominal_indices
 import unittest
 
 class TestIdentifyNominalIndices(unittest.TestCase):
