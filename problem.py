@@ -1,6 +1,9 @@
 """
-Set of variables that define the `problem` structure, especially `creator` and `toolbox`.
-This is the only file that a user has to modify for a given problem to solve.
+Set of variables that define the `problem` structure, especially `creator`
+and `toolbox`.
+
+This is the only file that a user has to modify for a given problem to
+solve.
 """
 
 from deap import creator, base, tools

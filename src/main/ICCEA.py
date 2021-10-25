@@ -5,9 +5,11 @@ import numpy as np
 
 from deap import tools
 
-from src.utils.utility import create_complete_solution, evaluate, evaluate_joint_fitness, evaluate_individual, \
-    breed_mlco, identify_nominal_indices, measure_heom_distance, index_in_complete_solution, \
-    find_individual_collaborator, rank_change, max_rank_change_fitness, find_max_fv_individual
+from src.utils.utility import create_complete_solution, evaluate, \
+    evaluate_joint_fitness, evaluate_individual, breed_mlco, \
+    identify_nominal_indices, measure_heom_distance, \
+    index_in_complete_solution, find_individual_collaborator, rank_change, \
+    max_rank_change_fitness, find_max_fv_individual
 
 
 class ICCEA:
@@ -59,9 +61,9 @@ class ICCEA:
     def breed_scenario(
             self, popScen, arcScen, enumLimits, tournSize, cxpb,
             mutbpb, mutgmu, mutgsig, mutgpb, mutipb):
-        """Breeds, i.e., performs selection, crossover (exploitation) and mutation
-        (exploration) on individuals of the Scenarios. It takes an old generation
-        of scenarios as input and returns an evolved generation.
+        """Breeds, i.e., performs selection, crossover (exploitation) and
+        mutation (exploration) on individuals of the Scenarios. It takes an old
+        generation of scenarios as input and returns an evolved generation.
 
         :param popScen: the population of scenarios.
         :param arcScen: the list of all memebrs of the archive.
@@ -120,11 +122,11 @@ class ICCEA:
     def mutate_scenario(
             self, scenario, intLimits, mutbpb, mutgmu,
             mutgsig, mutgpb, mutipb):
-        """Mutates a scenario individual. Input is an unmutated scenario, while the
-        output is a mutated scenario. The function applies one of the 3 mutators to
-        the elements depending on their type, i.e., `mutGaussian()` (Guass distr)
-        to Floats, `mutFlipBit()` (bitflip) to Booleans and `mutUniformInt()`
-        (integer-randomization) to Integers.
+        """Mutates a scenario individual. Input is an unmutated scenario, while
+        the output is a mutated scenario. The function applies one of the 3
+        mutators to the elements depending on their type, i.e., `mutGaussian()`
+        (Guass distr) to Floats, `mutFlipBit()` (bitflip) to Booleans and
+        `mutUniformInt()` (integer-randomization) to Integers.
 
         :param scenario: a scenario type individual to be mutated by the
                          function.
@@ -144,7 +146,7 @@ class ICCEA:
         """
         self.toolbox.register("mutateScenBool", tools.mutFlipBit, indpb=mutbpb)
         self.toolbox.register("mutateScenFlt", tools.mutGaussian, mu=mutgmu,
-                         sigma=mutgsig, indpb=mutgpb)
+                              sigma=mutgsig, indpb=mutgpb)
 
         # LIMITATION: assumes a specific format for intLimits.
 
@@ -191,8 +193,8 @@ class ICCEA:
         return list_of_lists[:1] + self.flatten(list_of_lists[1:])
 
     def prepare_for_distance_evaluation(self, irregular_nested_list):
-        """Prepares an irregular nested list for distance evaluation. It returns
-        the flattened list and the list of indices for nominal values.
+        """Prepares an irregular nested list for distance evaluation. It
+        returns the flattened list and the list of indices for nominal values.
 
         :param irregular_nested_list: an irregular nested list, i.e., a
                                       list that may have lists or other
@@ -212,8 +214,8 @@ class ICCEA:
             archive_members_and_collaborators_dictionary,
             min_distance, first_item_class):
         """The algorithm evaluates if a `candidate` and its `collaborator` are
-        similar to the memebrs of an `archive` and their collaborators (recorded in
-        `archive_members_and_collaborators_dictionary`).
+        similar to the memebrs of an `archive` and their collaborators
+        (recorded in `archive_members_and_collaborators_dictionary`).
 
         Similarity uses the criteria `min_distance` to decide.
         """
@@ -313,7 +315,8 @@ class ICCEA:
                 else:
                     for cs in range(len(complete_solutions_set)):
                         if self.individual_is_equal(c, complete_solutions_set[cs]):
-                            comp_sol_set_archive.append(complete_solutions_set[cs])
+                            comp_sol_set_archive.append(
+                                complete_solutions_set[cs])
                             break
 
                 # print('x is: ' + str(x))
@@ -440,12 +443,13 @@ class ICCEA:
                 max_fit_rank_change_a = dict_fit_rank_change_incl_i[str(a)]
                 for x in range(len(pop_prime)):
                     if max_fit in max_fit_rank_change_a[x]:
-                        x_a = pop_prime[max_fit_rank_change_a[x].index(max_fit)]
+                        x_a = pop_prime[max_fit_rank_change_a[x].index(
+                            max_fit)]
 
                 # Check the distance between a and other members of archive_p
                 if self.is_similar(a, x_a, archive_p,
-                              dict_archive_members_and_collaborators,
-                              min_distance, first_item_class):
+                                   dict_archive_members_and_collaborators,
+                                   min_distance, first_item_class):
                     ineligible_p.append(a)
                 else:
                     archive_p.append(a)
