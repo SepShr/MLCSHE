@@ -22,7 +22,7 @@ class TestIsSimilar(unittest.TestCase):
         mlco3 = creator.OutputMLC([[-2, 'e'], [10, 'f']])
         arc = [scen2, scen3]
         arc_collab_dict = {str(scen2): mlco2, str(scen3): mlco3}
-        min_dist = 1
+        min_dist = 0.5
         ficls = type(scen1)
 
         output_value = solver.is_similar(

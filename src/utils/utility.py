@@ -287,13 +287,15 @@ def evaluate_joint_fitness(c):
     y_1 = 0.75
     s_1 = 1.6
     f_1 = h_1 * \
-        (1 - ((16.0/s_1) * pow((c[0][0] - x_1), 2)) - ((16.0/s_1) * pow((c[1][0] - y_1), 2)))
+        (1 - ((16.0/s_1) * pow((c[0][0] - x_1), 2)) -
+         ((16.0/s_1) * pow((c[1][0] - y_1), 2)))
     h_2 = 150
     x_2 = 0.25
     y_2 = 0.25
     s_2 = 1.0/32.0
     f_2 = h_2 * \
-        (1 - ((16.0/s_2) * pow((c[0][0] - x_2), 2)) - ((16.0/s_2) * pow((c[1][0] - y_2), 2)))
+        (1 - ((16.0/s_2) * pow((c[0][0] - x_2), 2)) -
+         ((16.0/s_2) * pow((c[1][0] - y_2), 2)))
 
     return (max(f_1, f_2),)
 
@@ -503,7 +505,7 @@ def measure_heom_distance(
             # USE THE ABSOLUTE VALUE FOR DIFFERENCE
 
     heom_distance_values = \
-        list(np.sqrt(np.sum(np.square(results_array), axis=1)))
+        list(np.sqrt(np.sum(np.square(results_array)/col_x, axis=1)))
     return heom_distance_values
 
 

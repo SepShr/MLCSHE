@@ -44,21 +44,23 @@ class ICCEA:
                 solutionArchive.append(cs)
 
             # Some probes
-            fitness_scen_list = [ind.fitness.values[0] for ind in popScen]
-            avg_fitness_scen = sum(fitness_scen_list) / len(popScen)
-            print('the avg for popScen fitness is: ' + str(avg_fitness_scen))
+            # fitness_scen_list = [ind.fitness.values[0] for ind in popScen]
+            # avg_fitness_scen = sum(fitness_scen_list) / len(popScen)
+            # print('the avg for popScen fitness is: ' + str(avg_fitness_scen))
 
-            fitness_mlco_list = [ind.fitness.values[0] for ind in popMLCO]
-            avg_fitness_mlco = sum(fitness_mlco_list) / len(popMLCO)
-            print('the avg for popMLCO fitness is: ' + str(avg_fitness_mlco))
+            # fitness_mlco_list = [ind.fitness.values[0] for ind in popMLCO]
+            # avg_fitness_mlco = sum(fitness_mlco_list) / len(popMLCO)
+            # print('the avg for popMLCO fitness is: ' + str(avg_fitness_mlco))
 
             # print best complete solution found
-            best_solution = sorted(solutionArchive, key=lambda x: x.fitness.values[0])[-1]
+            best_solution = sorted(
+                solutionArchive, key=lambda x: x.fitness.values[0])[-1]
             print(f'len(solutionArchive): {len(solutionArchive)}')
-            print(f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
+            print(
+                f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
 
             # Evolve archives and populations for the next generation
-            min_distance = 1.3
+            min_distance = 0.2
             arcScen = self.update_archive(
                 popScen, popMLCO, completeSolSet, min_distance
             )
@@ -127,8 +129,9 @@ class ICCEA:
         )
         self.toolbox.register("crossover", tools.cxUniform, indpb=cxpb)
 
-        # Find the complement (population minus the archive).
-        breeding_population = [ele for ele in popScen if ele not in arcScen]
+        # # Find the complement (population minus the archive).
+        # breeding_population = [ele for ele in popScen if ele not in arcScen]
+        breeding_population = popScen
 
         # Select 2 parents, cx and mut them until satisfied.
         offspring_list = []

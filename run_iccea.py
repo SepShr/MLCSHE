@@ -14,6 +14,6 @@ solver = ICCEA(
 )
 
 # User does not need to modify anything but `problem.py`
-solution = solver.solve(max_gen=40)
+solution = solver.solve(max_gen=20)
 
 # print(f'solution={solution}')
