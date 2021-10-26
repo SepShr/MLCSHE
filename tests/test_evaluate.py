@@ -21,7 +21,7 @@ class TestEvaluate(unittest.TestCase):
                [[4, True, -7.8], [[8, 'a'], [2, 'b']]],
                [[4, True, -7.8], [[1, 'a'], [21, 'd']]]]
 
-        a, b, c = evaluate(pScen, aScen, pMLCO, aMLCO, cls, k)
+        a, b, c = evaluate(pScen, aScen, pMLCO, aMLCO, cls, k)  # FIXME: this function failed, possibly due to an error in evaluate_joint_fitness()
         self.assertEqual((a, b, c), (css, pScen, pMLCO))
 
         # Check whether fitness values for complete solutions and

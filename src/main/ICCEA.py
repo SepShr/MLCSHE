@@ -40,8 +40,8 @@ class ICCEA:
             # solutionArchive.append(
             #     cs for cs in completeSolSet if violate_safety_requirement(cs))
             for cs in completeSolSet:
-                if violate_safety_requirement(cs):
-                    solutionArchive.append(cs)
+                # if violate_safety_requirement(cs):  # DEBUG: to add all complete solutions
+                solutionArchive.append(cs)
 
             # Some probes
             fitness_scen_list = [ind.fitness.values[0] for ind in popScen]
@@ -51,6 +51,11 @@ class ICCEA:
             fitness_mlco_list = [ind.fitness.values[0] for ind in popMLCO]
             avg_fitness_mlco = sum(fitness_mlco_list) / len(popMLCO)
             print('the avg for popMLCO fitness is: ' + str(avg_fitness_mlco))
+
+            # print best complete solution found
+            best_solution = sorted(solutionArchive, key=lambda x: x.fitness.values[0])[-1]
+            print(f'len(solutionArchive): {len(solutionArchive)}')
+            print(f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
 
             # Evolve archives and populations for the next generation
             min_distance = 1.3
