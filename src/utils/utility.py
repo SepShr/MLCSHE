@@ -280,8 +280,22 @@ def evaluate_joint_fitness(c):
     It takes the complete solution as input and returns its joint
     fitness as output.
     """
-    # Returns a random value for now.
-    return (random.uniform(-5.0, 5.0),)
+    # # Returns a random value for now.
+    # return (random.uniform(-5.0, 5.0),)
+    h_1 = 50
+    x_1 = 0.75
+    y_1 = 0.75
+    s_1 = 1.6
+    f_1 = h_1 * \
+        (1 - ((16.0/s_1) * (c[0][0] - x_1)) - ((16.0/s_1) * (c[1][0] - y_1)))
+    h_2 = 150
+    x_2 = 0.25
+    y_2 = 0.25
+    s_2 = 1.0/32.0
+    f_2 = h_2 * \
+        (1 - ((16.0/s_2) * (c[0][0] - x_2)) - ((16.0/s_2) * (c[1][0] - y_2)))
+
+    return (max(f_1, f_2),)
 
 
 def evaluate_individual(individual, complete_solution_set, index):

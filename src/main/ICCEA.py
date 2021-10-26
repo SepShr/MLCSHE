@@ -26,6 +26,9 @@ class ICCEA:
         arcMLCO = self.toolbox.clone(popMLCO)
         solutionArchive = []
 
+        print('popScen is: ' + str(popScen))
+        print('PopMLCO is: ' + str(popMLCO))
+
         # Cooperative Coevolutionary Search
         for num_gen in range(max_gen):
             print('the current generation is: ' + str(num_gen))
@@ -40,8 +43,17 @@ class ICCEA:
                 if violate_safety_requirement(cs):
                     solutionArchive.append(cs)
 
+            # Some probes
+            fitness_scen_list = [ind.fitness.values[0] for ind in popScen]
+            avg_fitness_scen = sum(fitness_scen_list) / len(popScen)
+            print('the avg for popScen fitness is: ' + str(avg_fitness_scen))
+
+            fitness_mlco_list = [ind.fitness.values[0] for ind in popMLCO]
+            avg_fitness_mlco = sum(fitness_mlco_list) / len(popMLCO)
+            print('the avg for popMLCO fitness is: ' + str(avg_fitness_mlco))
+
             # Evolve archives and populations for the next generation
-            min_distance = 1
+            min_distance = 1.3
             arcScen = self.update_archive(
                 popScen, popMLCO, completeSolSet, min_distance
             )
@@ -51,12 +63,12 @@ class ICCEA:
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             ts = 2
-            cxpb = 1
+            cxpb = 0.5
             mut_bit_pb = 1
-            mut_guass_mu = 0
-            mut_guass_sig = 1
-            mut_guass_pb = 1
-            mut_int_pb = 1
+            mut_guass_mu = 0.5
+            mut_guass_sig = 0.125
+            mut_guass_pb = 0.5
+            mut_int_pb = 0.5
             popScen = self.breed_scenario(
                 popScen, arcScen, self.enumLimits, ts, cxpb, mut_bit_pb,
                 mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
@@ -69,6 +81,8 @@ class ICCEA:
             # popScen.append(x for x in arcScen)
             # popMLCO.append(x for x in arcMLCO)
 
+            print('popScen is: ' + str(popScen))
+            print('PopMLCO is: ' + str(popMLCO))
         return solutionArchive
 
     def breed_scenario(
