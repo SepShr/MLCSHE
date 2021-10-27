@@ -71,13 +71,13 @@ def collaborate_archive(archive, population, joint_class, ficls):
         "Input to collaborate_archive cannot be None."
 
     # Deepcopy the lists.
-    arc = deepcopy(archive)
-    pop = deepcopy(population)
+    # arc = deepcopy(archive)
+    # pop = deepcopy(population)
 
     complete_solution_set = []
 
-    for i in arc:
-        for j in pop:
+    for i in archive:
+        for j in population:
             c = create_complete_solution(i, j, ficls)
             complete_solution_set = complete_solution_set + joint_class([c])
 
@@ -117,25 +117,26 @@ def collaborate_complement(
     if min_num_evals <= len(first_archive):
         return []
 
-    pA = deepcopy(first_population)
-    pB = deepcopy(second_population)
-    aA = deepcopy(first_archive)
+    # pA = deepcopy(first_population)
+    # pB = deepcopy(second_population)
+    # aA = deepcopy(first_archive)
 
     # Ensure that first_archive is a subset of first_population
-    assert all(x in pA for x in aA), \
+    assert all(x in first_population for x in first_archive), \
         "first_archive is not a subset of first_population"
 
     complete_solution_set = []
 
     # Find {pA - aA}
-    pAComplement = [ele for ele in pA if ele not in aA]
+    pAComplement = [
+        ele for ele in first_population if ele not in first_archive]
 
     # Create complete solution between all members of pB and
     # (min_num_evals - len(aA)) members of pAComplement
-    while min_num_evals - len(aA) > 0:
+    while min_num_evals - len(first_archive) > 0:
         random_individual = \
             pAComplement[random.randint(0, len(pAComplement) - 1)]
-        for i in pB:
+        for i in second_population:
             c = create_complete_solution(
                 random_individual, i, first_component_class)
             complete_solution_set = \
@@ -189,20 +190,26 @@ def collaborate(
         "second_archive is not a subset of pop2"
 
     # Deepcopy archives and populations.
-    a1 = deepcopy(first_archive)
-    p1 = deepcopy(first_population)
-    a2 = deepcopy(second_archive)
-    p2 = deepcopy(second_population)
+    # a1 = deepcopy(first_archive)
+    # p1 = deepcopy(first_population)
+    # a2 = deepcopy(second_archive)
+    # p2 = deepcopy(second_population)
 
     # Create complete solutions from collaborations with the archives.
     complete_solutions_set = \
-        collaborate_archive(a1, p2, joint_class, first_component_class) \
-        + collaborate_archive(a2, p1, joint_class, first_component_class) \
-        + collaborate_complement(
-            p1, a1, p2, min_num_evals,
+        collaborate_archive(
+            first_archive, second_population,
+            joint_class, first_component_class) \
+        + collaborate_archive(
+            second_archive, first_population,
             joint_class, first_component_class) \
         + collaborate_complement(
-            p2, a2, p1, min_num_evals,
+            first_population, first_archive,
+            second_population, min_num_evals,
+            joint_class, first_component_class) \
+        + collaborate_complement(
+            second_population, second_archive,
+            first_population, min_num_evals,
             joint_class, first_component_class)
 
     # Remove repetitive complete solutions.
@@ -243,17 +250,17 @@ def evaluate(
     # Exception handling must be added.
 
     # Deep copy the inputs
-    population_one = deepcopy(first_population)
-    population_two = deepcopy(second_population)
-    archive_one = deepcopy(first_archive)
-    archive_two = deepcopy(second_archive)
+    # population_one = deepcopy(first_population)
+    # population_two = deepcopy(second_population)
+    # archive_one = deepcopy(first_archive)
+    # archive_two = deepcopy(second_archive)
 
-    first_component_class = type(population_one[0])
+    first_component_class = type(first_population[0])
     complete_solutions_set = collaborate(
-        archive_one,
-        population_one,
-        archive_two,
-        population_two,
+        first_archive,
+        first_population,
+        second_archive,
+        second_population,
         joint_class,
         first_component_class,
         min_num_evals)
@@ -263,15 +270,15 @@ def evaluate(
         c.fitness.values = evaluate_joint_fitness(c)
 
     # Evaluate individual fitness values.
-    for individual in population_one:
+    for individual in first_population:
         individual.fitness.values = evaluate_individual(
             individual, complete_solutions_set, 0)
 
-    for individual in population_two:
+    for individual in second_population:
         individual.fitness.values = evaluate_individual(
             individual, complete_solutions_set, 1)
 
-    return complete_solutions_set, population_one, population_two
+    return complete_solutions_set, first_population, second_population
 
 
 def evaluate_joint_fitness(c):
@@ -280,8 +287,30 @@ def evaluate_joint_fitness(c):
     It takes the complete solution as input and returns its joint
     fitness as output.
     """
-    # Returns a random value for now.
-    return (random.uniform(-5.0, 5.0),)
+    # # Returns a random value for now.
+    # return (random.uniform(-5.0, 5.0),)
+
+    # MTQ problem.
+    cf = 10  # Correction factor that controls the granularity of x and y.
+    x = c[0][0]
+    y = c[1][0]
+
+    h_1 = 50
+    x_1 = 0.75
+    y_1 = 0.75
+    s_1 = 1.6
+    f_1 = h_1 * \
+        (1 - ((16.0/s_1) * pow((x/cf - x_1), 2)) -
+         ((16.0/s_1) * pow((y/cf - y_1), 2)))
+    h_2 = 150
+    x_2 = 0.25
+    y_2 = 0.25
+    s_2 = 1.0/32.0
+    f_2 = h_2 * \
+        (1 - ((16.0/s_2) * pow((x/cf - x_2), 2)) -
+         ((16.0/s_2) * pow((y/cf - y_2), 2)))
+
+    return (max(f_1, f_2),)
 
 
 def evaluate_individual(individual, complete_solution_set, index):
@@ -489,7 +518,7 @@ def measure_heom_distance(
             # USE THE ABSOLUTE VALUE FOR DIFFERENCE
 
     heom_distance_values = \
-        list(np.sqrt(np.sum(np.square(results_array), axis=1)))
+        list(np.sqrt(np.sum(np.square(results_array)/col_x, axis=1)))
     return heom_distance_values
 
 

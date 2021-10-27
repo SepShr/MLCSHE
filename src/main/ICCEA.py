@@ -1,5 +1,6 @@
 import random
 from copy import deepcopy
+import deap
 
 import numpy as np
 
@@ -26,6 +27,9 @@ class ICCEA:
         arcMLCO = self.toolbox.clone(popMLCO)
         solutionArchive = []
 
+        print('popScen is: ' + str(popScen))
+        print('PopMLCO is: ' + str(popMLCO))
+
         # Cooperative Coevolutionary Search
         for num_gen in range(max_gen):
             print('the current generation is: ' + str(num_gen))
@@ -37,11 +41,27 @@ class ICCEA:
             # solutionArchive.append(
             #     cs for cs in completeSolSet if violate_safety_requirement(cs))
             for cs in completeSolSet:
-                if violate_safety_requirement(cs):
-                    solutionArchive.append(cs)
+                # if violate_safety_requirement(cs):  # DEBUG: to add all complete solutions
+                solutionArchive.append(cs)
+
+            # Some probes
+            # fitness_scen_list = [ind.fitness.values[0] for ind in popScen]
+            # avg_fitness_scen = sum(fitness_scen_list) / len(popScen)
+            # print('the avg for popScen fitness is: ' + str(avg_fitness_scen))
+
+            # fitness_mlco_list = [ind.fitness.values[0] for ind in popMLCO]
+            # avg_fitness_mlco = sum(fitness_mlco_list) / len(popMLCO)
+            # print('the avg for popMLCO fitness is: ' + str(avg_fitness_mlco))
+
+            # print best complete solution found
+            best_solution = sorted(
+                solutionArchive, key=lambda x: x.fitness.values[0])[-1]
+            print(f'len(solutionArchive): {len(solutionArchive)}')
+            print(
+                f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
 
             # Evolve archives and populations for the next generation
-            min_distance = 1
+            min_distance = 0.5
             arcScen = self.update_archive(
                 popScen, popMLCO, completeSolSet, min_distance
             )
@@ -51,12 +71,12 @@ class ICCEA:
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             ts = 2
-            cxpb = 1
+            cxpb = 0.5
             mut_bit_pb = 1
             mut_guass_mu = 0
-            mut_guass_sig = 1
-            mut_guass_pb = 1
-            mut_int_pb = 1
+            mut_guass_sig = 0.125
+            mut_guass_pb = 0.5
+            mut_int_pb = 0.5
             popScen = self.breed_scenario(
                 popScen, arcScen, self.enumLimits, ts, cxpb, mut_bit_pb,
                 mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
@@ -69,6 +89,8 @@ class ICCEA:
             # popScen.append(x for x in arcScen)
             # popMLCO.append(x for x in arcMLCO)
 
+            print('popScen is: ' + str(popScen))
+            print('PopMLCO is: ' + str(popMLCO))
         return solutionArchive
 
     def breed_scenario(
@@ -108,8 +130,9 @@ class ICCEA:
         )
         self.toolbox.register("crossover", tools.cxUniform, indpb=cxpb)
 
-        # Find the complement (population minus the archive).
-        breeding_population = [ele for ele in popScen if ele not in arcScen]
+        # # Find the complement (population minus the archive).
+        # breeding_population = [ele for ele in popScen if ele not in arcScen]
+        breeding_population = popScen
 
         # Select 2 parents, cx and mut them until satisfied.
         offspring_list = []
@@ -233,14 +256,14 @@ class ICCEA:
 
         Similarity uses the criteria `min_distance` to decide.
         """
-        cand = deepcopy(candidate)
-        collab = deepcopy(collaborator)
+        # cand = deepcopy(candidate)
+        # collab = deepcopy(collaborator)
         flat_complete_solutions_list = []
         ficls = first_item_class
         archive_dict = archive_members_and_collaborators_dictionary
         # Create the complete solution of cand and collab
         main_complete_solution = create_complete_solution(
-            cand, collab, ficls)
+            candidate, collaborator, ficls)
 
         # # Determine the nan equivalent value
         # nan_eqv = np.Nan
@@ -287,11 +310,11 @@ class ICCEA:
             return False
 
     def individual_is_equal(self, base_individual, target_individual):
-        base = deepcopy(base_individual)
-        target = deepcopy(target_individual)
+        # base = deepcopy(base_individual)
+        # target = deepcopy(target_individual)
 
-        base = self.flatten(base)
-        target = self.flatten(target)
+        base = self.flatten(base_individual)
+        target = self.flatten(target_individual)
 
         if base == target:
             return True
@@ -385,9 +408,13 @@ class ICCEA:
         # Is this always the case? or are they flexible?
 
         # Initialization of variables.
-        pop = deepcopy(population)
-        pop_prime = deepcopy(other_population)
-        complete_solutions_set_internal = deepcopy(complete_solutions_set)
+        # pop = deepcopy(population)
+        # pop_prime = deepcopy(other_population)
+        # complete_solutions_set_internal = deepcopy(complete_solutions_set)
+        pop = self.toolbox.clone(population)
+        pop_prime = self.toolbox.clone(other_population)
+        complete_solutions_set_internal = self.toolbox.clone(
+            complete_solutions_set)
         archive_p = []
         ineligible_p = []
 

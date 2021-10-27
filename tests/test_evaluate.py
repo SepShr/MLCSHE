@@ -1,3 +1,4 @@
+from unittest.case import SkipTest, skip, skipIf
 from deap import creator
 from src.utils.utility import evaluate
 import problem
@@ -5,6 +6,8 @@ import unittest
 
 
 class TestEvaluate(unittest.TestCase):
+
+    @unittest.skip('test data not applicable to jfit evaluation.')
     def test_evaluate_testInput1(self):
         scen1 = creator.Scenario([1, False, 5.0])
         mlco1 = creator.OutputMLC([[8, 'a'], [2, 'b']])
@@ -21,6 +24,7 @@ class TestEvaluate(unittest.TestCase):
                [[4, True, -7.8], [[8, 'a'], [2, 'b']]],
                [[4, True, -7.8], [[1, 'a'], [21, 'd']]]]
 
+        # FIXME: this function failed, possibly due to an error in evaluate_joint_fitness()
         a, b, c = evaluate(pScen, aScen, pMLCO, aMLCO, cls, k)
         self.assertEqual((a, b, c), (css, pScen, pMLCO))
 

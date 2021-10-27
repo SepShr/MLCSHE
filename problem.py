@@ -9,16 +9,14 @@ solve.
 from deap import creator, base, tools
 from src.utils.utility import initialize_hetero_vector
 
-
-SCEN_IND_SIZE = 1  # Size of a scenario individual
-MLCO_IND_SIZE = 2  # Size of an MLC output individual
-SCEN_POP_SIZE = 2  # Size of the scenario population
-MLCO_POP_SIZE = 2  # Size of the MLC output population
-MIN_DISTANCE = 1  # Minimum distance between members of an archive
+SCEN_POP_SIZE = 5  # Size of the scenario population
+MLCO_POP_SIZE = 5  # Size of the MLC output population
+MIN_DISTANCE = 0.5  # Minimum distance between members of an archive
 
 # The list of lower and upper limits for enumerationed types in sceanrio.
-enumLimits = ['bool', [1, 5], 'bool', [1.35, 276.87]]
+# enumLimits = ['bool', [1, 5], 'bool', [1.35, 276.87]]
 # [np.nan, np.nan, (1, 6)]
+enumLimits = [[0.0, 1.0]]
 
 # Create fitness and individual datatypes.
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))

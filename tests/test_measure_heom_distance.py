@@ -13,7 +13,8 @@ class TestMeasureHeomDistance(unittest.TestCase):
         category_indices = [0, 3, 6]
         output_value = measure_heom_distance(test_data, category_indices)
 
-        expected_value = [0.0, 2.235618758750633, 2.5]
+        # expected_value = [0.0, 2.235618758750633, 2.5]
+        expected_value = [0.0, 0.8449844660007257, 0.944911182523068]
 
         self.assertEqual(output_value, expected_value)
         self.assertIsInstance(output_value, list)
