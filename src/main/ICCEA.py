@@ -61,7 +61,7 @@ class ICCEA:
                 f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
 
             # Evolve archives and populations for the next generation
-            min_distance = 0.5
+            min_distance = 0.2
             arcScen = self.update_archive(
                 popScen, popMLCO, completeSolSet, min_distance
             )
@@ -102,28 +102,11 @@ class ICCEA:
         # # Returns a random value for now.
         # return (random.uniform(-5.0, 5.0),)
 
-        # MTQ problem.
-        # cf = 10  # Correction factor that controls the granularity of x and y.
         x = c[0][0]
         y = c[1][0]
 
         joint_fitness_value = self.toolbox.problem_jfit(x, y)
-        # h_1 = 50
-        # x_1 = 0.75
-        # y_1 = 0.75
-        # s_1 = 1.6
-        # f_1 = h_1 * \
-        #     (1 - ((16.0/s_1) * pow((x/cf - x_1), 2)) -
-        #      ((16.0/s_1) * pow((y/cf - y_1), 2)))
-        # h_2 = 150
-        # x_2 = 0.25
-        # y_2 = 0.25
-        # s_2 = 1.0/32.0
-        # f_2 = h_2 * \
-        #     (1 - ((16.0/s_2) * pow((x/cf - x_2), 2)) -
-        #      ((16.0/s_2) * pow((y/cf - y_2), 2)))
 
-        # return (max(f_1, f_2),)
         return (joint_fitness_value,)
 
     def evaluate(
