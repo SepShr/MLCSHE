@@ -1,5 +1,6 @@
 import random
 from copy import deepcopy
+import deap
 
 import numpy as np
 
@@ -60,7 +61,7 @@ class ICCEA:
                 f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
 
             # Evolve archives and populations for the next generation
-            min_distance = 0.2
+            min_distance = 0.5
             arcScen = self.update_archive(
                 popScen, popMLCO, completeSolSet, min_distance
             )
@@ -72,7 +73,7 @@ class ICCEA:
             ts = 2
             cxpb = 0.5
             mut_bit_pb = 1
-            mut_guass_mu = 0.5
+            mut_guass_mu = 0
             mut_guass_sig = 0.125
             mut_guass_pb = 0.5
             mut_int_pb = 0.5
@@ -255,14 +256,14 @@ class ICCEA:
 
         Similarity uses the criteria `min_distance` to decide.
         """
-        cand = deepcopy(candidate)
-        collab = deepcopy(collaborator)
+        # cand = deepcopy(candidate)
+        # collab = deepcopy(collaborator)
         flat_complete_solutions_list = []
         ficls = first_item_class
         archive_dict = archive_members_and_collaborators_dictionary
         # Create the complete solution of cand and collab
         main_complete_solution = create_complete_solution(
-            cand, collab, ficls)
+            candidate, collaborator, ficls)
 
         # # Determine the nan equivalent value
         # nan_eqv = np.Nan
@@ -309,11 +310,11 @@ class ICCEA:
             return False
 
     def individual_is_equal(self, base_individual, target_individual):
-        base = deepcopy(base_individual)
-        target = deepcopy(target_individual)
+        # base = deepcopy(base_individual)
+        # target = deepcopy(target_individual)
 
-        base = self.flatten(base)
-        target = self.flatten(target)
+        base = self.flatten(base_individual)
+        target = self.flatten(target_individual)
 
         if base == target:
             return True
@@ -407,9 +408,13 @@ class ICCEA:
         # Is this always the case? or are they flexible?
 
         # Initialization of variables.
-        pop = deepcopy(population)
-        pop_prime = deepcopy(other_population)
-        complete_solutions_set_internal = deepcopy(complete_solutions_set)
+        # pop = deepcopy(population)
+        # pop_prime = deepcopy(other_population)
+        # complete_solutions_set_internal = deepcopy(complete_solutions_set)
+        pop = self.toolbox.clone(population)
+        pop_prime = self.toolbox.clone(other_population)
+        complete_solutions_set_internal = self.toolbox.clone(
+            complete_solutions_set)
         archive_p = []
         ineligible_p = []
 
