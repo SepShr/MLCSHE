@@ -5,12 +5,12 @@ import deap
 import numpy as np
 
 from deap import tools
-
-from src.utils.utility import create_complete_solution, evaluate, \
-    evaluate_joint_fitness, evaluate_individual, breed_mlco, \
+# evaluate, evaluate_joint_fitness\
+from src.utils.utility import create_complete_solution, evaluate_individual, breed_mlco, \
     identify_nominal_indices, measure_heom_distance, \
     index_in_complete_solution, find_individual_collaborator, rank_change, \
-    max_rank_change_fitness, find_max_fv_individual, violate_safety_requirement
+    max_rank_change_fitness, find_max_fv_individual, violate_safety_requirement, \
+    collaborate
 
 
 class ICCEA:
@@ -34,7 +34,7 @@ class ICCEA:
         for num_gen in range(max_gen):
             print('the current generation is: ' + str(num_gen))
             # Create complete solutions and evaluate individuals
-            completeSolSet, popScen, popMLCO = evaluate(
+            completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
 
             # Record the complete solutions that violate the requirement r
@@ -92,6 +92,92 @@ class ICCEA:
             print('popScen is: ' + str(popScen))
             print('PopMLCO is: ' + str(popMLCO))
         return solutionArchive
+
+    def evaluate_joint_fitness(self, c):
+        """Evaluates the joint fitness of a complete solution.
+
+        It takes the complete solution as input and returns its joint
+        fitness as output.
+        """
+        # # Returns a random value for now.
+        # return (random.uniform(-5.0, 5.0),)
+
+        # MTQ problem.
+        # cf = 10  # Correction factor that controls the granularity of x and y.
+        x = c[0][0]
+        y = c[1][0]
+
+        joint_fitness_value = self.toolbox.problem_jfit(x, y)
+        # h_1 = 50
+        # x_1 = 0.75
+        # y_1 = 0.75
+        # s_1 = 1.6
+        # f_1 = h_1 * \
+        #     (1 - ((16.0/s_1) * pow((x/cf - x_1), 2)) -
+        #      ((16.0/s_1) * pow((y/cf - y_1), 2)))
+        # h_2 = 150
+        # x_2 = 0.25
+        # y_2 = 0.25
+        # s_2 = 1.0/32.0
+        # f_2 = h_2 * \
+        #     (1 - ((16.0/s_2) * pow((x/cf - x_2), 2)) -
+        #      ((16.0/s_2) * pow((y/cf - y_2), 2)))
+
+        # return (max(f_1, f_2),)
+        return (joint_fitness_value,)
+
+    def evaluate(
+            self, first_population, first_archive,
+            second_population, second_archive, joint_class, min_num_evals):
+        """Forms complete solutions, evaluates their joint fitness and evaluates
+        the individual fitness values.
+
+        :param first_population: the population (list) of scenarios.
+        :param first_archive: the archive (list) of scenarios.
+        :param second_population: the population of MLC outputs.
+        :param second_archive: the archive of MLC outputs.
+        :param joint_class: type into which each complete solution will
+                            be typecasted.
+        :param min_num_evals: the minimum number of collaborations and
+                            thus, joint fitness evaluations per
+                            individual.
+        :returns: set of complete solutions with their fitness values,
+                set of scenarios with their individual fitness values,
+                and the set of MLC outputs with their individual
+                fitness values.
+        """
+        # Exception handling must be added.
+
+        # Deep copy the inputs
+        # population_one = deepcopy(first_population)
+        # population_two = deepcopy(second_population)
+        # archive_one = deepcopy(first_archive)
+        # archive_two = deepcopy(second_archive)
+
+        first_component_class = type(first_population[0])
+        complete_solutions_set = collaborate(
+            first_archive,
+            first_population,
+            second_archive,
+            second_population,
+            joint_class,
+            first_component_class,
+            min_num_evals)
+
+        # Evaluate joint fitness and record its value.
+        for c in complete_solutions_set:
+            c.fitness.values = self.evaluate_joint_fitness(c)
+
+        # Evaluate individual fitness values.
+        for individual in first_population:
+            individual.fitness.values = evaluate_individual(
+                individual, complete_solutions_set, 0)
+
+        for individual in second_population:
+            individual.fitness.values = evaluate_individual(
+                individual, complete_solutions_set, 1)
+
+        return complete_solutions_set, first_population, second_population
 
     def breed_scenario(
             self, popScen, arcScen, enumLimits, tournSize, cxpb,
@@ -344,7 +430,7 @@ class ICCEA:
                 c = create_complete_solution(ind, x, first_item_class)
                 c = joint_class(c)
                 if not self.individual_in_list(c, complete_solutions_set):
-                    c.fitness.values = evaluate_joint_fitness(c)
+                    c.fitness.values = self.evaluate_joint_fitness(c)
                     # counter_jfe += 1
                     # print(counter_jfe)
                     comp_sol_set_archive.append(c)
@@ -376,7 +462,7 @@ class ICCEA:
             c = joint_class(create_complete_solution(
                 individual, x, first_item_class))
             if not self.individual_in_list(c, complete_solutions_set):
-                c.fitness.values = evaluate_joint_fitness(c)
+                c.fitness.values = self.evaluate_joint_fitness(c)
                 complete_solutions_set.append(c)
                 fitness_value = max(
                     fit_given_archive[population.index(x)], c.fitness.values[0])
