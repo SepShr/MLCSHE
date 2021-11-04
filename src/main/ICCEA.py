@@ -310,7 +310,7 @@ class ICCEA:
                   correspond to the nominal values.
         """
         flattened_list = self.flatten(irregular_nested_list)
-
+        
         nominal_values_indices = identify_nominal_indices(flattened_list)
 
         return flattened_list, nominal_values_indices
@@ -412,7 +412,7 @@ class ICCEA:
             for ind in archive:
                 c = create_complete_solution(ind, x, first_item_class)
                 c = joint_class(c)
-                if not self.individual_in_list(c, complete_solutions_set):
+                if not self.individual_in_list(c, complete_solutions_set):  # FIXME: Needs to be optimized!
                     c.fitness.values = self.evaluate_joint_fitness(c)
                     # counter_jfe += 1
                     # print(counter_jfe)
