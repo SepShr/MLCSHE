@@ -8,6 +8,7 @@ solve.
 
 from deap import creator, base, tools
 from numpy import cos, sqrt
+# FIXME: This should be imported from problem_utils.py
 from src.utils.utility import initialize_hetero_vector
 
 SCEN_POP_SIZE = 10  # Size of the scenario population
