@@ -5,14 +5,32 @@ with the simulation setup.
 The classes and their encode and decode metods have to be modified for
 every different problem.
 """
+import carla
 
 
-class Scenario(object):
-    def __init__(self, scenario_params):
-        # self.weather = scenario_params.weather
-        # self.road = scenario_params.road
-        self.world = scenario_params.world
-        self.ego_vehicle = scenario_params.ego_vehicle
+class Scenario(object):  # Check inheritence.
+    def __init__(self, scenario_list):
+        # Get client.
+        self.client = carla.Client("localhost", 2000)
+        self.client.set_timeout(2.0)
+        # Get world.
+        self.world = self.client.get_world()
+        # Set weather parameters.
+        self.weather = carla.WeatherParameters(
+            cloudiness=scenario_list[0],
+            precipitation=scenario_list[1],
+            sun_altitude_angle=scenario_list[2]
+        )  # FIXME: Provide exact mapping between list values and parameters.
+
+        # Set light parameters.
+        # Skipped for now.
+
+        # Set world settings.
+        # Skipped for now.
+
+        # Set actors.
+        # Skipped for now.
+        # self.world.spawn_actor(}
 
     # Encode the scenario datatype from the setup to a hetergeneous list.
     def encode(self) -> list:

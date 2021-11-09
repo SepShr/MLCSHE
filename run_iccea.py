@@ -17,3 +17,5 @@ solver = ICCEA(
 solution = solver.solve(max_gen=250)
 
 # print(f'solution={solution}')
+
+# FIXME: Add Carla and Pylot instantiation and setup
