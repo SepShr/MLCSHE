@@ -19,3 +19,11 @@ solution = solver.solve(max_gen=250)
 # print(f'solution={solution}')
 
 # FIXME: Add Carla and Pylot instantiation and setup
+'''
+simulator1 = environment()
+simulator1.set_scenario(individual1)
+
+simulator2 = mysimulator()
+simulator3 = mysimulator()
+simulator4 = mysimulator()
+'''
