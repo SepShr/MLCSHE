@@ -569,3 +569,35 @@ class ICCEA:
                 exit_condition = True
 
         return archive_p
+
+    def update_archive_elitist(self, population, archive_size):
+        """
+        Updates and archive by selecting only a number of best
+        individuals.
+        """
+        pop = self.toolbox.clone(population)
+
+        archive_p = []
+
+        pop_sorted = sorted(
+            pop, key=lambda x: x.fitness.values[0])
+
+        for i in range(archive_size):
+            archive_p.append(pop_sorted.pop(-1))
+
+        return archive_p
+
+    def update_archive_diverse_elitist(self, population, archive_size, min_distance):
+        pass
+
+    def update_archive_random(self):
+        pass
+
+    def update_archive_best_random(self):
+        pass
+
+    def update_archive_random(self):
+        pass
+
+    def update_archive_diverse_random(self):
+        pass
