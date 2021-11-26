@@ -315,6 +315,8 @@ class ICCEA:
 
         return flattened_list, nominal_values_indices
 
+    # FIXME: Needs to be refactored!!
+
     def is_similar(
             self, candidate, collaborator, archive,
             archive_members_and_collaborators_dictionary,
@@ -587,17 +589,122 @@ class ICCEA:
 
         return archive_p
 
-    def update_archive_diverse_elitist(self, population, archive_size, min_distance):
+    def update_archive_diverse_elitist(self, population,
+                                       max_archive_size, min_distance):
+        """
+        Updates and archive by selecting only a number of best
+        individuals that are distinct enought.
+        """
+        pop = self.toolbox.clone(population)
+
+        archive_p = []
+
+        pop_sorted = sorted(
+            pop, key=lambda x: x.fitness.values[0])
+
+        # # Add the first member of the archive
+        # archive_p.append(pop_sorted.pop(-1))
+
+        # Add the other members of the archive while
+        for i in range(max_archive_size):
+            candidate = pop_sorted.pop(-1)
+            if len(archive_p) > 0:
+                if not self.is_similar_individual(
+                        candidate, archive_p, min_distance):
+                    archive_p.append(candidate)
+            else:
+                # Add the first member of the archive
+                archive_p.append(candidate)
+
+        return archive_p
+
+    def update_archive_random(self, population, archive_size):
+        """
+        Creates an archive of size `archive_size` by randomly 
+        selecting from the members of the population.
+        """
+        population_copy = self.toolbox.clone(population)
+
+        archive_p = []
+
+        for i in range(archive_size):
+            candidate = population_copy.pop(
+                random.randint(0, len(population_copy)-1))
+            archive_p.append(candidate)
+
+        return archive_p
+
+    # IMPLEMENTATION REQUIRED
+    def update_archive_best_random(self, population, archive_size):
+        """
+        Updates and archive by selecting only a number of best
+        individuals.
+        """
+        pop = self.toolbox.clone(population)
+
+        archive_p = []
+
+        pop_sorted = sorted(
+            pop, key=lambda x: x.fitness.values[0])
+
+        for i in range(archive_size):
+            archive_p.append(pop_sorted.pop(-1))
+
+        return archive_p
+
+    # IMPLEMENTATION REQUIRED
+
+    def update_archive_diverse_random(self, population, archive_size, min_distance):
         pass
 
-    def update_archive_random(self):
-        pass
+    def is_similar_individual(self, candidate, archive, min_distance):
+        """The algorithm evaluates if an individual is
+        similar to the memebrs of an `archive`.
 
-    def update_archive_best_random(self):
-        pass
+        Similarity uses the criteria `min_distance` to decide.
+        """
 
-    def update_archive_random(self):
-        pass
+        flat_list = []
 
-    def update_archive_diverse_random(self):
-        pass
+        # Create the complete solution of cand and collab
+
+        # # Determine the nan equivalent value
+        # nan_eqv = np.Nan
+
+        # Prepare main_complete_solution for similarity assessment
+        candidate_flat, nominal_values_indices = \
+            self.prepare_for_distance_evaluation(candidate)
+
+        # Add main_complete_solution_flat to the list of flat complete solutions
+        flat_list.append(candidate_flat)
+
+        # Create the list of complete solutions that are to be used for distance
+        # evaluations.
+        for i in range(len(archive)):
+            arc_nom_indices = []
+            archive_individual_flat, arc_nom_indices = \
+                self.prepare_for_distance_evaluation(archive[i])
+            if arc_nom_indices != nominal_values_indices:
+                print(
+                    'The nominal values between ' +
+                    str(archive[i]) +
+                    ' and ' + str(candidate) +
+                    ' do not match!')
+            flat_list.append(archive_individual_flat)
+
+        distance_values = measure_heom_distance(
+            flat_list, nominal_values_indices)
+        distance_values.pop(0)
+
+        # Assess similarity between the main_complete_solution and the rest.
+        similarity_list = []
+        for i in range(len(distance_values)):
+            if distance_values[i] <= min_distance:
+                similarity_list.append(1)
+            else:
+                similarity_list.append(0)
+
+        if sum(similarity_list) == len(distance_values):
+            return True
+        else:
+            return False
