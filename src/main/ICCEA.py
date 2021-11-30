@@ -634,28 +634,74 @@ class ICCEA:
 
         return archive_p
 
-    # IMPLEMENTATION REQUIRED
     def update_archive_best_random(self, population, archive_size):
         """
-        Updates and archive by selecting only a number of best
-        individuals.
+        Updates and archive by selecting the best individual and
+        `archive_size - 1` random individuals.
         """
-        pop = self.toolbox.clone(population)
+        population_copy = self.toolbox.clone(population)
+
+        population_copy_sorted = sorted(
+            population_copy, key=lambda x: x.fitness.values[0])
 
         archive_p = []
 
-        pop_sorted = sorted(
-            pop, key=lambda x: x.fitness.values[0])
-
         for i in range(archive_size):
-            archive_p.append(pop_sorted.pop(-1))
+            if len(archive_p) > 0:
+                candidate = population_copy.pop(
+                    random.randint(0, len(population_copy)-1))
+
+            else:
+                # Select the best indiviudal as the first candidate
+                candidate = population_copy_sorted.pop(-1)
+
+            archive_p.append(candidate)
 
         return archive_p
 
-    # IMPLEMENTATION REQUIRED
-
     def update_archive_diverse_random(self, population, archive_size, min_distance):
-        pass
+        """
+        Updates and archive by selecting diverse random individuals.
+        """
+        population_copy = self.toolbox.clone(population)
+
+        archive_p = []
+
+        for i in range(archive_size):
+            candidate = population_copy.pop(
+                random.randint(0, len(population_copy)-1))
+            if len(archive_p) > 0:
+                if not self.is_similar_individual(
+                        candidate, archive_p, min_distance):
+                    archive_p.append(candidate)
+            else:
+                archive_p.append(candidate)
+
+        return archive_p
+
+    def update_archive_diverse_best_random(self, population, max_archive_size, min_distance):
+        """
+        Updates and archive by selecting diverse best and random individuals.
+        """
+        population_copy = self.toolbox.clone(population)
+
+        population_copy_sorted = sorted(
+            population_copy, key=lambda x: x.fitness.values[0])
+
+        archive_p = []
+
+        for i in range(max_archive_size):
+            if len(archive_p) > 0:
+                candidate = population_copy.pop(
+                    random.randint(0, len(population_copy)-1))
+                if not self.is_similar_individual(
+                        candidate, archive_p, min_distance):
+                    archive_p.append(candidate)
+            else:
+                candidate = population_copy_sorted.pop(-1)
+                archive_p.append(candidate)
+
+        return archive_p
 
     def is_similar_individual(self, candidate, archive, min_distance):
         """The algorithm evaluates if an individual is
