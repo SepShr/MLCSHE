@@ -61,11 +61,15 @@ class TestUpdateArchiveDiverseBestRandom(unittest.TestCase):
             pMLCO, max_archive_size, min_distance
         )
 
-        self.assertIn(output_archive_pScen_2[1], [scen2, scen3, scen4])
-        self.assertEqual(len(output_archive_pScen_2), 2)
+        for i in range(len(output_archive_pScen_2)):
+            self.assertIn(output_archive_pScen_2[i], pScen)
 
-        self.assertIn(output_archive_pMLCO_2[1], [mlco2, mlco3, mlco4])
-        self.assertEqual(len(output_archive_pMLCO_2), 2)
+        self.assertLessEqual(len(output_archive_pScen_2), 2)
+
+        for i in range(len(output_archive_pMLCO_2)):
+            self.assertIn(output_archive_pMLCO_2[i], pMLCO)
+
+        self.assertLessEqual(len(output_archive_pMLCO_2), 2)
 
         min_distance = 1.0
 

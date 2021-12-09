@@ -648,8 +648,8 @@ class ICCEA:
 
         for i in range(archive_size):
             if len(archive_p) > 0:
-                candidate = population_copy.pop(
-                    random.randint(0, len(population_copy)-1))
+                candidate = population_copy_sorted.pop(
+                    random.randint(0, len(population_copy_sorted)-1))
 
             else:
                 # Select the best indiviudal as the first candidate
