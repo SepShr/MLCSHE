@@ -1,6 +1,5 @@
 import random
-from copy import deepcopy
-import deap
+import os
 
 import numpy as np
 
@@ -11,6 +10,8 @@ from src.utils.utility import create_complete_solution, evaluate_individual, bre
     index_in_complete_solution, find_individual_collaborator, rank_change, \
     max_rank_change_fitness, find_max_fv_individual, violate_safety_requirement, \
     collaborate
+
+from problem_utils import translate_scenario_list, translate_mlco_list
 
 
 class ICCEA:
@@ -106,14 +107,25 @@ class ICCEA:
         y = c[1][0]
 
         joint_fitness_value = self.toolbox.problem_jfit(x, y)
+        # joint_fitness_value = simulate_and_evaluate_vehicle_distance(x, y)
 
         return (joint_fitness_value,)
+
+    def simulate_and_evaluate_vehicle_distance(self, x, y):
+        """Runs a simulator using the x and y values and evaluates the result
+        of the simulation given its safety requirement metric.
+        """
+        scenario_list = x
+        mlco_list = y
+        scenario_flags = translate_scenario_list(x)
+        mlco_flags = translate_mlco_list(y)
+        os.system("pylot.py " + scenario_flags + mlco_flags)
 
     def evaluate(
             self, first_population, first_archive,
             second_population, second_archive, joint_class, min_num_evals):
-        """Forms complete solutions, evaluates their joint fitness and evaluates
-        the individual fitness values.
+        """Forms complete solutions, evaluates their joint fitness and
+        evaluates the individual fitness values.
 
         :param first_population: the population (list) of scenarios.
         :param first_archive: the archive (list) of scenarios.

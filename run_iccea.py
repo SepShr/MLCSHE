@@ -27,3 +27,6 @@ simulator2 = mysimulator()
 simulator3 = mysimulator()
 simulator4 = mysimulator()
 '''
+
+# Change the code in component_creator.py to add the highjacker
+# run pylot.py while setting the weather_flags and
