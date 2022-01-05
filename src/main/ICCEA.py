@@ -1,17 +1,18 @@
-import random
 import os
+import random
 
 import numpy as np
-
 from deap import tools
+from problem_utils import translate_mlco_list, translate_scenario_list
 # evaluate, evaluate_joint_fitness\
-from src.utils.utility import create_complete_solution, evaluate_individual, breed_mlco, \
-    identify_nominal_indices, measure_heom_distance, \
-    index_in_complete_solution, find_individual_collaborator, rank_change, \
-    max_rank_change_fitness, find_max_fv_individual, violate_safety_requirement, \
-    collaborate
-
-from problem_utils import translate_scenario_list, translate_mlco_list
+from src.utils.utility import (breed_mlco, collaborate,
+                               create_complete_solution, evaluate_individual,
+                               find_individual_collaborator,
+                               find_max_fv_individual,
+                               identify_nominal_indices,
+                               index_in_complete_solution,
+                               max_rank_change_fitness, measure_heom_distance,
+                               rank_change, violate_safety_requirement)
 
 
 class ICCEA:

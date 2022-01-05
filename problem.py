@@ -6,8 +6,9 @@ This is the only file that a user has to modify for a given problem to
 solve.
 """
 
-from deap import creator, base, tools
+from deap import base, creator, tools
 from numpy import cos, sqrt
+
 # FIXME: This should be imported from problem_utils.py
 from src.utils.utility import initialize_hetero_vector
 
