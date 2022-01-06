@@ -10,25 +10,25 @@ import subprocess as sub
 
 import numpy as np
 
-WEATHER_MODALITIES = ['ClearNoon', 'ClearSunset', 'CloudyNoon',
-                      'CloudySunset', 'HardRainNoon', 'HardRainSunset',
-                      'MidRainSunset', 'MidRainyNoon', 'SoftRainNoon',
-                      'SoftRainSunset', 'WetCloudyNoon', 'WetCloudySunset',
-                      'WetNoon', 'WetSunset']
+WEATHER_PRESETS = ['ClearNoon', 'ClearSunset', 'CloudyNoon',
+                   'CloudySunset', 'HardRainNoon', 'HardRainSunset',
+                   'MidRainSunset', 'MidRainyNoon', 'SoftRainNoon',
+                   'SoftRainSunset', 'WetCloudyNoon', 'WetCloudySunset',
+                   'WetNoon', 'WetSunset']
 
 
 def translate_scenario_list(scenario_list):
     """Sets the value of the `flags.simulator_weather` based on the
     `scenario_list`.
     """
-
+    # FIXME: Exception handling.
     weather_flag = "--simulator_weather=" + \
-        WEATHER_MODALITIES[scenario_list[0]] + "\n"
+        WEATHER_PRESETS[scenario_list[0]] + "\n"
 
     # scenario_flag = weather_flag
 
     scenario_flag = {}
-    scenario_flag['simulation_weather'] = weather_flag
+    scenario_flag['simulator_weather'] = weather_flag
 
     return scenario_flag
 
@@ -50,7 +50,7 @@ def translate_mlco_list(mlco_list, container_name='pylot'):
     copy_to_container(container_id, source_path, destination_path)
 
     # Setup the flags to be passed on to pylot.
-    mlco_operator_flag = "--add_lane_detection_highjacker\n"
+    mlco_operator_flag = "--lane_detection_type=highjacker\n"
     mlco_list_path_flag = "--mlco_list_path=" + destination_path + "\n"
 
     # mlco_flag = []
@@ -58,7 +58,7 @@ def translate_mlco_list(mlco_list, container_name='pylot'):
     # mlco_flag += mlco_list_path_flag
 
     mlco_flag = {}
-    mlco_flag['add_lane_detection'] = mlco_operator_flag
+    mlco_flag['lane_detection_type'] = mlco_operator_flag
     mlco_flag['mlco_list_path'] = mlco_list_path_flag
 
     return mlco_flag
@@ -110,17 +110,22 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = 'pylot'):
     simulation_flag.update(scenario_flag)
     simulation_flag.update(mlco_flag)
 
+    # Test data.
+    # simulation_flag = {'lane_detection_type': "--lane_detection_type=highjacker\n",
+    #                    'mlco_list_path': "--mlco_list_path=/home/erdos/workspace/pylot/dependencies/mlco/mlco_list.pkl\n",
+    #                    'simulator_weather': "--simulator_weather=RainyNight\n"}
+
     # Update the config file.
     # Find the line that contains proper flags.
-    base_config = open("base_config.conf", 'r')
-    simulation_config = open("mlcshe_config.conf", 'w')
+    base_config = open("base_config.conf", 'rt')
+    simulation_config = open("mlcshe_config.conf", 'wt')
     for line in base_config:
         for key in simulation_flag:
-            if line.__contains__(key for key in simulation_flag):
-                simulation_config += simulation_flag[key]
-            else:
-                simulation_config += line
-    simulation_config.writelines("mlcshe_config.conf")
+            if line.__contains__(key):
+                simulation_config.write(simulation_flag[key])
+                break
+        else:
+            simulation_config.write(line)
 
     base_config.close()
     simulation_config.close()
