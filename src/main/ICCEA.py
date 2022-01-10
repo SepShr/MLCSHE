@@ -1,9 +1,10 @@
 import os
 import random
+import subprocess as sub
 
 import numpy as np
 from deap import tools
-from problem_utils import translate_mlco_list, translate_scenario_list
+from problem_utils import (run_carla, run_pylot, update_sim_config)
 # evaluate, evaluate_joint_fitness\
 from src.utils.utility import (breed_mlco, collaborate,
                                create_complete_solution, evaluate_individual,
@@ -112,15 +113,23 @@ class ICCEA:
 
         return (joint_fitness_value,)
 
-    def simulate_and_evaluate_vehicle_distance(self, x, y):
-        """Runs a simulator using the x and y values and evaluates the result
-        of the simulation given its safety requirement metric.
+    def simulate_and_evaluate_vehicle_distance(self, scenario_list, mlco_list):
+        """Runs a simulator using `scenario_list` and `mlco_list`
+        and evaluates the result of the simulation given its safety
+        requirement metric.
         """
-        scenario_list = x
-        mlco_list = y
-        scenario_flags = translate_scenario_list(x)
-        mlco_flags = translate_mlco_list(y)
-        os.system("pylot.py " + scenario_flags + mlco_flags)
+        # Update the configuration of the simulation and the serialized mlco_list
+        update_sim_config(scenario_list, mlco_list)
+
+        # Run Carla and Pylot in the docker container with appropriate config
+        run_carla()
+        run_pylot()
+
+        # Either measure jfit at run time or assess the report or log after the simulation.
+        # extract_jfit_value_from_sim()
+
+        # Option #1: Record information from pylot during run and evaluate that.
+        # Option #2: Get a handle on Carla, add a sensor to the vehicle and record the output.
 
     def evaluate(
             self, first_population, first_archive,
