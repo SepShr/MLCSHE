@@ -1,4 +1,5 @@
 import os
+import signal
 import random
 import subprocess as sub
 
@@ -113,23 +114,41 @@ class ICCEA:
 
         return (joint_fitness_value,)
 
-    def simulate_and_evaluate_vehicle_distance(self, scenario_list, mlco_list):
-        """Runs a simulator using `scenario_list` and `mlco_list`
-        and evaluates the result of the simulation given its safety
-        requirement metric.
-        """
-        # Update the configuration of the simulation and the serialized mlco_list
-        update_sim_config(scenario_list, mlco_list)
+    # def simulate_and_evaluate_vehicle_distance(self, scenario_list, mlco_list):
+    #     """Runs a simulator using `scenario_list` and `mlco_list`
+    #     and evaluates the result of the simulation given its safety
+    #     requirement metric.
+    #     """
+    #     # Update the configuration of the simulation and the serialized mlco_list
+    #     update_sim_config(scenario_list, mlco_list)
 
-        # Run Carla and Pylot in the docker container with appropriate config
-        run_carla()
-        run_pylot()
+    #     # Run Carla and Pylot in the docker container with appropriate config
+    #     carla_proc = run_carla()
+    #     pylot_proc = run_pylot()
 
-        # Either measure jfit at run time or assess the report or log after the simulation.
-        # extract_jfit_value_from_sim()
+    #     # Confirm that the pylot and carla are interfacing.
 
-        # Option #1: Record information from pylot during run and evaluate that.
-        # Option #2: Get a handle on Carla, add a sensor to the vehicle and record the output.
+    #     # Either measure jfit at run time or assess the report or log after the simulation.
+    #     # extract_jfit_value_from_sim()
+
+    #     # Option #1: Record information from pylot during run and evaluate that.
+    #     # Option #2: Get a handle on Carla, add a sensor to the vehicle and record the output.
+
+    #     # Kill the processes.
+    #     os.kill(carla_proc.pid, signal.SIGINT)
+    #     os.kill(pylot_proc.pid, signal.SIGTERM)
+    #     # FIXME: The processes spawned in the docker have a different pid and
+    #     # will not be killed using the above command.
+
+    #     # Reset the simulation setup.
+    #     # Log or print that simulation is being reset.
+    #     print("Resetting simulation setup via restarting the docker image...")
+    #     docker_reset_proc = sub.run(
+    #         "docker restart pylot", stdout=sub.PIPE, shell=True)
+    #     if docker_reset_proc.returncode != 0:
+    #         print("The docker image DID NOT restart")
+    #     else:
+    #         print("Successfully restarted the docker image.")
 
     def evaluate(
             self, first_population, first_archive,

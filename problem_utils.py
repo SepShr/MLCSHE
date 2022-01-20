@@ -5,8 +5,12 @@ with the simulation setup.
 The classes and their encode and decode metods have to be modified for
 every different problem.
 """
+import copy
+import os
 import pickle
+import signal
 import subprocess as sub
+import time
 
 import numpy as np
 
@@ -16,13 +20,19 @@ WEATHER_PRESETS = ['ClearNoon', 'ClearSunset', 'CloudyNoon',
                    'SoftRainSunset', 'WetCloudyNoon', 'WetCloudySunset',
                    'WetNoon', 'WetSunset']
 
+SIMULATION_DURATION = 30  # Simulation duration in seconds.
+
 CONTAINER_NAME = "pylot"
 
 CARLA_PATH = "/home/erdos/workspace/pylot/scripts/run_simulator.sh"
 
-PYLOT_PATH = "/home/erdos/workspace/pylot/pylot.py"
+# PYLOT_PATH = "/home/erdos/workspace/pylot/pylot.py"
+PYLOT_PATH = "/home/sepehr/AV/MLCSHE/MLCSHE/run_pylot.sh"
 
-FLAG_FILE = "--flagfile=configs/mlcshe/mlcshe_config.conf"
+# FLAG_FILE = "--flagfile=configs/mlcshe/mlcshe_config.conf"
+
+
+FINISHED_FILE_PATH = '/home/erdos/workspace/results/finished.txt'
 
 
 def translate_scenario_list(scenario_list):
@@ -61,10 +71,6 @@ def translate_mlco_list(mlco_list, container_name=CONTAINER_NAME):
     mlco_operator_flag = "--lane_detection_type=highjacker\n"
     mlco_list_path_flag = "--mlco_list_path=" + destination_path + "\n"
 
-    # mlco_flag = []
-    # mlco_flag += mlco_operator_flag
-    # mlco_flag += mlco_list_path_flag
-
     mlco_flag = {}
     mlco_flag['lane_detection_type'] = mlco_operator_flag
     mlco_flag['mlco_list_path'] = mlco_list_path_flag
@@ -80,13 +86,30 @@ def pickle_to_file(item_to_be_pickled, file_name: str):
     file.close()
 
 
+def start_container(container_name: str = 'pylot'):
+    """Starts a docker container with the name `container_name`.
+    """
+    cmd = ['docker', 'start', container_name]
+    docker_start_proc = sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    return docker_start_proc.returncode
+
+
+def stop_container(container_name: str = 'pylot'):
+    """Starts a docker container with the name `container_name`.
+    """
+    cmd = ['docker', 'stop', container_name]
+    docker_start_proc = sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    return docker_start_proc.returncode
+
+
 def copy_to_container(
         container_id: str, source_path: str, destination_path: str):
     """Copies a file from `source_path` to `destination_path`
     inside a `container_id`.
     """
     container_id_with_path = container_id + ":" + destination_path
-    sub.run(['docker', 'cp', source_path, container_id_with_path])
+    copy_cmd = ['docker', 'cp', source_path, container_id_with_path]
+    sub.run(copy_cmd)
 
 
 def find_container_id(container_name: str):
@@ -102,6 +125,27 @@ def find_container_id(container_name: str):
         if i.__contains__(container_name):
             container_id = i[:12]
     return container_id
+
+
+def update_config_file(
+        simulation_flag, base_config_file="base_config.conf",
+        simulation_config_file="mlcshe_config.conf"):
+    """Updates `base_config_file` according to `simulation_flag` and
+    writes it to `simulation_config_file`.
+    """
+    # Find the lines that contain proper flags and updates them.
+    base_config = open(base_config_file, 'rt')
+    simulation_config = open(simulation_config_file, 'wt')
+    for line in base_config:
+        for key in simulation_flag:
+            if line.__contains__(key):
+                simulation_config.write(simulation_flag[key])
+                break
+        else:
+            simulation_config.write(line)
+
+    base_config.close()
+    simulation_config.close()
 
 
 def update_sim_config(scenario_list, mlco_list, container_name: str = CONTAINER_NAME):
@@ -124,19 +168,7 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = CONTAINER_
     #                    'simulator_weather': "--simulator_weather=RainyNight\n"}
 
     # Update the config file.
-    # Find the line that contains proper flags.
-    base_config = open("base_config.conf", 'rt')
-    simulation_config = open("mlcshe_config.conf", 'wt')
-    for line in base_config:
-        for key in simulation_flag:
-            if line.__contains__(key):
-                simulation_config.write(simulation_flag[key])
-                break
-        else:
-            simulation_config.write(line)
-
-    base_config.close()
-    simulation_config.close()
+    update_config_file(simulation_flag)
 
     # Copy the config file to the container.
     container_id = find_container_id(container_name)
@@ -147,36 +179,166 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = CONTAINER_
     copy_to_container(container_id, source_path, destination_path)
 
 
+def run_command_in_shell(command, verbose: bool = True):
+    """Runs a command in shell via subprocess. Also if verbose is set
+    to `True`, it will print out the `stdout` or `stderr` messages,
+    depending on the successful run of the process.
+    """
+    if verbose:
+        print(f'Running {command} in shell...')
+
+    proc = sub.Popen(command, shell=True)
+    #  stdout=sub.PIPE, stderr=sub.PIPE,
+
+    # # Verify successful execution of the command.
+    # if proc.returncode != 0:
+    #     print("Process FAILED.\nThe error was:")
+    #     for line in proc.stderr.decode("utf-8").split('\n'):
+    #         print(line.strip())
+    # else:
+    #     print("Process successfully executed.")
+    #     if verbose:
+    #         for line in proc.stdout.decode("utf-8").split('\n'):
+    #             print(line.strip())
+
+    return proc
+
+
 def run_carla(
         container_name: str = CONTAINER_NAME, carla_run_path=CARLA_PATH):
-    """"Runs the carla simulator inside a container.
+    """Runs the carla simulator which is inside `container_name`.
     """
-    carla_run_command = "nvidia-docker exec " + \
+    carla_run_command = "nvidia-docker exec -it " + \
         container_name + " " + carla_run_path
 
-    p = sub.run(
-        carla_run_command, stdout=sub.PIPE, stderr=sub.PIPE, shell=True)
-    # NOTE: The run command, runs the simulator but does not terminate.
-    # FIXME: Must run a script that runs CARLA and terminates it after
-    # simulation is over.
+    carla_proc = run_command_in_shell(carla_run_command)
 
-    # for line in p.stdout.decode("utf-8").split('\n'):
-    #     print(line)
+    return carla_proc
 
 
-def run_pylot(
-        run_flag: str = FLAG_FILE, container_name: str = CONTAINER_NAME, pylot_run_path=PYLOT_PATH):
-    """Runs pylot inside a container.
+def run_pylot(run_pylot_path: str = PYLOT_PATH):
+    """Runs a script that runs pylot inside a container.
     """
-    pylot_run_command = "nvidia-docker exec" + \
-        container_name + " " + pylot_run_path + \
-        " " + run_flag
+    pylot_run_command = run_pylot_path
 
-    p = sub.run(
-        pylot_run_command, stdout=sub.PIPE, stderr=sub.PIPE, shell=True)
-    # NOTE: The run command, runs pylot but does not terminate.
-    # FIXME: Must run a script that runs pylot and terminates it after
-    # simulation is over.
+    pylot_proc = run_command_in_shell(pylot_run_command)
+
+    return pylot_proc
+
+# COMMENTED FOR THE TEST RUN.
+# def remove_finished_file(finished_file_path: str = FINISHED_FILE_PATH):
+#     """Removes `finished.txt`
+#     """
+#     cmd = ['docker', 'exec', 'pylot', 'rm', '-rf',
+#            finished_file_path]
+#     rm_finished_file_proc = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+#     if os.path.exists("finished.txt"):
+#         os.remove("finished.txt")
+
+
+def reset_sim_setup(container_name: str = 'pylot'):
+    """Resets the simulation setup, i.e., restarts the container, and
+    removes old finished files.
+    """
+    stop_container(container_name)
+    start_container(container_name)
+
+    # COMMENTED FOR THE TEST RUN.
+    # remove_finished_file()
+
+
+def run_carla_and_pylot():
+    """Runs carla and pylot and ensures that they are in sync.
+    """
+    run_carla()
+    time.sleep(20)
+    run_pylot()
+    time.sleep(20)
+    # FIXME: Confirm successful Carla and Pylot are in sync.
+
+
+def scenario_finished():
+    """
+    """
+    return False
+
+
+def run_single_scenario(scenario_list, mlco_list):
+    """Ensures that the simulation setup is ready, updates simulation
+    configuration given `scenario_list` and `mlco_list` and, runs the
+    simulation, records its output and 
+    """
+    scenario_list_deepcopy = copy.deepcopy(scenario_list)
+    mlco_list_deepcopy = copy.deepcopy(mlco_list)
+
+    reset_sim_setup()
+    update_sim_config(scenario_list_deepcopy, mlco_list_deepcopy)
+    run_carla_and_pylot()
+
+    # Monitor scenario execution and end it when its over.
+    counter = 0
+
+    while (True):
+        counter = counter + 1
+        time.sleep(1)
+        if (counter > SIMULATION_DURATION) or scenario_finished():
+            print("End of simulation")
+            stop_container()
+            break
+        else:
+            print("Scenario execution in progress...\ncounter = " +
+                  str(counter))
+
+    # # Copy the results of the simulation.
+    # copy_sim_results()
+    # results_file_name = 'Results/' + str(fv)
+    # if os.path.exists(results_file_name):
+    #     get_values()
+
+
+def simulate_and_evaluate_vehicle_distance(scenario_list, mlco_list):
+    """Runs a simulator using `scenario_list` and `mlco_list`
+    and evaluates the result of the simulation given its safety
+    requirement metric.
+    """
+    # Update the configuration of the simulation and the serialized mlco_list
+    update_sim_config(scenario_list, mlco_list)
+
+    # Run Carla and Pylot in the docker container with appropriate config
+    carla_proc = run_carla()
+    pylot_proc = run_pylot()
+
+    # Confirm that the pylot and carla are interfacing.
+
+    # Either measure jfit at run time or assess the report or log after the simulation.
+    # extract_jfit_value_from_sim()
+
+    # Option #1: Record information from pylot during run and evaluate that.
+    # Option #2: Get a handle on Carla, add a sensor to the vehicle and record the output.
+
+    # Kill the processes.
+    os.kill(carla_proc.pid, signal.SIGINT)
+    os.kill(pylot_proc.pid, signal.SIGTERM)
+    # FIXME: The processes spawned in the docker have a different pid and
+    # will not be killed using the above command.
+
+    # Reset the simulation setup.
+    reset_sim_setup()
+
+
+def main():
+    scenario_list = [4]
+    mlco_list = [
+                [0,  [1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]],
+                [1,  [2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]],
+                [2,  [3, 4, 5, 2, 3, 1], [4, 7, 2, 4, 5, 2]]
+    ]
+
+    run_single_scenario(scenario_list, mlco_list)
+
+
+if __name__ == "__main__":
+    main()
 
     # ## COMMENTED IMPLEMENTATION ###
 
