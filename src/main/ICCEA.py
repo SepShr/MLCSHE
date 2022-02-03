@@ -106,8 +106,10 @@ class ICCEA:
         # # Returns a random value for now.
         # return (random.uniform(-5.0, 5.0),)
 
-        x = c[0][0]
-        y = c[1][0]
+        # x = c[0][0]
+        # y = c[1][0]
+        x = c[0]
+        y = c[1]
 
         joint_fitness_value = self.toolbox.problem_jfit(x, y)
         # joint_fitness_value = simulate_and_evaluate_vehicle_distance(x, y)
@@ -521,9 +523,6 @@ class ICCEA:
         # Is this always the case? or are they flexible?
 
         # Initialization of variables.
-        # pop = deepcopy(population)
-        # pop_prime = deepcopy(other_population)
-        # complete_solutions_set_internal = deepcopy(complete_solutions_set)
         pop = self.toolbox.clone(population)
         pop_prime = self.toolbox.clone(other_population)
         complete_solutions_set_internal = self.toolbox.clone(

@@ -138,5 +138,8 @@ __pycache__
 *.pyc
 
 # Pickled files
-.pkl
-.p
+*.pkl
+*.p
+
+# Results log files
+/results/*

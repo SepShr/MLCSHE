@@ -6,20 +6,23 @@ This is the only file that a user has to modify for a given problem to
 solve.
 """
 
+from copy import deepcopy
 from deap import base, creator, tools
 from numpy import cos, sqrt
 
 # FIXME: This should be imported from problem_utils.py
 from src.utils.utility import initialize_hetero_vector
+from problem_utils import run_simulation
 
-SCEN_POP_SIZE = 10  # Size of the scenario population
-MLCO_POP_SIZE = 10  # Size of the MLC output population
+SCEN_POP_SIZE = 2  # Size of the scenario population
+MLCO_POP_SIZE = 2  # Size of the MLC output population
 MIN_DISTANCE = 0.5  # Minimum distance between members of an archive
 
 # The list of lower and upper limits for enumerationed types in sceanrio.
 # enumLimits = ['bool', [1, 5], 'bool', [1.35, 276.87]]
 # [np.nan, np.nan, (1, 6)]
-enumLimits = [[0.0, 1.0]]
+# enumLimits = [[0.0, 1.0]]
+enumLimits = [[0, 2], [0, 6], [0, 1]]
 
 # Define the problem's joint fitness function.
 
@@ -80,24 +83,38 @@ enumLimits = [[0.0, 1.0]]
 
 #     return f
 
-def problem_joint_fitness(x, y):
-    """This is the problem-specific joint fitness evaluation.
+# def problem_joint_fitness(x, y):
+#     """This is the problem-specific joint fitness evaluation.
+#     """
+#     # The Booth domain.
+
+#     cf = 1.0  # Correction factor that controls the granularity of x and y.
+
+#     x_bar = 10.24 * x - 5.12
+#     y_bar = 10.24 * y - 5.12
+
+#     f = -1.0 * pow((x_bar + 2.0 * y_bar - y), 2) - \
+#         pow((2 * x_bar + y_bar - 5.0), 2)
+
+#     return f
+
+
+def problem_joint_fitness(scenario, mlco):
+    """Joint fitness evaluation which runs the simulator.
     """
-    # The Booth domain.
+    scenario_deepcopy = deepcopy(scenario)
+    mlco_deepcopy = deepcopy(mlco)
 
-    cf = 1.0  # Correction factor that controls the granularity of x and y.
+    DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = run_simulation(
+        scenario_deepcopy, mlco_deepcopy)
 
-    x_bar = 10.24 * x - 5.12
-    y_bar = 10.24 * y - 5.12
-
-    f = -1.0 * pow((x_bar + 2.0 * y_bar - y), 2) - \
-        pow((2 * x_bar + y_bar - 5.0), 2)
-
-    return f
+    # return DfP_max
+    return DfV_max
 
 
 # Create fitness and individual datatypes.
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+# creator.create("FitnessMax", base.Fitness, weights=(1.0,))   # Original formulation of the problem.
+creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
 creator.create("Scenario", creator.Individual)
 creator.create("OutputMLC", creator.Individual)

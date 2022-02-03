@@ -14,19 +14,6 @@ solver = ICCEA(
 )
 
 # User does not need to modify anything but `problem.py`
-solution = solver.solve(max_gen=250)
+solution = solver.solve(max_gen=2)
 
 # print(f'solution={solution}')
-
-# FIXME: Add Carla and Pylot instantiation and setup
-'''
-simulator1 = environment()
-simulator1.set_scenario(individual1)
-
-simulator2 = mysimulator()
-simulator3 = mysimulator()
-simulator4 = mysimulator()
-'''
-
-# Change the code in component_creator.py to add the highjacker
-# run pylot.py while setting the weather_flags and
