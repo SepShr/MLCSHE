@@ -23,7 +23,7 @@ sudo systemctl restart docker
 2. Pull the modified Pylot Docker image from Docker Hub:
 ```bash
 docker pull sepshr/pylot:1.0
-nvidia-docker run -itd --name pylot -p 20022:22 erdosproject/pylot /bin/bash
+nvidia-docker run -itd --name pylot -p 20022:22 sepshr/pylot:1.0 /bin/bash
 ```
 
 *NOTE:* In the code, it is assumed that the name of the docker container is `pylot`. If you are using another name, please ensure that you update the `container_name` variable inside `/MLCSHE/simulation_config.py`. Additionally, you have to change the name of container in the 2 script files, namely `run_pylot.sh` and `copy_pylot_finished_file.sh`.
