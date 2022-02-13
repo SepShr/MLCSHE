@@ -2,10 +2,15 @@ import copy
 import os
 import pickle
 import subprocess as sub
+from sys import stderr
 import time
+import logging
 
 import simulation_config as cfg
 from data_handler import get_values
+
+logging.basicConfig(file_name='sim_log.log', level=logging.DEBUG,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 
 def translate_scenario_list(scenario_list):
@@ -67,9 +72,12 @@ def translate_scenario_list(scenario_list):
         if (scenario_list[1] == 6):  # clear
             weather = "SoftRainSunset"
         scenario_flag['night_time='] = "--night_time=1" + "\n"
+        logging.debug('simulator time of day is set to night.')
 
     scenario_flag['simulator_weather='] = "--simulator_weather=" + \
         weather + "\n"
+
+    logging.debug('simulator_weather set to {}'.format(weather))
 
     num_of_pedestrians = 0
     if scenario_list[2] == 0:
@@ -79,6 +87,8 @@ def translate_scenario_list(scenario_list):
 
     scenario_flag['simulator_num_people='] = "--simulator_num_people=" + \
         str(num_of_pedestrians) + "\n"
+    logging.debug('Number of pedestrians is set to {}'.format(
+        str(num_of_pedestrians)))
 
     # Set target speed of ego vehicle.
     # scenario_flag['target_speed='] =  "\n--target_speed=" + str(scenario_list[?] / 3.6)
@@ -126,6 +136,7 @@ def start_container(container_name: str = cfg.container_name):
     """
     cmd = ['docker', 'start', container_name]
     docker_start_proc = sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    # Log the container's successful start or failure.
     return docker_start_proc.returncode
 
 
@@ -273,7 +284,7 @@ def run_carla(
 def run_pylot(run_pylot_path: str = cfg.pylot_runner_path):
     """Runs a script that runs pylot inside a container.
     """
-    pylot_run_command = run_pylot_path
+    pylot_run_command = [run_pylot_path, cfg.container_name]
 
     pylot_proc = run_command_in_shell(pylot_run_command)
 
@@ -314,8 +325,8 @@ def run_carla_and_pylot(carla_sleep_time=20, pylot_sleep_time=20):
 def scenario_finished():
     """
     """
-    cmd = [cfg.base_directory+'./copy_pylot_finished_file.sh']
-    sub.run(cmd, text=True)
+    cmd = [cfg.base_directory+'./copy_pylot_finished_file.sh', cfg.container_name]
+    sub.run(cmd, sub.PIPE)
     if os.path.exists(cfg.base_directory + "finished.txt"):
         return True
     return False
@@ -330,7 +341,7 @@ def run_simulation(scenario_list, mlco_list):
     mlco_list_deepcopy = copy.deepcopy(mlco_list)
 
     print(f'scenario_list is: {scenario_list_deepcopy}')
-    print(f'mlco_list is: {mlco_list_deepcopy}')
+    print('mlco_list is: '.format(mlco_list_deepcopy))
 
     # Reset the simulation setup.
     print("Resetting the simulation setup.")
@@ -361,14 +372,17 @@ def run_simulation(scenario_list, mlco_list):
                  cfg.simulation_results_source_directory, cfg.simulation_results_destination_path)
     results_file_name = 'results/' + str(scenario_list)
     if os.path.exists(results_file_name):
-        print("results file found!")
+        logging.info(
+            'Found the results of simulation in {}'.format(results_file_name))
         DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = get_values(
             scenario_list)
         print(
             f'{DfC_min}, {DfV_max}, {DfP_max}, {DfM_max}, {DT_max}, {traffic_lights_max}')
         return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
     else:
-        print("return 1000 for all.")
+        logging.warning(
+            'Did not find the simulation results, i.e., {}'.format(results_file_name))
+        logging.warning("Returning 1000 for all simulation results.")
         return 1000, 1000, 1000, 1000, 1000, 1000
 
 
