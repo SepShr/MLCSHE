@@ -1,2 +1,2 @@
 #!/bin/bash
-docker cp pylot_main:/home/erdos/workspace/results/finished.txt ./
+docker cp $1:/home/erdos/workspace/results/finished.txt ./
