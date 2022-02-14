@@ -286,8 +286,8 @@ def run_pylot(run_pylot_path: str = cfg.pylot_runner_path):
     """
     pylot_run_command = [run_pylot_path, cfg.container_name]
 
-    pylot_proc = run_command_in_shell(pylot_run_command)
-
+    # pylot_proc = run_command_in_shell(pylot_run_command)
+    pylot_proc = sub.run(pylot_run_command, stdout=sub.PIPE, stderr=sub.PIPE)
     return pylot_proc
 
 
@@ -326,7 +326,7 @@ def scenario_finished():
     """
     """
     cmd = [cfg.base_directory+'./copy_pylot_finished_file.sh', cfg.container_name]
-    sub.run(cmd, sub.PIPE)
+    sub.run(cmd, strout=sub.PIPE, stderr=sub.PIPE)
     if os.path.exists(cfg.base_directory + "finished.txt"):
         return True
     return False
