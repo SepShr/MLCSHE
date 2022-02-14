@@ -9,7 +9,7 @@ import logging
 import simulation_config as cfg
 from data_handler import get_values
 
-logging.basicConfig(file_name='sim_log.log', level=logging.DEBUG,
+logging.basicConfig(filename='sim_log.log', level=logging.DEBUG,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 
@@ -252,7 +252,7 @@ def run_command_in_shell(command, verbose: bool = True):
     if verbose:
         print(f'Running {command} in shell...')
 
-    proc = sub.Popen(command, stdout=sub.PIPE, stderr=sub.PIPE, shell=True)
+    proc = sub.Popen(command, shell=True)
     #  stdout=sub.PIPE, stderr=sub.PIPE,
 
     # # Verify successful execution of the command.
