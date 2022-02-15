@@ -102,15 +102,23 @@ def translate_mlco_list(mlco_list, container_name=cfg.container_name):
     """Transfers the `mlco_list` to `container_name` and updates
     the flags for pylot.
     """
+    pickled_filename = 'mlco_list.pkl'
     # Write the mlco_list to a file.
-    pickle_to_file(mlco_list, 'mlco_list.pkl')
+    pickle_to_file(mlco_list, pickled_filename)
 
     # FIXME: Make the paths relative.
     # Copy the file inside the Pylot container.
     source_path = '/home/sepehr/AV/MLCSHE/MLCSHE/mlco_list.pkl'
     destination_path = \
         '/home/erdos/workspace/pylot/dependencies/mlco/mlco_list.pkl'
-    copy_to_container(container_name, source_path, destination_path)
+    copy_returncode = copy_to_container(
+        container_name, source_path, destination_path)
+    if copy_returncode != 0:
+        logging.error('{} was NOT copied to {}'.format(
+            pickled_filename, container_name))
+    else:
+        logging.debug('{} successfully copied to {}'.format(
+            pickled_filename, container_name))
 
     # Setup the flags to be passed on to pylot.
     mlco_operator_flag = "--lane_detection_type=highjacker\n"
@@ -153,23 +161,25 @@ def copy_to_container(
     """Copies a file from `source_path` to `destination_path`
     inside a `container_name`.
     """
-    container_id = find_container_id(container_name)
-    container_id_with_path = container_id + ":" + destination_path
-    copy_cmd = ['docker', 'cp', source_path, container_id_with_path]
-    sub.run(copy_cmd)
+    # container_id = find_container_id(container_name)
+    container_name_with_path = container_name + ":" + destination_path
+    copy_cmd = ['docker', 'cp', source_path, container_name_with_path]
+    copy_proc = sub.run(copy_cmd)
+
+    return copy_proc.returncode
 
 
 def copy_to_host(container_name: str, file_name: str, source_path: str, destination_path: str):
     """Copies a file from a `source_path` inside a `container_name` to
     `destination_path`.
     """
-    container_id_with_path = container_name + ":" + source_path + file_name
-    copy_cmd = ['docker', 'cp', container_id_with_path, destination_path]
+    container_name_with_path = container_name + ":" + source_path + file_name
+    copy_cmd = ['docker', 'cp', container_name_with_path, destination_path]
     sub.run(copy_cmd)
 
-    container_id_with_path = container_name + \
+    container_name_with_path = container_name + \
         ":" + source_path + file_name + "_ex.log"
-    copy_cmd = ['docker', 'cp', container_id_with_path, destination_path]
+    copy_cmd = ['docker', 'cp', container_name_with_path, destination_path]
     sub.run(copy_cmd, stderr=sub.PIPE)
 
 
@@ -178,7 +188,7 @@ def find_container_id(container_name: str):
     (`container_id`).
     """
     # FIXME: Handle exception.
-
+    container_id = ''
     # Make sure that the Pylot container is running and find the container ID.
     containers = sub.check_output(['docker', 'ps'], universal_newlines=True)
     containers_split = containers.split('\n')
