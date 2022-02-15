@@ -1,5 +1,5 @@
 base_directory = ""
-container_name = "pylot_main"
+container_name = "pylot"
 base_config_file_name = "base_config.conf"
 config_source_path = "/home/sepehr/AV/MLCSHE/MLCSHE/mlcshe_config.conf"
 config_destination_path = "/home/erdos/workspace/pylot/configs/mlcshe/mlcshe_config.conf"
