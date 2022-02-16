@@ -12,6 +12,8 @@ from data_handler import get_values
 logging.basicConfig(filename='sim_log.log', level=logging.DEBUG,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
+CWD = os.getcwd()
+
 
 def translate_scenario_list(scenario_list):
     """Sets the value of the `flags.simulator_weather` based on the
@@ -249,8 +251,7 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.contai
     # Update the config file.
     update_config_file(simulation_flag)
 
-    # FIXME: Make the paths relative.
-    copy_to_container(container_name, cfg.config_source_path,
+    copy_to_container(container_name, CWD + cfg.config_source_path,
                       cfg.config_destination_path)
 
 
@@ -262,8 +263,7 @@ def run_command_in_shell(command, verbose: bool = True):
     if verbose:
         print(f'Running {command} in shell...')
 
-    proc = sub.Popen(command, shell=True)
-    #  stdout=sub.PIPE, stderr=sub.PIPE,
+    proc = sub.Popen(command, stdout=sub.PIPE, stderr=sub.PIPE, shell=True)
 
     # # Verify successful execution of the command.
     # if proc.returncode != 0:
@@ -291,13 +291,13 @@ def run_carla(
     return carla_proc
 
 
-def run_pylot(run_pylot_path: str = cfg.pylot_runner_path):
+def run_pylot(run_pylot_path: str = CWD + cfg.pylot_runner_path):
     """Runs a script that runs pylot inside a container.
     """
     pylot_run_command = [run_pylot_path, cfg.container_name]
 
     # pylot_proc = run_command_in_shell(pylot_run_command)
-    pylot_proc = sub.run(pylot_run_command, stdout=sub.PIPE, stderr=sub.PIPE)
+    pylot_proc = sub.Popen(pylot_run_command, stdout=sub.PIPE, stderr=sub.PIPE)
     return pylot_proc
 
 
@@ -336,7 +336,7 @@ def scenario_finished():
     """
     """
     cmd = [cfg.base_directory+'./copy_pylot_finished_file.sh', cfg.container_name]
-    sub.run(cmd, strout=sub.PIPE, stderr=sub.PIPE)
+    sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
     if os.path.exists(cfg.base_directory + "finished.txt"):
         return True
     return False
@@ -351,7 +351,7 @@ def run_simulation(scenario_list, mlco_list):
     mlco_list_deepcopy = copy.deepcopy(mlco_list)
 
     print(f'scenario_list is: {scenario_list_deepcopy}')
-    print('mlco_list is: '.format(mlco_list_deepcopy))
+    print(f'mlco_list is: {mlco_list_deepcopy}')
 
     # Reset the simulation setup.
     print("Resetting the simulation setup.")
@@ -372,9 +372,9 @@ def run_simulation(scenario_list, mlco_list):
             print("End of simulation")
             stop_container()
             break
-        # else:
-        #     print("Scenario execution in progress...\ncounter = " +
-        #           str(counter))
+        else:
+            print("Scenario execution in progress...\ncounter = " +
+                  str(counter))
 
     # Copy the results of the simulation.
     # FIXME: The naming of logfiles should be fixed.
@@ -717,3 +717,5 @@ def update_results_file(objective, value, id=-1):
     pickle.dump(results, results_file_name)
 
     return results
+
+# %%
