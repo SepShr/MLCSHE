@@ -131,7 +131,15 @@ dmypy.json
 
 # IDE
 .vscode
+.idea
 
 # pycache
 __pycache__
 *.pyc
+
+# Pickled files
+*.pkl
+*.p
+
+# Results log files
+/results/*

@@ -1,16 +1,20 @@
+import os
+import signal
 import random
-from copy import deepcopy
-import deap
+import subprocess as sub
 
 import numpy as np
-
 from deap import tools
+from problem_utils import (run_carla, run_pylot, update_sim_config)
 # evaluate, evaluate_joint_fitness\
-from src.utils.utility import create_complete_solution, evaluate_individual, breed_mlco, \
-    identify_nominal_indices, measure_heom_distance, \
-    index_in_complete_solution, find_individual_collaborator, rank_change, \
-    max_rank_change_fitness, find_max_fv_individual, violate_safety_requirement, \
-    collaborate
+from src.utils.utility import (breed_mlco, collaborate,
+                               create_complete_solution, evaluate_individual,
+                               find_individual_collaborator,
+                               find_max_fv_individual,
+                               identify_nominal_indices,
+                               index_in_complete_solution,
+                               max_rank_change_fitness, measure_heom_distance,
+                               rank_change, violate_safety_requirement)
 
 
 class ICCEA:
@@ -61,7 +65,7 @@ class ICCEA:
                 f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
 
             # Evolve archives and populations for the next generation
-            min_distance = 0.5
+            min_distance = 0.2
             arcScen = self.update_archive(
                 popScen, popMLCO, completeSolSet, min_distance
             )
@@ -102,35 +106,57 @@ class ICCEA:
         # # Returns a random value for now.
         # return (random.uniform(-5.0, 5.0),)
 
-        # MTQ problem.
-        # cf = 10  # Correction factor that controls the granularity of x and y.
-        x = c[0][0]
-        y = c[1][0]
+        # x = c[0][0]
+        # y = c[1][0]
+        x = c[0]
+        y = c[1]
 
         joint_fitness_value = self.toolbox.problem_jfit(x, y)
-        # h_1 = 50
-        # x_1 = 0.75
-        # y_1 = 0.75
-        # s_1 = 1.6
-        # f_1 = h_1 * \
-        #     (1 - ((16.0/s_1) * pow((x/cf - x_1), 2)) -
-        #      ((16.0/s_1) * pow((y/cf - y_1), 2)))
-        # h_2 = 150
-        # x_2 = 0.25
-        # y_2 = 0.25
-        # s_2 = 1.0/32.0
-        # f_2 = h_2 * \
-        #     (1 - ((16.0/s_2) * pow((x/cf - x_2), 2)) -
-        #      ((16.0/s_2) * pow((y/cf - y_2), 2)))
+        # joint_fitness_value = simulate_and_evaluate_vehicle_distance(x, y)
 
-        # return (max(f_1, f_2),)
         return (joint_fitness_value,)
+
+    # def simulate_and_evaluate_vehicle_distance(self, scenario_list, mlco_list):
+    #     """Runs a simulator using `scenario_list` and `mlco_list`
+    #     and evaluates the result of the simulation given its safety
+    #     requirement metric.
+    #     """
+    #     # Update the configuration of the simulation and the serialized mlco_list
+    #     update_sim_config(scenario_list, mlco_list)
+
+    #     # Run Carla and Pylot in the docker container with appropriate config
+    #     carla_proc = run_carla()
+    #     pylot_proc = run_pylot()
+
+    #     # Confirm that the pylot and carla are interfacing.
+
+    #     # Either measure jfit at run time or assess the report or log after the simulation.
+    #     # extract_jfit_value_from_sim()
+
+    #     # Option #1: Record information from pylot during run and evaluate that.
+    #     # Option #2: Get a handle on Carla, add a sensor to the vehicle and record the output.
+
+    #     # Kill the processes.
+    #     os.kill(carla_proc.pid, signal.SIGINT)
+    #     os.kill(pylot_proc.pid, signal.SIGTERM)
+    #     # FIXME: The processes spawned in the docker have a different pid and
+    #     # will not be killed using the above command.
+
+    #     # Reset the simulation setup.
+    #     # Log or print that simulation is being reset.
+    #     print("Resetting simulation setup via restarting the docker image...")
+    #     docker_reset_proc = sub.run(
+    #         "docker restart pylot", stdout=sub.PIPE, shell=True)
+    #     if docker_reset_proc.returncode != 0:
+    #         print("The docker image DID NOT restart")
+    #     else:
+    #         print("Successfully restarted the docker image.")
 
     def evaluate(
             self, first_population, first_archive,
             second_population, second_archive, joint_class, min_num_evals):
-        """Forms complete solutions, evaluates their joint fitness and evaluates
-        the individual fitness values.
+        """Forms complete solutions, evaluates their joint fitness and
+        evaluates the individual fitness values.
 
         :param first_population: the population (list) of scenarios.
         :param first_archive: the archive (list) of scenarios.
@@ -332,6 +358,8 @@ class ICCEA:
 
         return flattened_list, nominal_values_indices
 
+    # FIXME: Needs to be refactored!!
+
     def is_similar(
             self, candidate, collaborator, archive,
             archive_members_and_collaborators_dictionary,
@@ -429,6 +457,7 @@ class ICCEA:
             for ind in archive:
                 c = create_complete_solution(ind, x, first_item_class)
                 c = joint_class(c)
+                # FIXME: Needs to be optimized!
                 if not self.individual_in_list(c, complete_solutions_set):
                     c.fitness.values = self.evaluate_joint_fitness(c)
                     # counter_jfe += 1
@@ -494,9 +523,6 @@ class ICCEA:
         # Is this always the case? or are they flexible?
 
         # Initialization of variables.
-        # pop = deepcopy(population)
-        # pop_prime = deepcopy(other_population)
-        # complete_solutions_set_internal = deepcopy(complete_solutions_set)
         pop = self.toolbox.clone(population)
         pop_prime = self.toolbox.clone(other_population)
         complete_solutions_set_internal = self.toolbox.clone(
@@ -585,3 +611,186 @@ class ICCEA:
                 exit_condition = True
 
         return archive_p
+
+    def update_archive_elitist(self, population, archive_size):
+        """
+        Updates and archive by selecting only a number of best
+        individuals.
+        """
+        pop = self.toolbox.clone(population)
+
+        archive_p = []
+
+        pop_sorted = sorted(
+            pop, key=lambda x: x.fitness.values[0])
+
+        for i in range(archive_size):
+            archive_p.append(pop_sorted.pop(-1))
+
+        return archive_p
+
+    def update_archive_diverse_elitist(self, population,
+                                       max_archive_size, min_distance):
+        """
+        Updates and archive by selecting only a number of best
+        individuals that are distinct enought.
+        """
+        pop = self.toolbox.clone(population)
+
+        archive_p = []
+
+        pop_sorted = sorted(
+            pop, key=lambda x: x.fitness.values[0])
+
+        # # Add the first member of the archive
+        # archive_p.append(pop_sorted.pop(-1))
+
+        # Add the other members of the archive while
+        for i in range(max_archive_size):
+            candidate = pop_sorted.pop(-1)
+            if len(archive_p) > 0:
+                if not self.is_similar_individual(
+                        candidate, archive_p, min_distance):
+                    archive_p.append(candidate)
+            else:
+                # Add the first member of the archive
+                archive_p.append(candidate)
+
+        return archive_p
+
+    def update_archive_random(self, population, archive_size):
+        """
+        Creates an archive of size `archive_size` by randomly 
+        selecting from the members of the population.
+        """
+        population_copy = self.toolbox.clone(population)
+
+        archive_p = []
+
+        for i in range(archive_size):
+            candidate = population_copy.pop(
+                random.randint(0, len(population_copy)-1))
+            archive_p.append(candidate)
+
+        return archive_p
+
+    def update_archive_best_random(self, population, archive_size):
+        """
+        Updates and archive by selecting the best individual and
+        `archive_size - 1` random individuals.
+        """
+        population_copy = self.toolbox.clone(population)
+
+        population_copy_sorted = sorted(
+            population_copy, key=lambda x: x.fitness.values[0])
+
+        archive_p = []
+
+        for i in range(archive_size):
+            if len(archive_p) > 0:
+                candidate = population_copy_sorted.pop(
+                    random.randint(0, len(population_copy_sorted)-1))
+
+            else:
+                # Select the best indiviudal as the first candidate
+                candidate = population_copy_sorted.pop(-1)
+
+            archive_p.append(candidate)
+
+        return archive_p
+
+    def update_archive_diverse_random(self, population, archive_size, min_distance):
+        """
+        Updates and archive by selecting diverse random individuals.
+        """
+        population_copy = self.toolbox.clone(population)
+
+        archive_p = []
+
+        for i in range(archive_size):
+            candidate = population_copy.pop(
+                random.randint(0, len(population_copy)-1))
+            if len(archive_p) > 0:
+                if not self.is_similar_individual(
+                        candidate, archive_p, min_distance):
+                    archive_p.append(candidate)
+            else:
+                archive_p.append(candidate)
+
+        return archive_p
+
+    def update_archive_diverse_best_random(self, population, max_archive_size, min_distance):
+        """
+        Updates and archive by selecting diverse best and random individuals.
+        """
+        population_copy = self.toolbox.clone(population)
+
+        population_copy_sorted = sorted(
+            population_copy, key=lambda x: x.fitness.values[0])
+
+        archive_p = []
+
+        for i in range(max_archive_size):
+            if len(archive_p) > 0:
+                candidate = population_copy.pop(
+                    random.randint(0, len(population_copy)-1))
+                if not self.is_similar_individual(
+                        candidate, archive_p, min_distance):
+                    archive_p.append(candidate)
+            else:
+                candidate = population_copy_sorted.pop(-1)
+                archive_p.append(candidate)
+
+        return archive_p
+
+    def is_similar_individual(self, candidate, archive, min_distance):
+        """The algorithm evaluates if an individual is
+        similar to the memebrs of an `archive`.
+
+        Similarity uses the criteria `min_distance` to decide.
+        """
+
+        flat_list = []
+
+        # Create the complete solution of cand and collab
+
+        # # Determine the nan equivalent value
+        # nan_eqv = np.Nan
+
+        # Prepare main_complete_solution for similarity assessment
+        candidate_flat, nominal_values_indices = \
+            self.prepare_for_distance_evaluation(candidate)
+
+        # Add main_complete_solution_flat to the list of flat complete solutions
+        flat_list.append(candidate_flat)
+
+        # Create the list of complete solutions that are to be used for distance
+        # evaluations.
+        for i in range(len(archive)):
+            arc_nom_indices = []
+            archive_individual_flat, arc_nom_indices = \
+                self.prepare_for_distance_evaluation(archive[i])
+            if arc_nom_indices != nominal_values_indices:
+                print(
+                    'The nominal values between ' +
+                    str(archive[i]) +
+                    ' and ' + str(candidate) +
+                    ' do not match!')
+            flat_list.append(archive_individual_flat)
+
+        distance_values = measure_heom_distance(
+            flat_list, nominal_values_indices)
+        distance_values.pop(0)
+
+        # Assess similarity between the main_complete_solution and the rest.
+        similarity_list = []
+        for i in range(len(distance_values)):
+            if distance_values[i] <= min_distance:
+                similarity_list.append(1)
+            else:
+                similarity_list.append(0)
+
+        if sum(similarity_list) == len(distance_values):
+            return True
+        else:
+            return False
