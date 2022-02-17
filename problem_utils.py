@@ -6,13 +6,15 @@ from sys import stderr
 import time
 import logging
 
+from datetime import datetime
+from uuid import uuid4
+
 import simulation_config as cfg
 from data_handler import get_values
 
-logging.basicConfig(filename='sim_log.log', level=logging.DEBUG,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
-
 CWD = os.getcwd()
+
+logger = logging.getLogger(__name__)
 
 
 def translate_scenario_list(scenario_list):
@@ -74,12 +76,12 @@ def translate_scenario_list(scenario_list):
         if (scenario_list[1] == 6):  # clear
             weather = "SoftRainSunset"
         scenario_flag['night_time='] = "--night_time=1" + "\n"
-        logging.debug('simulator time of day is set to night.')
+        logger.debug('simulator time of day is set to night.')
 
     scenario_flag['simulator_weather='] = "--simulator_weather=" + \
         weather + "\n"
 
-    logging.debug('simulator_weather set to {}'.format(weather))
+    logger.debug('simulator_weather set to {}'.format(weather))
 
     num_of_pedestrians = 0
     if scenario_list[2] == 0:
@@ -89,7 +91,7 @@ def translate_scenario_list(scenario_list):
 
     scenario_flag['simulator_num_people='] = "--simulator_num_people=" + \
         str(num_of_pedestrians) + "\n"
-    logging.debug('Number of pedestrians is set to {}'.format(
+    logger.debug('Number of pedestrians is set to {}'.format(
         str(num_of_pedestrians)))
 
     # Set target speed of ego vehicle.
@@ -116,10 +118,10 @@ def translate_mlco_list(mlco_list, container_name=cfg.container_name):
     copy_returncode = copy_to_container(
         container_name, source_path, destination_path)
     if copy_returncode != 0:
-        logging.error('{} was NOT copied to {}'.format(
+        logger.error('{} was NOT copied to {}'.format(
             pickled_filename, container_name))
     else:
-        logging.debug('{} successfully copied to {}'.format(
+        logger.debug('{} successfully copied to {}'.format(
             pickled_filename, container_name))
 
     # Setup the flags to be passed on to pylot.
@@ -243,8 +245,10 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.contai
     simulation_flag.update(scenario_flag)
     simulation_flag.update(mlco_flag)
 
-    # # FIXME: Find a unique naming scheme for log file.
-    log_file_name = '/home/erdos/workspace/results/' + str(scenario_list)
+    now = datetime.now().strftime("%Y-%m-%d_%H:%M")
+    simulation_log_file_name = str(now) + "_Sim" + '.log'  # + uuid4().hex
+    log_file_name = '/home/erdos/workspace/results/' + simulation_log_file_name
+
     simulation_flag['--log_fil_name='] = "--log_fil_name=" + \
         log_file_name + "\n"
 
@@ -253,6 +257,8 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.contai
 
     copy_to_container(container_name, CWD + cfg.config_source_path,
                       cfg.config_destination_path)
+
+    return simulation_log_file_name
 
 
 def run_command_in_shell(command, verbose: bool = True):
@@ -348,7 +354,11 @@ def run_simulation(scenario_list, mlco_list):
     simulation, records its output and 
     """
     scenario_list_deepcopy = copy.deepcopy(scenario_list)
+    logger.info('Scenario individual considered for simulation is {}'.format(
+        scenario_list_deepcopy))
     mlco_list_deepcopy = copy.deepcopy(mlco_list)
+    logger.info('MLCO individual considered for simulation is {}'.format(
+        mlco_list_deepcopy))
 
     print(f'scenario_list is: {scenario_list_deepcopy}')
     print(f'mlco_list is: {mlco_list_deepcopy}')
@@ -357,7 +367,8 @@ def run_simulation(scenario_list, mlco_list):
     print("Resetting the simulation setup.")
     reset_sim_setup()
     # Update the configuration of the simulation and the serialized mlco_list
-    update_sim_config(scenario_list_deepcopy, mlco_list_deepcopy)
+    simulation_log_file_name = update_sim_config(
+        scenario_list_deepcopy, mlco_list_deepcopy)
     print("Simulation configuration is updated.")
     # Run Carla and Pylot in the docker container with appropriate config
     run_carla_and_pylot()
@@ -377,48 +388,47 @@ def run_simulation(scenario_list, mlco_list):
                   str(counter))
 
     # Copy the results of the simulation.
-    # FIXME: The naming of logfiles should be fixed.
-    copy_to_host(cfg.container_name, str(scenario_list),
+    copy_to_host(cfg.container_name, simulation_log_file_name,
                  cfg.simulation_results_source_directory, cfg.simulation_results_destination_path)
-    results_file_name = 'results/' + str(scenario_list)
+    results_file_name = 'results/' + simulation_log_file_name
     if os.path.exists(results_file_name):
-        logging.info(
+        logger.info(
             'Found the results of simulation in {}'.format(results_file_name))
         DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = get_values(
-            scenario_list)
+            simulation_log_file_name)
         print(
             f'{DfC_min}, {DfV_max}, {DfP_max}, {DfM_max}, {DT_max}, {traffic_lights_max}')
         return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
     else:
-        logging.warning(
+        logger.warning(
             'Did not find the simulation results, i.e., {}'.format(results_file_name))
-        logging.warning("Returning 1000 for all simulation results.")
+        logger.warning("Returning 1000 for all simulation results.")
         return 1000, 1000, 1000, 1000, 1000, 1000
 
 
-def main():
-    scenario_list = [1, 3, 1]
-    mlco_list = [
-                [0, [[1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]],
-                    [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]]],
-                [1, [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]],
-                    [[1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]]],
-                [2, [[3, 4, 5, 2, 3, 1], [4, 7, 2, 4, 5, 2]],
-                    [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]]]
-    ]
-    #     ],
-    #     [
-    #         [0,  [1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]],
-    #         [1,  [2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]],
-    #         [2,  [3, 4, 5, 2, 3, 1], [4, 7, 2, 4, 5, 2]]
-    #     ]
-    # ]
+# def main():
+#     scenario_list = [1, 3, 1]
+#     mlco_list = [
+#                 [0, [[1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]],
+#                     [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]]],
+#                 [1, [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]],
+#                     [[1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]]],
+#                 [2, [[3, 4, 5, 2, 3, 1], [4, 7, 2, 4, 5, 2]],
+#                     [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]]]
+#     ]
+#     #     ],
+#     #     [
+#     #         [0,  [1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]],
+#     #         [1,  [2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]],
+#     #         [2,  [3, 4, 5, 2, 3, 1], [4, 7, 2, 4, 5, 2]]
+#     #     ]
+#     # ]
 
-    run_simulation(scenario_list, mlco_list)
+#     run_simulation(scenario_list, mlco_list)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
     # ## COMMENTED IMPLEMENTATION ###
 

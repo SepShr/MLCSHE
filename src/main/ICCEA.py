@@ -1,12 +1,8 @@
-import os
-import signal
 import random
-import subprocess as sub
+import logging
 
 import numpy as np
 from deap import tools
-from problem_utils import (run_carla, run_pylot, update_sim_config)
-# evaluate, evaluate_joint_fitness\
 from src.utils.utility import (breed_mlco, collaborate,
                                create_complete_solution, evaluate_individual,
                                find_individual_collaborator,
@@ -23,30 +19,61 @@ class ICCEA:
         self.creator = creator
         self.enumLimits = enumLimits
 
-    def solve(self, max_gen):
+    def solve(self, max_gen, hyperparameters, seed=None, log_level='DEBUG'):
+        # Set the random module seed.
+        random.seed(seed)
+
+        # Setup logger.
+        logger = logging.getLogger(__name__)
+
         # Instantiate individuals and populations
         popScen = self.toolbox.popScen()
         popMLCO = self.toolbox.popMLCO()
         arcScen = self.toolbox.clone(popScen)
         arcMLCO = self.toolbox.clone(popMLCO)
-        solutionArchive = []
+        solution_archive = []
 
-        print('popScen is: ' + str(popScen))
-        print('PopMLCO is: ' + str(popMLCO))
+        # Adding multiple statistics.
+        stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
+        stats_size = tools.Statistics(key=len)
+        mstats = tools.MultiStatistics(fitness=stats_fit, size=stats_size)
+        mstats.register("avg", np.mean, axis=0)
+        mstats.register("std", np.std, axis=0)
+        mstats.register("min", np.min, axis=0)
+        mstats.register("max", np.max, axis=0)
+
+        logbook = tools.Logbook()
+
+        logbook.header = "gen", "evals", "fitness", "size"
+        logbook.chapters["fitness"].header = "min", "avg", "max"
+        logbook.chapters["size"].header = "min", "avg", "max"
+
+        logger.info('popScen is: {}'.format(popScen))
+        logger.info('PopMLCO is: {}'.format(popMLCO))
 
         # Cooperative Coevolutionary Search
         for num_gen in range(max_gen):
-            print('the current generation is: ' + str(num_gen))
+            # print('the current generation is: ' + str(num_gen))
+            logger.info('The current generation is: {}'.format(num_gen))
             # Create complete solutions and evaluate individuals
             completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
 
             # Record the complete solutions that violate the requirement r
-            # solutionArchive.append(
+            # solution_archive.append(
             #     cs for cs in completeSolSet if violate_safety_requirement(cs))
             for cs in completeSolSet:
                 # if violate_safety_requirement(cs):  # DEBUG: to add all complete solutions
-                solutionArchive.append(cs)
+                solution_archive.append(cs)
+
+            # Compiling statistics on the populations and completeSolSet.
+            record_scenario = mstats.compile(popScen)
+            record_mlco = mstats.compile(popMLCO)
+            record_complete_solution = mstats.compile(completeSolSet)
+            logbook.record(gen=num_gen, evals=30, **record_complete_solution)
+            # logbook.record(gen=num_gen, evals=num_evals, **record_scenario,
+            #                **record_mlco, **record_complete_solution)
+            print(logbook.stream)
 
             # Some probes
             # fitness_scen_list = [ind.fitness.values[0] for ind in popScen]
@@ -59,10 +86,11 @@ class ICCEA:
 
             # print best complete solution found
             best_solution = sorted(
-                solutionArchive, key=lambda x: x.fitness.values[0])[-1]
-            print(f'len(solutionArchive): {len(solutionArchive)}')
-            print(
-                f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
+                solution_archive, key=lambda x: x.fitness.values[0])[-1]
+            logger.info('len(solution_archive): {}'.format(
+                len(solution_archive)))
+            logger.info(
+                'The best complete solution in solution_archive: {} (fitness: {})'.format(best_solution, best_solution.fitness.values[0]))
 
             # Evolve archives and populations for the next generation
             min_distance = 0.2
@@ -74,13 +102,14 @@ class ICCEA:
             )
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
-            ts = 2
-            cxpb = 0.5
-            mut_bit_pb = 1
-            mut_guass_mu = 0
-            mut_guass_sig = 0.125
-            mut_guass_pb = 0.5
-            mut_int_pb = 0.5
+            ts, \
+                cxpb, \
+                mut_bit_pb, \
+                mut_guass_mu, \
+                mut_guass_sig, \
+                mut_guass_pb, \
+                mut_int_pb = hyperparameters
+
             popScen = self.breed_scenario(
                 popScen, arcScen, self.enumLimits, ts, cxpb, mut_bit_pb,
                 mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
@@ -95,7 +124,7 @@ class ICCEA:
 
             print('popScen is: ' + str(popScen))
             print('PopMLCO is: ' + str(popMLCO))
-        return solutionArchive
+        return solution_archive
 
     def evaluate_joint_fitness(self, c):
         """Evaluates the joint fitness of a complete solution.
@@ -103,54 +132,16 @@ class ICCEA:
         It takes the complete solution as input and returns its joint
         fitness as output.
         """
-        # # Returns a random value for now.
-        # return (random.uniform(-5.0, 5.0),)
-
+        # For benchmarking problems.
         # x = c[0][0]
         # y = c[1][0]
+
         x = c[0]
         y = c[1]
 
         joint_fitness_value = self.toolbox.problem_jfit(x, y)
-        # joint_fitness_value = simulate_and_evaluate_vehicle_distance(x, y)
 
         return (joint_fitness_value,)
-
-    # def simulate_and_evaluate_vehicle_distance(self, scenario_list, mlco_list):
-    #     """Runs a simulator using `scenario_list` and `mlco_list`
-    #     and evaluates the result of the simulation given its safety
-    #     requirement metric.
-    #     """
-    #     # Update the configuration of the simulation and the serialized mlco_list
-    #     update_sim_config(scenario_list, mlco_list)
-
-    #     # Run Carla and Pylot in the docker container with appropriate config
-    #     carla_proc = run_carla()
-    #     pylot_proc = run_pylot()
-
-    #     # Confirm that the pylot and carla are interfacing.
-
-    #     # Either measure jfit at run time or assess the report or log after the simulation.
-    #     # extract_jfit_value_from_sim()
-
-    #     # Option #1: Record information from pylot during run and evaluate that.
-    #     # Option #2: Get a handle on Carla, add a sensor to the vehicle and record the output.
-
-    #     # Kill the processes.
-    #     os.kill(carla_proc.pid, signal.SIGINT)
-    #     os.kill(pylot_proc.pid, signal.SIGTERM)
-    #     # FIXME: The processes spawned in the docker have a different pid and
-    #     # will not be killed using the above command.
-
-    #     # Reset the simulation setup.
-    #     # Log or print that simulation is being reset.
-    #     print("Resetting simulation setup via restarting the docker image...")
-    #     docker_reset_proc = sub.run(
-    #         "docker restart pylot", stdout=sub.PIPE, shell=True)
-    #     if docker_reset_proc.returncode != 0:
-    #         print("The docker image DID NOT restart")
-    #     else:
-    #         print("Successfully restarted the docker image.")
 
     def evaluate(
             self, first_population, first_archive,
