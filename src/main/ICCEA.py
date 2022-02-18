@@ -49,8 +49,9 @@ class ICCEA:
 
         logbook = tools.Logbook()
 
-        logbook.header = "gen", "evals", "fitness", "size"
-        logbook.chapters["fitness"].header = "min", "avg", "max"
+        # FIXME: Maybe add the number of evaluations
+        logbook.header = "gen", "type", "fitness", "size"
+        logbook.chapters["fitness"].header = "min", "avg", "max", "std"
         logbook.chapters["size"].header = "min", "avg", "max"
 
         # Cooperative Coevolutionary Search
@@ -73,10 +74,16 @@ class ICCEA:
             record_scenario = mstats.compile(popScen)
             record_mlco = mstats.compile(popMLCO)
             record_complete_solution = mstats.compile(completeSolSet)
-            logbook.record(gen=num_gen, evals=30, **record_complete_solution)
-            # logbook.record(gen=num_gen, evals=num_evals, **record_scenario,
-            #                **record_mlco, **record_complete_solution)
+
+            # FIXME: Find the number of evaluations.
+            logbook.record(gen=num_gen, type='scen',
+                           **record_scenario)
+            logbook.record(gen=num_gen, type='mlco', **record_mlco)
+            logbook.record(gen=num_gen, type='cs',
+                           **record_complete_solution)
+
             print(logbook.stream)
+            self._logger.info(logbook.stream)
 
             # Some probes
             # fitness_scen_list = [ind.fitness.values[0] for ind in popScen]

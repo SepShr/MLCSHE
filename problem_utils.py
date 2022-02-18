@@ -1,5 +1,6 @@
 import copy
 import os
+import pathlib
 import pickle
 import subprocess as sub
 from sys import stderr
@@ -76,7 +77,7 @@ def translate_scenario_list(scenario_list):
             weather = "HardRainSunset"
         if (scenario_list[1] == 6):  # clear
             weather = "SoftRainSunset"
-        scenario_flag['night_time='] = "--night_time=1" + "\n"
+        scenario_flag['night_time='] = "--night_time=1\n"
         logger.debug('simulator time of day is set to night.')
 
     scenario_flag['simulator_weather='] = "--simulator_weather=" + \
@@ -103,27 +104,27 @@ def translate_scenario_list(scenario_list):
     return scenario_flag
 
 
-def translate_mlco_list(mlco_list, container_name=cfg.container_name):
+def translate_mlco_list(mlco_list, container_name=cfg.container_name, file_name=cfg.mlco_file_name, destination_path=cfg.mlco_destination_path):
     """Transfers the `mlco_list` to `container_name` and updates
     the flags for pylot.
     """
-    pickled_filename = 'mlco_list.pkl'
-    # Write the mlco_list to a file.
-    pickle_to_file(mlco_list, pickled_filename)
+    pathlib.Path('temp/').mkdir(parents=True, exist_ok=True)
+    mlco_file = os.path.join('temp', file_name)
 
-    # FIXME: Make the paths relative.
+    # Write the mlco_list to a file.
+    pickle_to_file(mlco_list, mlco_file)
+
     # Copy the file inside the Pylot container.
-    source_path = '/home/sepehr/AV/MLCSHE/MLCSHE/mlco_list.pkl'
-    destination_path = \
-        '/home/erdos/workspace/pylot/dependencies/mlco/mlco_list.pkl'
+    source_path = os.path.join(CWD, mlco_file)
     copy_returncode = copy_to_container(
         container_name, source_path, destination_path)
+
     if copy_returncode != 0:
         logger.error('{} was NOT copied to {}'.format(
-            pickled_filename, container_name))
+            file_name, container_name))
     else:
         logger.debug('{} successfully copied to {}'.format(
-            pickled_filename, container_name))
+            file_name, container_name))
 
     # Setup the flags to be passed on to pylot.
     mlco_operator_flag = "--lane_detection_type=highjacker\n"
@@ -203,20 +204,15 @@ def find_container_id(container_name: str):
     return container_id
 
 
-def read_base_config_file(base_file_name=cfg.base_config_file_name):
-    """Reads the base_config_file.
-    """
-    base_config_file = open(base_file_name, "rt")
-
-    return base_config_file.read()
-
-
 def update_config_file(
-        simulation_flag, base_config_file=cfg.base_config_file_name,
-        simulation_config_file=cfg.simulation_config_file_name):
+        simulation_flag, base_config_file=cfg.base_config_file,
+        simulation_config_file_name=cfg.simulation_config_file_name):
     """Updates `base_config_file` according to `simulation_flag` and
     writes it to `simulation_config_file`.
     """
+    # Create the temp folder if it does not exist.
+    pathlib.Path('temp/').mkdir(parents=True, exist_ok=True)
+    simulation_config_file = os.path.join('temp', simulation_config_file_name)
     # Find the lines that contain proper flags and updates them.
     base_config = open(base_config_file, 'rt')
     simulation_config = open(simulation_config_file, 'wt')
@@ -257,8 +253,15 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.contai
     # Update the config file.
     update_config_file(simulation_flag)
 
-    copy_to_container(container_name, CWD + cfg.config_source_path,
-                      cfg.config_destination_path)
+    copy_returncode = copy_to_container(container_name, CWD + cfg.config_source_path,
+                                        cfg.config_destination_path)
+
+    if copy_returncode != 0:
+        logger.error('{} was NOT copied to {}'.format(
+            cfg.config_source_path, container_name))
+    else:
+        logger.debug('{} successfully copied to {}'.format(
+            cfg.config_source_path, container_name))
 
     return simulation_log_file_name
 
@@ -330,10 +333,10 @@ def reset_sim_setup(container_name: str = cfg.container_name):
 def run_carla_and_pylot(carla_sleep_time=20, pylot_sleep_time=20):
     """Runs carla and pylot and ensures that they are in sync.
     """
-    logger.debug('Running Carla (timeout = {} sec).'.format(carla_sleep_time))
+    logger.info('Running Carla (timeout = {} sec).'.format(carla_sleep_time))
     run_carla()
     time.sleep(carla_sleep_time)
-    logger.debug('Running Pylot (timeout = {} sec).'.format(pylot_sleep_time))
+    logger.info('Running Pylot (timeout = {} sec).'.format(pylot_sleep_time))
     run_pylot()
     time.sleep(pylot_sleep_time)
     # FIXME: Confirm successful Carla and Pylot are in sync.
@@ -341,8 +344,11 @@ def run_carla_and_pylot(carla_sleep_time=20, pylot_sleep_time=20):
 
 def scenario_finished():
     """
+    Check whether the scenario is finished or not.
     """
-    cmd = [cfg.base_directory+'./copy_pylot_finished_file.sh', cfg.container_name]
+    cmd = [cfg.script_directory +
+           'copy_pylot_finished_file.sh', cfg.container_name]
+    print(cmd)
     sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
     if os.path.exists(cfg.base_directory + "finished.txt"):
         return True
@@ -397,7 +403,7 @@ def run_simulation(scenario_list, mlco_list):
                  cfg.simulation_results_source_directory, cfg.simulation_results_destination_path)
     results_file_name = 'results/' + simulation_log_file_name
     if os.path.exists(results_file_name):
-        logger.info(
+        logger.debug(
             'Found the results of simulation in {}'.format(results_file_name))
         DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = get_values(
             simulation_log_file_name)
@@ -684,53 +690,90 @@ def run_simulation(scenario_list, mlco_list):
     #                                             mlco_list, FLAGS)
     #     return lane_detection_stream
 
-
-def get_min_dist_from_ped(self, people):
-    """Calculates the minimum distance between a hero_vehicle and all
-    pedestrians.
-    """
-    min_ego_ped_dist = 1000.0
-    closest_ped_id = -1
-
-    for person in people:
-        current_ego_ped_dist = person._distance(
-            self._ego_vehicle.get_transform())
-
-        if current_ego_ped_dist < min_ego_ped_dist:
-            min_ego_ped_dist = current_ego_ped_dist
-            closest_ped_id = person.id
-
-            update_results_file('ped_dist', min_ego_ped_dist, closest_ped_id)
+    # Implementation meant to handle mlco individual translation.
 
 
-def update_results_file(objective, value, id=-1):
-    """Updates the results file for a simulation run.
-    """
-    results = {}
+    class ObstacleDetectionHighjackerOperator(erdos.Operator):
+        """
+        """
 
-    # results_file = get_results_file()
+        def __init__(self, camera_stream: erdos.ReadStream,
+                     detected_obstacles_stream: erdos.WriteStream, mlco_list, flags):
+            self.frame_index = 0  # Initialize frame_index
+            self.mlco_list = mlco_list
 
-    if objective == 'ped_dist':
+            camera_stream.add_callback(self.on_camera_frame,
+                                       [detected_obstacles_stream])
+            self._flags = flags
+            self._logger = erdos.utils.setup_logging(self.config.name,
+                                                     self.config.log_file_name)
 
-        results['min_dist_ped'] = value
-        results['closest_ped'] = id
+        @staticmethod
+        def connect(camera_stream: erdos.ReadStream):
+            """Connects the operator to other streams.
+            Args:
+                camera_stream (:py:class:`erdos.ReadStream`): The stream on which
+                    camera frames are received.
+            Returns:
+                :py:class:`erdos.WriteStream`: Stream on which the operator sends
+                :py:class:`~pylot.perception.messages.LanesMessage` messages.
+            """
+            detected_obstacles_stream = erdos.WriteStream()
+            return [detected_obstacles_stream]
 
-        # minimun_distance_pedestrian = "Minimum_Distance_Pedestrian = " + str(value)
-        # closest_pedestrian_id = "Closest_Pedestrian_ID = " + str(id)
+        @erdos.profile_method()
+        def on_camera_frame(self, msg: erdos.Message,
+                            detected_lanes_stream: erdos.WriteStream):
+            """Invoked whenever a frame message is received on the stream.
+            Args:
+                msg: A :py:class:`~pylot.perception.messages.FrameMessage`.
+                detected_lanes_stream (:py:class:`erdos.WriteStream`): Stream on
+                    which the operator sends
+                    :py:class:`~pylot.perception.messages.LanesMessage` messages.
+            """
+            self._logger.debug('@{}: {} received message'.format(
+                msg.timestamp, self.config.name))
+            assert msg.frame.encoding == 'BGR', 'Expects BGR frames'
 
-        # results = open(results_file, 'wt')
-        # for line in results:
-        #     if line.__contains__("Minimum_Distance_Pedestrian"):
-        #         results.write(minimun_distance_pedestrian)
-        #     if line.__contains__("Closest_Pedestrian_ID"):
-        #         results.write(closest_pedestrian_id)
-        # results.close()
+            # # Optional: reformat the image data as an RGB numpy array.
+            # image = cv2.resize(msg.frame.as_rgb_numpy_array(), (512, 256),
+            #                    interpolation=cv2.INTER_LINEAR)
+            # image = image / 127.5 - 1.0
 
-    # + str(mlco_list+scenario_list) + ".pkl"
-    results_file_name = "results.pkl"
+            # Decode the MLCO individuals and write them to the
+            # detected_lanes_stream.
+            detected_obstacles = self.decode_mlco()
+            self._logger.debug('@{}: Detected {} obstacles'.format(
+                msg.timestamp, len(detected_obstacles)))
+            detected_obstacles_stream.send(erdos.Message(msg.timestamp,
+                                                         detected_obstacles))
 
-    pickle.dump(results, results_file_name)
+            self.frame_index += 1
 
-    return results
+        def decode_mlco(self):
+            """Translates an element in the `mlco_list` to pylot.Obstacle format.
+            Returns:
+            """
+            decoded_obstacles = []
 
-# %%
+            # FIXME: Map mlco list values to obstacle messages.
+
+            return decoded_obstacles
+
+    # NOTE: Should be added to operator_creator.py
+
+    def add_obstacle_detection_highjacker(
+            bgr_camera_stream, mlco_list, name='highjacker_obstacle_detection'):
+        """
+        The function creates a `obstacle_detection_stream` for pylot using
+        the `LaneDetectionHighjackerOperator` operator.
+        """
+        op_config = erdos.OperatorConfig(name=name,
+                                         log_file_name=FLAGS.log_file_name,
+                                         csv_log_file_name=FLAGS.csv_log_file_name,
+                                         profile_file_name=FLAGS.profile_file_name)
+        [obstacle_detection_stream] = erdos.connect(ObstacleDetectionHighjackerOperator,
+                                                    op_config, [
+                                                        bgr_camera_stream],
+                                                    mlco_list, FLAGS)
+        return obstacle_detection_stream
