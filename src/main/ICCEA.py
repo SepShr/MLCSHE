@@ -19,12 +19,17 @@ class ICCEA:
         self.creator = creator
         self.enumLimits = enumLimits
 
-    def solve(self, max_gen, hyperparameters, seed=None, log_level='DEBUG'):
+        # Setup logger.
+        self._logger = logging.getLogger(__name__)
+
+    def solve(self, max_gen, hyperparameters, seed=None):
+        self._logger.info("CCEA search started.")
+        self._logger.info(
+            'Maximum number of generations is: {}'.format(max_gen))
+
         # Set the random module seed.
         random.seed(seed)
-
-        # Setup logger.
-        logger = logging.getLogger(__name__)
+        self._logger.info('Random seed is set to: {}'.format(seed))
 
         # Instantiate individuals and populations
         popScen = self.toolbox.popScen()
@@ -48,13 +53,11 @@ class ICCEA:
         logbook.chapters["fitness"].header = "min", "avg", "max"
         logbook.chapters["size"].header = "min", "avg", "max"
 
-        logger.info('popScen is: {}'.format(popScen))
-        logger.info('PopMLCO is: {}'.format(popMLCO))
-
         # Cooperative Coevolutionary Search
         for num_gen in range(max_gen):
-            # print('the current generation is: ' + str(num_gen))
-            logger.info('The current generation is: {}'.format(num_gen))
+            self._logger.info('The current generation is: {}'.format(num_gen))
+            self._logger.info('The Scenario population is: {}'.format(popScen))
+            self._logger.info('The MLCO population is: {}'.format(popMLCO))
             # Create complete solutions and evaluate individuals
             completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
@@ -84,12 +87,11 @@ class ICCEA:
             # avg_fitness_mlco = sum(fitness_mlco_list) / len(popMLCO)
             # print('the avg for popMLCO fitness is: ' + str(avg_fitness_mlco))
 
-            # print best complete solution found
             best_solution = sorted(
                 solution_archive, key=lambda x: x.fitness.values[0])[-1]
-            logger.info('len(solution_archive): {}'.format(
-                len(solution_archive)))
-            logger.info(
+            self._logger.info('Size of the solution_archive at generation {} is: {}'.format(
+                num_gen, len(solution_archive)))
+            self._logger.info(
                 'The best complete solution in solution_archive: {} (fitness: {})'.format(best_solution, best_solution.fitness.values[0]))
 
             # Evolve archives and populations for the next generation
@@ -122,8 +124,6 @@ class ICCEA:
             # popScen.append(x for x in arcScen)
             # popMLCO.append(x for x in arcMLCO)
 
-            print('popScen is: ' + str(popScen))
-            print('PopMLCO is: ' + str(popMLCO))
         return solution_archive
 
     def evaluate_joint_fitness(self, c):
@@ -390,7 +390,7 @@ class ICCEA:
             archive_complete_solution_flat, arc_nom_indices = \
                 self.prepare_for_distance_evaluation(archive_complete_solution)
             if arc_nom_indices != nominal_values_indices:
-                print(
+                self._logger.error(
                     'The nominal values between ' +
                     str(archive_complete_solution) +
                     ' and ' + str(main_complete_solution) +
@@ -550,7 +550,8 @@ class ICCEA:
 
             # Check if all individuals of pop have been considered archive.
             if not pop_minus_archive_and_ineligible:
-                print('No individual left to be considered for archive membership.')
+                self._logger.info(
+                    "No individual left to be considered for archive membership.")
                 break
 
             # Calculate the individual fitness of pop_prime individuals,
@@ -762,7 +763,7 @@ class ICCEA:
             archive_individual_flat, arc_nom_indices = \
                 self.prepare_for_distance_evaluation(archive[i])
             if arc_nom_indices != nominal_values_indices:
-                print(
+                self._logger.error(
                     'The nominal values between ' +
                     str(archive[i]) +
                     ' and ' + str(candidate) +

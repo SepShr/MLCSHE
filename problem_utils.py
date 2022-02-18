@@ -5,6 +5,7 @@ import subprocess as sub
 from sys import stderr
 import time
 import logging
+from tqdm import trange
 
 from datetime import datetime
 from uuid import uuid4
@@ -245,8 +246,9 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.contai
     simulation_flag.update(scenario_flag)
     simulation_flag.update(mlco_flag)
 
-    now = datetime.now().strftime("%Y-%m-%d_%H:%M")
-    simulation_log_file_name = str(now) + "_Sim" + '.log'  # + uuid4().hex
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    simulation_log_file_name = str(
+        timestamp) + "_sim" + '.log'  # + uuid4().hex
     log_file_name = '/home/erdos/workspace/results/' + simulation_log_file_name
 
     simulation_flag['--log_fil_name='] = "--log_fil_name=" + \
@@ -261,13 +263,12 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.contai
     return simulation_log_file_name
 
 
-def run_command_in_shell(command, verbose: bool = True):
+def run_command_in_shell(command):
     """Runs a command in shell via subprocess. Also if verbose is set
     to `True`, it will print out the `stdout` or `stderr` messages,
     depending on the successful run of the process.
     """
-    if verbose:
-        print(f'Running {command} in shell...')
+    logger.debug(f'Running {command} in shell.')
 
     proc = sub.Popen(command, stdout=sub.PIPE, stderr=sub.PIPE, shell=True)
 
@@ -329,10 +330,10 @@ def reset_sim_setup(container_name: str = cfg.container_name):
 def run_carla_and_pylot(carla_sleep_time=20, pylot_sleep_time=20):
     """Runs carla and pylot and ensures that they are in sync.
     """
-    print("Running Carla")
+    logger.debug('Running Carla (timeout = {} sec).'.format(carla_sleep_time))
     run_carla()
     time.sleep(carla_sleep_time)
-    print("Running Pylot")
+    logger.debug('Running Pylot (timeout = {} sec).'.format(pylot_sleep_time))
     run_pylot()
     time.sleep(pylot_sleep_time)
     # FIXME: Confirm successful Carla and Pylot are in sync.
@@ -357,35 +358,39 @@ def run_simulation(scenario_list, mlco_list):
     logger.info('Scenario individual considered for simulation is {}'.format(
         scenario_list_deepcopy))
     mlco_list_deepcopy = copy.deepcopy(mlco_list)
-    logger.info('MLCO individual considered for simulation is {}'.format(
+    logger.info('Mlco individual considered for simulation is {}'.format(
         mlco_list_deepcopy))
 
-    print(f'scenario_list is: {scenario_list_deepcopy}')
-    print(f'mlco_list is: {mlco_list_deepcopy}')
-
     # Reset the simulation setup.
-    print("Resetting the simulation setup.")
+    logger.debug("Resetting the simulation setup.")
     reset_sim_setup()
     # Update the configuration of the simulation and the serialized mlco_list
     simulation_log_file_name = update_sim_config(
         scenario_list_deepcopy, mlco_list_deepcopy)
-    print("Simulation configuration is updated.")
+    logger.debug("Simulation configuration is updated.")
     # Run Carla and Pylot in the docker container with appropriate config
     run_carla_and_pylot()
 
     # Monitor scenario execution and end it when its over.
     counter = 0
 
-    while (True):
-        counter = counter + 1
+    # while (True):
+    #     counter = counter + 1
+    #     time.sleep(1)
+    #     if (counter > cfg.simulation_duration) or scenario_finished():
+    #         logger.info("End of simulation.")
+    #         stop_container()
+    #         break
+    #     else:
+    #         print("Scenario execution in progress...\ncounter = " +
+    #               str(counter))
+
+    for counter in trange(cfg.simulation_duration):
         time.sleep(1)
-        if (counter > cfg.simulation_duration) or scenario_finished():
-            print("End of simulation")
-            stop_container()
+        if scenario_finished():
             break
-        else:
-            print("Scenario execution in progress...\ncounter = " +
-                  str(counter))
+    stop_container()
+    logger.info("End of simulation.")
 
     # Copy the results of the simulation.
     copy_to_host(cfg.container_name, simulation_log_file_name,
@@ -396,7 +401,7 @@ def run_simulation(scenario_list, mlco_list):
             'Found the results of simulation in {}'.format(results_file_name))
         DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = get_values(
             simulation_log_file_name)
-        print(
+        logger.info(
             f'{DfC_min}, {DfV_max}, {DfP_max}, {DfM_max}, {DT_max}, {traffic_lights_max}')
         return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
     else:

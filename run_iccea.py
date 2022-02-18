@@ -3,8 +3,8 @@ iCCEA Runner.
 """
 
 from src.main.ICCEA import ICCEA
+from src.utils.utility import setup_logger
 import problem
-import logging
 from datetime import datetime
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
@@ -37,28 +37,8 @@ hyperparameters = [
     mut_int_pb
 ]
 
-logger = logging.getLogger('')
-
-formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-
-now = datetime.now().strftime("%Y-%m-%d_%H:%M")
-log_file_name = 'results/' + str(now) + '_CCEA' + '.log'
-logging.basicConfig(filename=log_file_name,
-                    format='%(asctime)s:%(name)s:%(levelname)s:%(message)s', level=logging.DEBUG)
-# file_handler = logging.FileHandler(log_file_name)
-# file_handler.setFormatter(formatter)
-# file_handler.setLevel(logging.INFO)
-
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
-stream_handler.setLevel(logging.INFO)
-
-# logger.addHandler(file_handler)
-logger.addHandler(stream_handler)
-
-logger.info("CCEA search started.")
-logger.info('Maximum number of generations is: {}'.format(num_gen))
-logger.info('Random seed is set to: {}'.format(seed))
+# Setup logger.
+setup_logger(file_log_level='DEBUG', stream_log_level='INFO')
 
 # User does not need to modify anything but `problem.py`
 solution = solver.solve(

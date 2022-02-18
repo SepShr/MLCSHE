@@ -2,6 +2,10 @@
 Set of utility functions which are independent from the `problem` structure.
 """
 
+from datetime import datetime
+import logging
+import os
+import pathlib
 import random
 from copy import deepcopy
 
@@ -532,3 +536,53 @@ def violate_safety_requirement(complete_solution):
         return True
     else:
         return False
+
+
+def setup_logger(file_log_level='DEBUG', stream_log_level='INFO'):
+    """Initilizes and formats the root logger. It also sets the log
+    levels for the log file and stream handler.
+    """
+    # Create the results folder if it does not exist.
+    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+    # Setup logger.
+    logger = logging.getLogger()
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_id = str(timestamp) + '_CCEA' + '.log'
+    log_file = os.path.join('results', log_id)
+    logging.basicConfig(filename=log_file,
+                        format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+
+    # Set logger's logging level.
+    if file_log_level == 'DEBUG':
+        logger.setLevel(logging.DEBUG)
+    elif file_log_level == 'INFO':
+        logger.setLevel(logging.INFO)
+    elif file_log_level == 'WARNING':
+        logger.setLevel(logging.WARNING)
+    elif file_log_level == 'ERROR':
+        logger.setLevel(logging.ERROR)
+    else:
+        raise ValueError(
+            "file_log_level can only be DEBUG, INFO, WARNING or ERROR.")
+
+    # Initialize and format the stream_handler.
+    stream_handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+    stream_handler.setFormatter(formatter)
+
+    # Set stream_handler logging level.
+    if stream_log_level == 'DEBUG':
+        stream_handler.setLevel(logging.DEBUG)
+    elif stream_log_level == 'INFO':
+        stream_handler.setLevel(logging.INFO)
+    elif stream_log_level == 'WARNING':
+        stream_handler.setLevel(logging.WARNING)
+    elif stream_log_level == 'ERROR':
+        stream_handler.setLevel(logging.ERROR)
+    else:
+        raise ValueError(
+            "stream_log_level can only be DEBUG, INFO, WARNING or ERROR.")
+
+    logger.addHandler(stream_handler)
