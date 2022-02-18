@@ -1,9 +1,13 @@
 import os
 
 
-# to extact fitness values
-def get_values(fv):
-    file_name = 'results/'+str(fv)
+# Extract fitness values
+def get_values(filename):
+    file_name = 'results/' + filename
+
+    assert os.path.exists(
+        file_name), 'The path {} does not exist!'.format(file_name)
+
     file_handler = open(file_name, "r")
     DfC_min = 1
     DfV_min = 1
