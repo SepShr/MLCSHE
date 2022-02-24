@@ -127,11 +127,11 @@ def translate_mlco_list(mlco_list, container_name=cfg.container_name, file_name=
             file_name, container_name))
 
     # Setup the flags to be passed on to pylot.
-    mlco_operator_flag = "--lane_detection_type=highjacker\n"
+    # mlco_operator_flag = "--lane_detection_type=highjacker\n"
     mlco_list_path_flag = "--mlco_list_path=" + destination_path + '\n'
 
     mlco_flag = {}
-    mlco_flag['lane_detection_type='] = mlco_operator_flag
+    # mlco_flag['lane_detection_type='] = mlco_operator_flag
     mlco_flag['mlco_list_path='] = mlco_list_path_flag
 
     return mlco_flag
@@ -307,7 +307,8 @@ def run_pylot(run_pylot_path: str = CWD + cfg.pylot_runner_path):
     pylot_run_command = [run_pylot_path, cfg.container_name]
 
     # pylot_proc = run_command_in_shell(pylot_run_command)
-    pylot_proc = sub.Popen(pylot_run_command, stdout=sub.PIPE, stderr=sub.PIPE)
+    pylot_proc = sub.Popen(pylot_run_command, text=True)
+    # stdout=sub.PIPE, stderr=sub.PIPE
     return pylot_proc
 
 
@@ -330,7 +331,7 @@ def reset_sim_setup(container_name: str = cfg.container_name):
     remove_finished_file()
 
 
-def run_carla_and_pylot(carla_sleep_time=20, pylot_sleep_time=20):
+def run_carla_and_pylot(carla_sleep_time=cfg.carla_timeout, pylot_sleep_time=cfg.pylot_timeout):
     """Runs carla and pylot and ensures that they are in sync.
     """
     logger.info('Running Carla (timeout = {} sec).'.format(carla_sleep_time))
@@ -348,7 +349,6 @@ def scenario_finished():
     """
     cmd = [cfg.script_directory +
            'copy_pylot_finished_file.sh', cfg.container_name]
-    print(cmd)
     sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
     if os.path.exists(cfg.base_directory + "finished.txt"):
         return True
@@ -420,12 +420,9 @@ def run_simulation(scenario_list, mlco_list):
 # def main():
 #     scenario_list = [1, 3, 1]
 #     mlco_list = [
-#                 [0, [[1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]],
-#                     [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]]],
-#                 [1, [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]],
-#                     [[1, 4, 5, 2, 3, 1], [2, 7, 2, 4, 5, 2]]],
-#                 [2, [[3, 4, 5, 2, 3, 1], [4, 7, 2, 4, 5, 2]],
-#                     [[2, 4, 5, 2, 3, 1], [3, 7, 2, 4, 6, 2]]]
+#                 [200, 250, 210, 260, 0],
+#                 [300, 350, 310, 360, 0],
+#                 [100, 160, 150, 220, 6]
 #     ]
 #     #     ],
 #     #     [
@@ -690,90 +687,89 @@ def run_simulation(scenario_list, mlco_list):
     #                                             mlco_list, FLAGS)
     #     return lane_detection_stream
 
-    # Implementation meant to handle mlco individual translation.
+    # # Implementation meant to handle mlco individual translation.
 
+    # class ObstacleDetectionHighjackerOperator(erdos.Operator):
+    #     """
+    #     """
 
-    class ObstacleDetectionHighjackerOperator(erdos.Operator):
-        """
-        """
+    #     def __init__(self, camera_stream: erdos.ReadStream,
+    #                  detected_obstacles_stream: erdos.WriteStream, mlco_list, flags):
+    #         self.frame_index = 0  # Initialize frame_index
+    #         self.mlco_list = mlco_list
 
-        def __init__(self, camera_stream: erdos.ReadStream,
-                     detected_obstacles_stream: erdos.WriteStream, mlco_list, flags):
-            self.frame_index = 0  # Initialize frame_index
-            self.mlco_list = mlco_list
+    #         camera_stream.add_callback(self.on_camera_frame,
+    #                                    [detected_obstacles_stream])
+    #         self._flags = flags
+    #         self._logger = erdos.utils.setup_logging(self.config.name,
+    #                                                  self.config.log_file_name)
 
-            camera_stream.add_callback(self.on_camera_frame,
-                                       [detected_obstacles_stream])
-            self._flags = flags
-            self._logger = erdos.utils.setup_logging(self.config.name,
-                                                     self.config.log_file_name)
+    #     @staticmethod
+    #     def connect(camera_stream: erdos.ReadStream):
+    #         """Connects the operator to other streams.
+    #         Args:
+    #             camera_stream (:py:class:`erdos.ReadStream`): The stream on which
+    #                 camera frames are received.
+    #         Returns:
+    #             :py:class:`erdos.WriteStream`: Stream on which the operator sends
+    #             :py:class:`~pylot.perception.messages.LanesMessage` messages.
+    #         """
+    #         detected_obstacles_stream = erdos.WriteStream()
+    #         return [detected_obstacles_stream]
 
-        @staticmethod
-        def connect(camera_stream: erdos.ReadStream):
-            """Connects the operator to other streams.
-            Args:
-                camera_stream (:py:class:`erdos.ReadStream`): The stream on which
-                    camera frames are received.
-            Returns:
-                :py:class:`erdos.WriteStream`: Stream on which the operator sends
-                :py:class:`~pylot.perception.messages.LanesMessage` messages.
-            """
-            detected_obstacles_stream = erdos.WriteStream()
-            return [detected_obstacles_stream]
+    #     @erdos.profile_method()
+    #     def on_camera_frame(self, msg: erdos.Message,
+    #                         detected_lanes_stream: erdos.WriteStream):
+    #         """Invoked whenever a frame message is received on the stream.
+    #         Args:
+    #             msg: A :py:class:`~pylot.perception.messages.FrameMessage`.
+    #             detected_lanes_stream (:py:class:`erdos.WriteStream`): Stream on
+    #                 which the operator sends
+    #                 :py:class:`~pylot.perception.messages.LanesMessage` messages.
+    #         """
+    #         self._logger.debug('@{}: {} received message'.format(
+    #             msg.timestamp, self.config.name))
+    #         assert msg.frame.encoding == 'BGR', 'Expects BGR frames'
 
-        @erdos.profile_method()
-        def on_camera_frame(self, msg: erdos.Message,
-                            detected_lanes_stream: erdos.WriteStream):
-            """Invoked whenever a frame message is received on the stream.
-            Args:
-                msg: A :py:class:`~pylot.perception.messages.FrameMessage`.
-                detected_lanes_stream (:py:class:`erdos.WriteStream`): Stream on
-                    which the operator sends
-                    :py:class:`~pylot.perception.messages.LanesMessage` messages.
-            """
-            self._logger.debug('@{}: {} received message'.format(
-                msg.timestamp, self.config.name))
-            assert msg.frame.encoding == 'BGR', 'Expects BGR frames'
+    #         # # Optional: reformat the image data as an RGB numpy array.
+    #         # image = cv2.resize(msg.frame.as_rgb_numpy_array(), (512, 256),
+    #         #                    interpolation=cv2.INTER_LINEAR)
+    #         # image = image / 127.5 - 1.0
 
-            # # Optional: reformat the image data as an RGB numpy array.
-            # image = cv2.resize(msg.frame.as_rgb_numpy_array(), (512, 256),
-            #                    interpolation=cv2.INTER_LINEAR)
-            # image = image / 127.5 - 1.0
+    #         # Decode the MLCO individuals and write them to the
+    #         # detected_lanes_stream.
+    #         detected_obstacles = self.decode_mlco()
+    #         self._logger.debug('@{}: Detected {} obstacles'.format(
+    #             msg.timestamp, len(detected_obstacles)))
+    #         detected_obstacles_stream.send(erdos.Message(msg.timestamp,
+    #                                                      detected_obstacles))
 
-            # Decode the MLCO individuals and write them to the
-            # detected_lanes_stream.
-            detected_obstacles = self.decode_mlco()
-            self._logger.debug('@{}: Detected {} obstacles'.format(
-                msg.timestamp, len(detected_obstacles)))
-            detected_obstacles_stream.send(erdos.Message(msg.timestamp,
-                                                         detected_obstacles))
+    #         self.frame_index += 1
 
-            self.frame_index += 1
+    #     def decode_mlco(self):
+    #         """Translates an element in the `mlco_list` to pylot.Obstacle format.
+    #         Returns:
+    #         """
+    #         decoded_obstacles = []
 
-        def decode_mlco(self):
-            """Translates an element in the `mlco_list` to pylot.Obstacle format.
-            Returns:
-            """
-            decoded_obstacles = []
+    #         # FIXME: Map mlco list values to obstacle messages.
 
-            # FIXME: Map mlco list values to obstacle messages.
+    #         return decoded_obstacles
 
-            return decoded_obstacles
+    # # NOTE: Should be added to operator_creator.py
 
-    # NOTE: Should be added to operator_creator.py
-
-    def add_obstacle_detection_highjacker(
-            bgr_camera_stream, mlco_list, name='highjacker_obstacle_detection'):
-        """
-        The function creates a `obstacle_detection_stream` for pylot using
-        the `LaneDetectionHighjackerOperator` operator.
-        """
-        op_config = erdos.OperatorConfig(name=name,
-                                         log_file_name=FLAGS.log_file_name,
-                                         csv_log_file_name=FLAGS.csv_log_file_name,
-                                         profile_file_name=FLAGS.profile_file_name)
-        [obstacle_detection_stream] = erdos.connect(ObstacleDetectionHighjackerOperator,
-                                                    op_config, [
-                                                        bgr_camera_stream],
-                                                    mlco_list, FLAGS)
-        return obstacle_detection_stream
+    # def add_obstacle_detection_highjacker(
+    #         bgr_camera_stream, mlco_list, name='highjacker_obstacle_detection'):
+    #     """
+    #     The function creates a `obstacle_detection_stream` for pylot using
+    #     the `LaneDetectionHighjackerOperator` operator.
+    #     """
+    #     op_config = erdos.OperatorConfig(name=name,
+    #                                      log_file_name=FLAGS.log_file_name,
+    #                                      csv_log_file_name=FLAGS.csv_log_file_name,
+    #                                      profile_file_name=FLAGS.profile_file_name)
+    #     [obstacle_detection_stream] = erdos.connect(ObstacleDetectionHighjackerOperator,
+    #                                                 op_config, [
+    #                                                     bgr_camera_stream],
+    #                                                 mlco_list, FLAGS)
+    #     return obstacle_detection_stream
