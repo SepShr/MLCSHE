@@ -10,6 +10,8 @@ from copy import deepcopy
 from deap import base, creator, tools
 from numpy import cos, sqrt
 
+from random import randint
+
 # FIXME: This should be imported from problem_utils.py
 from src.utils.utility import initialize_hetero_vector
 from problem_utils import run_simulation
@@ -24,8 +26,82 @@ MIN_DISTANCE = 0.5  # Minimum distance between members of an archive
 # enumLimits = [[0.0, 1.0]]
 enumLimits = [[0, 2], [0, 6], [0, 1]]
 
-# Define the problem's joint fitness function.
+TOTAL_MLCO_MESSAGES = 2
+TOTAL_OBSTACLES_PER_MESSAGE = 2
 
+
+# Initialization functions
+
+def initialize_mlco(class_):
+    """Initializes an mlco individual.
+    """
+    # Initialize number of obstacles per message.
+    car_per_message = []
+    person_per_message = []
+    for i in range(TOTAL_MLCO_MESSAGES):
+        car_per_message.append(0)
+        person_per_message.append(0)
+
+    for i in range(TOTAL_MLCO_MESSAGES):
+        car_per_message[i] = randint(0, TOTAL_OBSTACLES_PER_MESSAGE-1)
+        person_per_message[i] = randint(
+            0, TOTAL_OBSTACLES_PER_MESSAGE-car_per_message[i]-1)
+
+    # total_obstacles_per_message = []
+    # for i in range(TOTAL_MLCO_MESSAGES):
+    #     total_obstacles_per_message[i] = 0
+
+    # for i in range(len(total_messages)):
+    #     total_obstacles_per_message[i] = car_per_message[i] + person_per_message[i]
+    not_an_obstacle_list = [0, 0, 0, 0, -1]
+    obstacle_id = 0
+    mlco_list = []
+    # Create obstacle message lists.
+    for i in range(TOTAL_MLCO_MESSAGES):
+        obstacle_message = []
+        obstacle_label = 'car'
+        car_obstacle_message = create_obstacle_message(
+            label=obstacle_label, num=car_per_message[i])
+        obstacle_message += car_obstacle_message
+
+        obstacle_label = 'person'
+        person_obstacle_message = create_obstacle_message(
+            label=obstacle_label, num=person_per_message[i])
+        obstacle_message += person_obstacle_message
+
+        for i in range(TOTAL_OBSTACLES_PER_MESSAGE - len(obstacle_message)):
+            obstacle_message.append(not_an_obstacle_list)
+
+        mlco_list.append(obstacle_message)
+    return class_(mlco_list)
+
+# map(create_obstacle_message,key, list[i])
+
+
+def create_obstacle_message(label, num):
+    """
+    Creates an `obstacle_message` for a specific obstacle (`label`).
+    An obstacle_message is a number `num` of obstacles.
+    """
+    obstacle_message = []
+    for i in range(num):
+        obstacle_message.append(create_single_obstacle(obstacle_label=label))
+    return obstacle_message
+
+
+def create_single_obstacle(obstacle_label, frame_width: float = 800, frame_height: float = 600, min_bbox_size: float = 50):
+    """Create an obstacle list given a label.
+    """
+    obstacle_enums_list = [[0.0, frame_width - min_bbox_size],
+                           [min_bbox_size, frame_width],
+                           [0.0, frame_height - min_bbox_size],
+                           [min_bbox_size, frame_height]]
+    obstacle_list = initialize_hetero_vector(limits=obstacle_enums_list)
+    obstacle_list.append(obstacle_label)
+
+    return obstacle_list
+
+# Define the problem's joint fitness function.
 
 # def problem_joint_fitness(x, y):
 #     """This is the problem-specific joint fitness evaluation.
@@ -103,7 +179,9 @@ def problem_joint_fitness(scenario, mlco):
     """Joint fitness evaluation which runs the simulator.
     """
     scenario_deepcopy = deepcopy(scenario)
+    scenario_deepcopy = list(scenario_deepcopy)
     mlco_deepcopy = deepcopy(mlco)
+    mlco_deepcopy = list(mlco_deepcopy)
 
     DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = run_simulation(
         scenario_deepcopy, mlco_deepcopy)
@@ -124,14 +202,21 @@ toolbox = base.Toolbox()
 # Define functions and register them in toolbox.
 toolbox.register(
     "scenario", initialize_hetero_vector,
-    creator.Scenario, enumLimits
+    class_=creator.Scenario, limits=enumLimits
 )
 
 # enum_limits is different for the two types of individuals
+# toolbox.register(
+#     "mlco", initialize_hetero_vector,
+#     creator.OutputMLC, enumLimits
+# )
+
+# FIXME: Add variable to initialize_mlco function such as BBsize.
 toolbox.register(
-    "mlco", initialize_hetero_vector,
-    creator.OutputMLC, enumLimits
+    "mlco", initialize_mlco,
+    creator.OutputMLC
 )
+
 toolbox.register(
     "popScen", tools.initRepeat, list,
     toolbox.scenario, n=SCEN_POP_SIZE

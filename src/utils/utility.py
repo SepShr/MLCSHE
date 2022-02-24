@@ -12,7 +12,7 @@ from copy import deepcopy
 import numpy as np
 
 
-def initialize_hetero_vector(class_, limits):
+def initialize_hetero_vector(limits, class_=None):
     """Initializes a heterogeneous vector of type `class_` based on the values
     in `limits`.
 
@@ -41,7 +41,10 @@ def initialize_hetero_vector(class_, limits):
             if type(limits[i][0]) == int:
                 x += [random.randint(limits[i][0], limits[i][1])]
 
-    return class_(x)
+    if class_:
+        return class_(x)
+    else:
+        return x
 
 
 def create_complete_solution(element, other_element, first_component_class):
