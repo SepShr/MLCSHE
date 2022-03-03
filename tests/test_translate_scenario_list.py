@@ -1,7 +1,7 @@
 import unittest
 
 from deap import base, creator
-from problem_utils import translate_scenario_list
+from simulation_utils import translate_scenario_list
 
 
 class TestTranslateScenarioList(unittest.TestCase):

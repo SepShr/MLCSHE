@@ -121,11 +121,11 @@ class ICCEA:
             # Select, mate (crossover) and mutate individuals that are not in archives.
             ts, \
                 cxpb, \
-                mut_bit_pb, \
                 mut_guass_mu, \
                 mut_guass_sig, \
                 mut_guass_pb, \
-                mut_int_pb = hyperparameters
+                mut_int_pb, \
+                mut_bit_pb = hyperparameters
 
             popScen = self.breed_scenario(
                 popScen, arcScen, self.enumLimits, ts, cxpb, mut_bit_pb,
