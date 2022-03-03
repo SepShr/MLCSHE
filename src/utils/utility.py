@@ -2,6 +2,7 @@
 Set of utility functions which are independent from the `problem` structure.
 """
 
+import configparser
 from datetime import datetime
 import logging
 import os
@@ -550,7 +551,16 @@ def setup_logger(file_log_level='DEBUG', stream_log_level='INFO'):
     # Setup logger.
     logger = logging.getLogger()
 
+    # Get current timestamp to use as a unique ID.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # # Create a log folder for a run.
+    # log_folder = os.path.join('results', str(timestamp))
+    # pathlib.Path(log_folder).mkdir(parents=True, exist_ok=True)
+
+    # parser = configparser.ConfigParser()
+    # parser.set()
+
     log_id = str(timestamp) + '_CCEA' + '.log'
     log_file = os.path.join('results', log_id)
     logging.basicConfig(filename=log_file,
@@ -589,3 +599,16 @@ def setup_logger(file_log_level='DEBUG', stream_log_level='INFO'):
             "stream_log_level can only be DEBUG, INFO, WARNING or ERROR.")
 
     logger.addHandler(stream_handler)
+
+
+def setup_logbook_file():
+    # Create the results folder if it does not exist.
+    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+
+    # Get current timestamp to use as a unique ID.
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    logbook_id = str(timestamp) + '_logbook' + '.log'
+    logbook_file = os.path.join('results', logbook_id)
+
+    return logbook_file

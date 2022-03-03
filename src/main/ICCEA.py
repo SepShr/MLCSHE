@@ -1,3 +1,4 @@
+from copyreg import pickle
 import random
 import logging
 
@@ -10,7 +11,7 @@ from src.utils.utility import (breed_mlco, collaborate,
                                identify_nominal_indices,
                                index_in_complete_solution,
                                max_rank_change_fitness, measure_heom_distance,
-                               rank_change, violate_safety_requirement)
+                               rank_change, setup_logbook_file, violate_safety_requirement)
 
 
 class ICCEA:
@@ -21,6 +22,8 @@ class ICCEA:
 
         # Setup logger.
         self._logger = logging.getLogger(__name__)
+
+        self._logbook_file = setup_logbook_file()
 
     def solve(self, max_gen, hyperparameters, seed=None):
         self._logger.info("CCEA search started.")
@@ -83,7 +86,9 @@ class ICCEA:
                            **record_complete_solution)
 
             print(logbook.stream)
-            self._logger.info(logbook.stream)
+
+            # with open(self._logbook_file, 'wt') as lb_file:
+            #     print(logbook.stream, file=lb_file)
 
             # Some probes
             # fitness_scen_list = [ind.fitness.values[0] for ind in popScen]
@@ -100,6 +105,9 @@ class ICCEA:
                 num_gen, len(solution_archive)))
             self._logger.info(
                 'The best complete solution in solution_archive: {} (fitness: {})'.format(best_solution, best_solution.fitness.values[0]))
+
+            if num_gen == max_gen - 1:
+                break
 
             # Evolve archives and populations for the next generation
             min_distance = 0.2
@@ -130,6 +138,10 @@ class ICCEA:
             popMLCO += arcMLCO
             # popScen.append(x for x in arcScen)
             # popMLCO.append(x for x in arcMLCO)
+
+        # Record the complete logbook.
+        with open(self._logbook_file, 'wb') as lb_file:
+            pickle.dump(logbook, lb_file)
 
         return solution_archive
 
