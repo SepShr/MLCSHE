@@ -10,7 +10,7 @@ from copy import deepcopy
 from deap import base, creator, tools
 from numpy import cos, sqrt
 
-from random import randint
+from random import randint, random, uniform
 
 # FIXME: This should be imported from problem_utils.py
 from src.utils.utility import initialize_hetero_vector
@@ -26,8 +26,8 @@ MIN_DISTANCE = 0.5  # Minimum distance between members of an archive
 # enumLimits = [[0.0, 1.0]]
 enumLimits = [[0, 2], [0, 6], [0, 1]]
 
-TOTAL_MLCO_MESSAGES = 2
-TOTAL_OBSTACLES_PER_MESSAGE = 2
+TOTAL_MLCO_MESSAGES = 10
+TOTAL_OBSTACLES_PER_MESSAGE = 3
 
 
 # Initialization functions
@@ -47,24 +47,19 @@ def initialize_mlco(class_):
         person_per_message[i] = randint(
             0, TOTAL_OBSTACLES_PER_MESSAGE-car_per_message[i]-1)
 
-    # total_obstacles_per_message = []
-    # for i in range(TOTAL_MLCO_MESSAGES):
-    #     total_obstacles_per_message[i] = 0
-
-    # for i in range(len(total_messages)):
-    #     total_obstacles_per_message[i] = car_per_message[i] + person_per_message[i]
     not_an_obstacle_list = [0, 0, 0, 0, -1]
-    obstacle_id = 0
+
     mlco_list = []
+
     # Create obstacle message lists.
     for i in range(TOTAL_MLCO_MESSAGES):
         obstacle_message = []
-        obstacle_label = 'car'
+        obstacle_label = 0  # 'vehicle'
         car_obstacle_message = create_obstacle_message(
             label=obstacle_label, num=car_per_message[i])
         obstacle_message += car_obstacle_message
 
-        obstacle_label = 'person'
+        obstacle_label = 1  # 'person'
         person_obstacle_message = create_obstacle_message(
             label=obstacle_label, num=person_per_message[i])
         obstacle_message += person_obstacle_message
@@ -74,8 +69,6 @@ def initialize_mlco(class_):
 
         mlco_list.append(obstacle_message)
     return class_(mlco_list)
-
-# map(create_obstacle_message,key, list[i])
 
 
 def create_obstacle_message(label, num):
@@ -92,11 +85,14 @@ def create_obstacle_message(label, num):
 def create_single_obstacle(obstacle_label, frame_width: float = 800, frame_height: float = 600, min_bbox_size: float = 50):
     """Create an obstacle list given a label.
     """
-    obstacle_enums_list = [[0.0, frame_width - min_bbox_size],
-                           [min_bbox_size, frame_width],
-                           [0.0, frame_height - min_bbox_size],
-                           [min_bbox_size, frame_height]]
-    obstacle_list = initialize_hetero_vector(limits=obstacle_enums_list)
+    x_min = uniform(0.0, frame_width - min_bbox_size)
+    x_max = uniform(x_min + min_bbox_size, frame_width)
+    y_min = uniform(0.0, frame_height - min_bbox_size)
+    y_max = uniform(y_min + min_bbox_size, frame_height)
+
+    obstacle_list = [x_min, x_max, y_min, y_max]
+
+    # FIXME: Ensure that the labels exist in OBSTACLE_LABELS.
     obstacle_list.append(obstacle_label)
 
     return obstacle_list
