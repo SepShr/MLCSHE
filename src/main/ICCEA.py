@@ -15,7 +15,7 @@ from src.utils.utility import (collaborate,
 
 
 class ICCEA:
-    def __init__(self, creator, toolbox, first_population_enumLimits=None, second_population_enumLimits=None):
+    def __init__(self, creator, toolbox, simulator, first_population_enumLimits=None, second_population_enumLimits=None):
         self.toolbox = toolbox
         self.creator = creator
         self.p1_enumLimits = first_population_enumLimits
@@ -24,6 +24,8 @@ class ICCEA:
         # Setup logger and logbook.
         self._logger = logging.getLogger(__name__)
         self._logbook_file = setup_logbook_file()
+
+        self.simulator = simulator
 
     def solve(self, max_gen, hyperparameters, seed=None):
         self._logger.info("CCEA search started.")
@@ -88,8 +90,9 @@ class ICCEA:
         # Cooperative Coevolutionary Search
         for num_gen in range(max_gen):
             self._logger.info('The current generation is: {}'.format(num_gen))
-            self._logger.info('The Scenario population is: {}'.format(popScen))
-            self._logger.info('The MLCO population is: {}'.format(popMLCO))
+            self._logger.debug(
+                'The Scenario population is: {}'.format(popScen))
+            self._logger.debug('The MLCO population is: {}'.format(popMLCO))
             # Create complete solutions and evaluate individuals
             completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
@@ -170,7 +173,7 @@ class ICCEA:
         x = c[0]
         y = c[1]
 
-        joint_fitness_value = self.toolbox.problem_jfit(x, y)
+        joint_fitness_value = self.toolbox.problem_jfit(self.simulator, x, y)
 
         return (joint_fitness_value,)
 

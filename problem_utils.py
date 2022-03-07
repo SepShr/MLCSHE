@@ -5,7 +5,7 @@ from random import randint, uniform
 
 import search_config as cfg
 
-from simulation_runner import run_simulation
+# from simulation_runner import run_simulation
 from src.utils.utility import mutate_flat_hetero_individual
 
 total_mlco_messages = cfg.total_mlco_messages
@@ -220,7 +220,7 @@ def repair_obstacle_bbox(
 # Define the problem's joint fitness function.
 
 
-def problem_joint_fitness(scenario, mlco):
+def problem_joint_fitness(simulator, scenario, mlco):
     """Joint fitness evaluation which runs the simulator.
     """
     scenario_deepcopy = deepcopy(scenario)
@@ -228,8 +228,9 @@ def problem_joint_fitness(scenario, mlco):
     mlco_deepcopy = deepcopy(mlco)
     mlco_deepcopy = list(mlco_deepcopy)
 
-    DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = run_simulation(
+    DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = simulator.run_simulation(
         scenario_deepcopy, mlco_deepcopy)
 
-    # return DfP_max
-    return DfV_max
+    logger.info('The joint_fitness value is: {}'.format(DfC_min))
+
+    return DfC_min

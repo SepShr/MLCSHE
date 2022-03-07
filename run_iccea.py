@@ -5,15 +5,20 @@ iCCEA Runner.
 from src.main.ICCEA import ICCEA
 from src.utils.utility import setup_logger
 import problem
-from datetime import datetime
+from simulation_runner import Simulator
+# from datetime import datetime
 
 import search_config as cfg
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
 # FIXME: Refactor enumLimits
+# Instantiate simulator instance.
+simulator = Simulator()
+
 solver = ICCEA(
     creator=problem.creator,
     toolbox=problem.toolbox,
+    simulator=simulator,
     # more parameters can be added to better define the problem
     first_population_enumLimits=cfg.scenario_enumLimits
 )
