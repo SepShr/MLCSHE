@@ -19,6 +19,7 @@ solver = ICCEA(
 )
 
 hyperparameters = [
+    cfg.min_distance,
     cfg.tournament_selection,
     cfg.crossover_probability,
     cfg.guassian_mutation_mean,

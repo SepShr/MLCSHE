@@ -60,13 +60,16 @@ class ICCEA:
         logbook.chapters["size"].header = "min", "avg", "max"
 
         # Set the hyperparameter values.
-        ts, \
+        min_dist,\
+            ts, \
             cxpb, \
             mut_guass_mu, \
             mut_guass_sig, \
             mut_guass_pb, \
             mut_int_pb, \
             mut_bit_pb = hyperparameters
+        self._logger.info(
+            'Minimum distance threshold is set to: {}'.format(min_dist))
         self._logger.info(
             'Tournament selection size is set to: {}'.format(ts))
         self._logger.info(
@@ -127,12 +130,11 @@ class ICCEA:
                 break
 
             # Evolve archives and populations for the next generation
-            min_distance = 0.2
             arcScen = self.update_archive(
-                popScen, popMLCO, completeSolSet, min_distance
+                popScen, popMLCO, completeSolSet, min_dist
             )
             arcMLCO = self.update_archive(
-                popMLCO, popScen, completeSolSet, min_distance
+                popMLCO, popScen, completeSolSet, min_dist
             )
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
