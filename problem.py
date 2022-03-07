@@ -9,7 +9,7 @@ from deap import base, creator, tools
 
 import search_config as cfg
 
-from problem_utils import initialize_mlco, problem_joint_fitness
+from problem_utils import initialize_mlco, mutate_scenario, problem_joint_fitness, mutate_mlco
 
 # FIXME: This should be imported from problem_utils.py
 from src.utils.utility import initialize_hetero_vector
@@ -20,10 +20,6 @@ min_distance = cfg.min_distance  # Minimum distance between members of an archiv
 
 # The list of lower and upper limits for enumerationed types in sceanrio.
 scen_enumLimits = cfg.scenario_enumLimits
-
-TOTAL_MLCO_MESSAGES = 10
-TOTAL_OBSTACLES_PER_MESSAGE = 3
-
 
 # Create fitness and individual datatypes.
 # creator.create("FitnessMax", base.Fitness, weights=(1.0,))   # Original formulation of the problem.
@@ -40,7 +36,6 @@ toolbox.register(
     class_=creator.Scenario, limits=scen_enumLimits
 )
 
-# FIXME: Add variable to initialize_mlco function such as BBsize.
 toolbox.register(
     "mlco", initialize_mlco,
     creator.OutputMLC
@@ -56,3 +51,13 @@ toolbox.register(
 )
 
 toolbox.register("problem_jfit", problem_joint_fitness)
+
+toolbox.register(
+    "select", tools.selTournament,
+    tournsize=cfg.tournament_selection, fit_attr='fitness'
+)
+
+toolbox.register("crossover", tools.cxUniform)
+
+toolbox.register("mutate_mlco", mutate_mlco)
+toolbox.register("mutate_scenario", mutate_scenario)

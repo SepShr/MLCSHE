@@ -1,13 +1,18 @@
 from copy import deepcopy
+from deap import tools
+import logging
 from random import randint, uniform
 
 import search_config as cfg
 
 from simulation_runner import run_simulation
+from src.utils.utility import mutate_flat_hetero_individual
 
 total_mlco_messages = cfg.total_mlco_messages
 total_obstacles_per_message = cfg.total_obstacles_per_message
+obstacle_enumLimits = cfg.obstacle_label_enum_limits
 
+logger = logging.getLogger(__name__)
 # Initialization functions
 
 
@@ -26,7 +31,7 @@ def initialize_mlco(class_):
         person_per_message[i] = randint(
             0, total_obstacles_per_message-car_per_message[i]-1)
 
-    not_an_obstacle_list = [0, 0, 0, 0, -1]
+    not_an_obstacle_list = [0.0, 0.0, 0.0, 0.0, -1]
 
     mlco_list = []
 
@@ -61,13 +66,16 @@ def create_obstacle_message(label, num):
     return obstacle_message
 
 
-def create_single_obstacle(obstacle_label, frame_width: float = 800, frame_height: float = 600, min_bbox_size: float = 50):
+def create_single_obstacle(
+        obstacle_label, frame_width: float = cfg.frame_width,
+        frame_height: float = cfg.frame_height,
+        min_bbox_size: float = cfg.min_boundingbox_size):
     """Create an obstacle list given a label.
     """
-    x_min = uniform(0.0, frame_width - min_bbox_size)
-    x_max = uniform(x_min + min_bbox_size, frame_width)
-    y_min = uniform(0.0, frame_height - min_bbox_size)
-    y_max = uniform(y_min + min_bbox_size, frame_height)
+    x_min = round(uniform(0.0, frame_width - min_bbox_size), 3)
+    x_max = round(uniform(x_min + min_bbox_size, frame_width), 3)
+    y_min = round(uniform(0.0, frame_height - min_bbox_size), 3)
+    y_max = round(uniform(y_min + min_bbox_size, frame_height), 3)
 
     obstacle_list = [x_min, x_max, y_min, y_max]
 
@@ -75,6 +83,139 @@ def create_single_obstacle(obstacle_label, frame_width: float = 800, frame_heigh
     obstacle_list.append(obstacle_label)
 
     return obstacle_list
+
+
+def mutate_scenario(
+        scenario, scenario_enumLimits,
+        mutbpb, mutgmu, mutgsig, mutgpb, mutipb):
+    """Mutates a scenario individual.
+    """
+    return mutate_flat_hetero_individual(scenario, scenario_enumLimits,
+                                         mutbpb, mutgmu,
+                                         mutgsig, mutgpb, mutipb)
+
+
+def mutate_mlco(
+        mlco, mutgmu, mutgsig, mutgpb, mutipb, enumLimits=obstacle_enumLimits):
+    """Mutates a mlco individual."""
+    # Use multiprocessing for each obstacle
+    num_messages = len(mlco)
+    # print('num messages is: ' + str(num_messages))
+    num_obstacles_per_message = len(mlco[0])
+    # print(f'obs_per_msg is: {num_obstacles_per_message}')
+
+    for i in range(num_messages):
+        for j in range(num_obstacles_per_message):
+            mlco[i][j] = mutate_mlco_element(
+                mlco[i][j], enumLimits,
+                mutgmu, mutgsig, mutgpb, mutipb)
+            # print(f'mlco[{i}][{j}] is: {mlco[i][j]}')
+
+    return mlco
+
+
+def mutate_mlco_element(mlco_element, label_enum_limit, mutgmu, mutgsig, mutgpb, mutipb):
+    """Mutates an atomic element the mlco message.
+#     Currently the shape of the mlco_element is assumed to be:
+#     `[flt, flt, flt, flt, int]`
+
+#     NOTE: The implementation must change when the target mlc changes!
+    """
+    mlco_element_label = [mlco_element[4]]
+    # mlco_element_label = mlco_element[4]
+    mlco_element_bbox = mlco_element[:4]
+
+    # mutated_label = randint(label_enum_limit[0], label_enum_limit[1])
+    mutated_label = list(tools.mutUniformInt(
+        mlco_element_label, label_enum_limit[0], label_enum_limit[1], mutipb)[0])
+
+    # if mutated_label == -1:
+    if mutated_label[0] == -1:
+        return [0.0, 0.0, 0.0, 0.0, -1]
+    else:
+        if mlco_element_label == -1:
+            # if mlco_element_label[0] == -1:
+            # return create_single_obstacle(mutated_label)
+            return create_single_obstacle(mutated_label[0])
+        else:
+            mutated_mlco_element = list(tools.mutGaussian(
+                mlco_element_bbox, mu=mutgmu, sigma=mutgsig, indpb=mutgpb)[0])
+
+            repaired_mlco_element = repair_obstacle_bbox(mutated_mlco_element)
+
+            for i in range(len(repaired_mlco_element)):
+                repaired_mlco_element[i] = round(repaired_mlco_element[i], 3)
+
+            # return repaired_mlco_element + [mutated_label]
+            return mutated_mlco_element + mutated_label
+
+
+def repair_obstacle_bbox(
+        obstacle, max_width=cfg.frame_width, max_height=cfg.frame_height, min_bbox_size=cfg.min_boundingbox_size):
+    """Checks whether the mutated obstacle is valid. If not, it will
+    repair them.
+
+    Assumptions:
+    1. Obstacle has the following shape: 
+    `[x_min, x_max, y_min, y_max]`
+
+    2. The min bound for x and y is 0.0.
+    """
+    # Basic check and repair.
+    if obstacle[1] < obstacle[0]:
+        obstacle[1] = obstacle[0] + min_bbox_size
+        # logger.debug('x_max was less than x_min.')
+
+    if obstacle[3] < obstacle[2]:
+        obstacle[3] = obstacle[2] + min_bbox_size
+        # logger.debug('y_max was less than y_min.')
+
+    # Check and repair the bound of x_min.
+    if obstacle[0] < 0.0:
+        obstacle[0] = 0.0
+        # logger.debug("x_min was out of bound.")
+
+    # Check and repair the bound of x_max.
+    if obstacle[1] > max_width:
+        obstacle[1] = max_width
+        # logger.debug("x_max was out of bound.")
+
+    # Check and repair the bound of y_min.
+    if obstacle[2] < 0.0:
+        obstacle[2] = 0.0
+        # logger.debug("y_min was out of bound.")
+
+    # Check the and repair bound of y_max.
+    if obstacle[3] > max_height:
+        obstacle[3] = max_height
+        # logger.debug("y_max was out of bound.")
+
+    # Check and repair the min_boundingbox_size.
+    if obstacle[1] - obstacle[0] < min_bbox_size:
+        if obstacle[1] < max_width - min_bbox_size:
+            obstacle[1] += min_bbox_size - (obstacle[1] - obstacle[0])
+        else:
+            obstacle[0] += (obstacle[1] - obstacle[0]) - min_bbox_size
+        # logger.debug("bbox width was less than the min_bbox size.")
+
+    if obstacle[3] - obstacle[2] < min_bbox_size:
+        if obstacle[3] < max_height - min_bbox_size:
+            obstacle[3] += min_bbox_size - (obstacle[3] - obstacle[2])
+        else:
+            obstacle[2] += (obstacle[3] - obstacle[2]) - min_bbox_size
+        # logger.debug("bbox height was less than the min_bbox size.")
+
+    return obstacle
+
+
+# TEST
+# mlco = [[[260.0, 480.0, 300.0, 400.0, 0], [0.0, 0.0, 0.0, 0.0, -1]], [[0.0, 0.0, 0.0, 0.0, -1], [300.0, 490.0, 350.0, 410.0, 0]]]
+# obstacle_enumLimits = [-1, 1]
+# mutbpb = 0.5
+# mutgmu = 0
+# mutgsig = 0.125
+# mutgpb = 0.5
+# mutipb = 0.5
 
 # Define the problem's joint fitness function.
 

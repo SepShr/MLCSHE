@@ -15,7 +15,7 @@ solver = ICCEA(
     creator=problem.creator,
     toolbox=problem.toolbox,
     # more parameters can be added to better define the problem
-    enumLimits=cfg.scenario_enumLimits
+    first_population_enumLimits=cfg.scenario_enumLimits
 )
 
 hyperparameters = [
