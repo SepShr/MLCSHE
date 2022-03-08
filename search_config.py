@@ -6,7 +6,6 @@ number_of_generations = 2
 random_seed = 10
 
 # Evolution hyperparameters
-minimum_distance = 0.2
 tournament_selection = 2
 crossover_probability = 0.5
 guassian_mutation_mean = 0

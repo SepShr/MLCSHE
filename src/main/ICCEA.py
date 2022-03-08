@@ -70,29 +70,43 @@ class ICCEA:
             mut_guass_pb, \
             mut_int_pb, \
             mut_bit_pb = hyperparameters
+        # self._logger.info(
+        #     'Minimum distance threshold is set to: {}'.format(min_dist))
+        # self._logger.info(
+        #     'Tournament selection size is set to: {}'.format(ts))
+        # self._logger.info(
+        #     'Crossover probability (rate) is set to: {}'.format(cxpb))
+        # self._logger.info(
+        #     'Gaussian mutation mean is set to: {}'.format(mut_guass_mu))
+        # self._logger.info(
+        #     'Gaussian mutation standard deviation is set to: {}'.format(mut_guass_sig))
+        # self._logger.info(
+        #     'Gaussian mutation probability (rate) is set to: {}'.format(mut_guass_pb))
+        # self._logger.info(
+        #     'Integer mutation probability (rate) is set to: {}'.format(mut_int_pb))
+        # self._logger.info(
+        #     'Bitflip mutation probability (rate) is set to: {}'.format(mut_bit_pb))
         self._logger.info(
-            'Minimum distance threshold is set to: {}'.format(min_dist))
+            'minimum_distance_threshold={}'.format(min_dist))
+        self._logger.info('tournament_selection_size={}'.format(ts))
+        self._logger.info('crossover_probability={}'.format(cxpb))
+        self._logger.info('gaussian_mutation_mean+{}'.format(mut_guass_mu))
         self._logger.info(
-            'Tournament selection size is set to: {}'.format(ts))
+            'gaussian_mutation_standard_deviation={}'.format(mut_guass_sig))
         self._logger.info(
-            'Crossover probability (rate) is set to: {}'.format(cxpb))
-        self._logger.info(
-            'Gaussian mutation mean is set to: {}'.format(mut_guass_mu))
-        self._logger.info(
-            'Gaussian mutation standard deviation is set to: {}'.format(mut_guass_sig))
-        self._logger.info(
-            'Gaussian mutation probability (rate) is set to: {}'.format(mut_guass_pb))
-        self._logger.info(
-            'Integer mutation probability (rate) is set to: {}'.format(mut_int_pb))
-        self._logger.info(
-            'Bitflip mutation probability (rate) is set to: {}'.format(mut_bit_pb))
+            'gaussian_mutation_probability={}'.format(mut_guass_pb))
+        self._logger.info('integer_mutation_probability={}'.format(mut_int_pb))
+        self._logger.info('bitflip_mutation_probability={}'.format(mut_bit_pb))
 
         # Cooperative Coevolutionary Search
         for num_gen in range(max_gen):
-            self._logger.info('The current generation is: {}'.format(num_gen))
-            self._logger.debug(
-                'The Scenario population is: {}'.format(popScen))
-            self._logger.debug('The MLCO population is: {}'.format(popMLCO))
+            # self._logger.info('The current generation is: {}'.format(num_gen))
+            self._logger.info('current_generation={}'.format(num_gen))
+            # self._logger.debug(
+            #     'The Scenario population is: {}'.format(popScen))
+            self._logger.debug('scenario_population={}'.format(popScen))
+            # self._logger.debug('The MLCO population is: {}'.format(popMLCO))
+            self._logger.debug('mlco_population={}'.format(popMLCO))
             # Create complete solutions and evaluate individuals
             completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
@@ -124,10 +138,14 @@ class ICCEA:
 
             best_solution = sorted(
                 complete_solution_archive, key=lambda x: x.fitness.values[0])[-1]
-            self._logger.info('Size of the complete_solution_archive at generation {} is: {}'.format(
+            # self._logger.info('Size of the complete_solution_archive at generation {} is: {}'.format(
+            #     num_gen, len(complete_solution_archive)))
+            self._logger.info('at generation={}, complete_solution_archive_size={}'.format(
                 num_gen, len(complete_solution_archive)))
+            # self._logger.info(
+            #     'The best complete solution in complete_solution_archive: {} (fitness={})'.format(best_solution, best_solution.fitness.values[0]))
             self._logger.info(
-                'The best complete solution in complete_solution_archive: {} (fitness: {})'.format(best_solution, best_solution.fitness.values[0]))
+                'best_complete_solution={} | fitness={}'.format(best_solution, best_solution.fitness.values[0]))
 
             if num_gen == max_gen - 1:
                 break

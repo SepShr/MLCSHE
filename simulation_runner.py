@@ -26,15 +26,22 @@ class Simulator():
         """
         self.simulation_counter += 1
 
-        logger.debug('Simulation number is: {}'.format(
+        simulation_fitness_values = {}
+
+        # logger.debug('Simulation number is: {}'.format(
+        #     self.simulation_counter))
+        logger.debug('simulation_counter={}'.format(
             self.simulation_counter))
 
         scenario_list_deepcopy = copy.deepcopy(scenario_list)
-        logger.debug('Scenario individual considered for simulation is {}'.format(
+        # logger.debug('Scenario individual considered for simulation is {}'.format(
+        #     scenario_list_deepcopy))
+        logger.debug('scenario={}'.format(
             scenario_list_deepcopy))
         mlco_list_deepcopy = copy.deepcopy(mlco_list)
-        logger.debug('Mlco individual considered for simulation is {}'.format(
-            mlco_list_deepcopy))
+        # logger.debug('Mlco individual considered for simulation is {}'.format(
+        #     mlco_list_deepcopy))
+        logger.debug('mlco={}'.format(mlco_list_deepcopy))
 
         # Reset the simulation setup.
         logger.debug("Resetting the simulation setup.")
@@ -65,13 +72,24 @@ class Simulator():
                 'Found the results of simulation in {}'.format(results_file_name))
             DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = get_values(
                 simulation_log_file_name)
-            logger.info(
-                f'Fitness values:\nDistance from centreline: {DfC_min}, Distance from another vehicle: {DfV_max}, Distance from pedestrian: {DfP_max}, ???: {DfM_max}, Distance Travelled: {DT_max}, Traffic Lights: {traffic_lights_max}')
+
+            simulation_fitness_values = {
+                'distance_from_center': DfC_min,
+                'distance_from_vehicle': DfV_max,
+                'distance_from_pedestrian': DfP_max,
+                'distance_from_obstacles': DfM_max,
+                'distance_traveled': DT_max,
+                'violated_traffic_lights': traffic_lights_max
+            }
+
+            logger.info('simulation_fitness_values={}'.format(
+                simulation_fitness_values))
+
             return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
         else:
-            logger.warning(
+            logger.error(
                 'Did not find the simulation results, i.e., {}'.format(results_file_name))
-            logger.warning("Returning 1000 for all simulation results.")
+            logger.error("Returning 1000 for all simulation results.")
             return 1000, 1000, 1000, 1000, 1000, 1000
 
 

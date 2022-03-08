@@ -118,6 +118,8 @@ def translate_scenario_list(scenario_list):
 
     # scenario_flag['simulator_weather='] = weather_flag
 
+    logger.debug('scenario_flag={}'.format(scenario_flag))
+
     return scenario_flag
 
 
@@ -243,6 +245,8 @@ def update_config_file(
 
     base_config.close()
     simulation_config.close()
+
+# FIXME: Maybe add the simulation ID (counter) to the log file's name.
 
 
 def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.container_name):
@@ -371,55 +375,55 @@ def scenario_finished():
     return False
 
 
-def run_simulation(scenario_list, mlco_list):
-    """Ensures that the simulation setup is ready, updates simulation
-    configuration given `scenario_list` and `mlco_list` and, runs the
-    simulation, records its output and 
-    """
-    scenario_list_deepcopy = copy.deepcopy(scenario_list)
-    logger.info('Scenario individual considered for simulation is {}'.format(
-        scenario_list_deepcopy))
-    mlco_list_deepcopy = copy.deepcopy(mlco_list)
-    logger.info('Mlco individual considered for simulation is {}'.format(
-        mlco_list_deepcopy))
+# def run_simulation(scenario_list, mlco_list):
+#     """Ensures that the simulation setup is ready, updates simulation
+#     configuration given `scenario_list` and `mlco_list` and, runs the
+#     simulation, records its output and
+#     """
+#     scenario_list_deepcopy = copy.deepcopy(scenario_list)
+#     logger.info('Scenario individual considered for simulation is {}'.format(
+#         scenario_list_deepcopy))
+#     mlco_list_deepcopy = copy.deepcopy(mlco_list)
+#     logger.info('Mlco individual considered for simulation is {}'.format(
+#         mlco_list_deepcopy))
 
-    # Reset the simulation setup.
-    logger.debug("Resetting the simulation setup.")
-    reset_sim_setup()
-    # Update the configuration of the simulation and the serialized mlco_list
-    simulation_log_file_name = update_sim_config(
-        scenario_list_deepcopy, mlco_list_deepcopy)
-    logger.debug("Simulation configuration is updated.")
-    # Run Carla and Pylot in the docker container with appropriate config
-    run_carla_and_pylot()
+#     # Reset the simulation setup.
+#     logger.debug("Resetting the simulation setup.")
+#     reset_sim_setup()
+#     # Update the configuration of the simulation and the serialized mlco_list
+#     simulation_log_file_name = update_sim_config(
+#         scenario_list_deepcopy, mlco_list_deepcopy)
+#     logger.debug("Simulation configuration is updated.")
+#     # Run Carla and Pylot in the docker container with appropriate config
+#     run_carla_and_pylot()
 
-    # Monitor scenario execution and end it when its over.
-    counter = 0
+#     # Monitor scenario execution and end it when its over.
+#     counter = 0
 
-    for counter in trange(cfg.simulation_duration):
-        time.sleep(1)
-        if scenario_finished():
-            break
-    stop_container()
-    logger.info("End of simulation.")
+#     for counter in trange(cfg.simulation_duration):
+#         time.sleep(1)
+#         if scenario_finished():
+#             break
+#     stop_container()
+#     logger.info("End of simulation.")
 
-    # Copy the results of the simulation.
-    copy_to_host(cfg.container_name, simulation_log_file_name,
-                 cfg.simulation_results_source_directory, cfg.simulation_results_destination_path)
-    results_file_name = 'results/' + simulation_log_file_name
-    if os.path.exists(results_file_name):
-        logger.debug(
-            'Found the results of simulation in {}'.format(results_file_name))
-        DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = get_values(
-            simulation_log_file_name)
-        logger.info(
-            f'{DfC_min}, {DfV_max}, {DfP_max}, {DfM_max}, {DT_max}, {traffic_lights_max}')
-        return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
-    else:
-        logger.warning(
-            'Did not find the simulation results, i.e., {}'.format(results_file_name))
-        logger.warning("Returning 1000 for all simulation results.")
-        return 1000, 1000, 1000, 1000, 1000, 1000
+#     # Copy the results of the simulation.
+#     copy_to_host(cfg.container_name, simulation_log_file_name,
+#                  cfg.simulation_results_source_directory, cfg.simulation_results_destination_path)
+#     results_file_name = 'results/' + simulation_log_file_name
+#     if os.path.exists(results_file_name):
+#         logger.debug(
+#             'Found the results of simulation in {}'.format(results_file_name))
+#         DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = get_values(
+#             simulation_log_file_name)
+#         logger.info(
+#             f'{DfC_min}, {DfV_max}, {DfP_max}, {DfM_max}, {DT_max}, {traffic_lights_max}')
+#         return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
+#     else:
+#         logger.warning(
+#             'Did not find the simulation results, i.e., {}'.format(results_file_name))
+#         logger.warning("Returning 1000 for all simulation results.")
+#         return 1000, 1000, 1000, 1000, 1000, 1000
 
 
 # def main():

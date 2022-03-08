@@ -231,6 +231,6 @@ def problem_joint_fitness(simulator, scenario, mlco):
     DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = simulator.run_simulation(
         scenario_deepcopy, mlco_deepcopy)
 
-    logger.info('The joint_fitness value is: {}'.format(DfC_min))
+    logger.info('joint_fitness_value={}'.format(DfC_min))
 
     return DfC_min
