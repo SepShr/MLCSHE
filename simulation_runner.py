@@ -49,7 +49,7 @@ class Simulator():
         # Update the configuration of the simulation and the serialized mlco_list
         simulation_log_file_name = update_sim_config(
             scenario_list_deepcopy, mlco_list_deepcopy)
-        logger.debug("Simulation configuration is updated.")
+        logger.debug("Simulation configuration updated.")
         # Run Carla and Pylot in the docker container with appropriate config
         run_carla_and_pylot()
 

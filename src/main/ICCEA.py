@@ -90,7 +90,7 @@ class ICCEA:
             'minimum_distance_threshold={}'.format(min_dist))
         self._logger.info('tournament_selection_size={}'.format(ts))
         self._logger.info('crossover_probability={}'.format(cxpb))
-        self._logger.info('gaussian_mutation_mean+{}'.format(mut_guass_mu))
+        self._logger.info('gaussian_mutation_mean={}'.format(mut_guass_mu))
         self._logger.info(
             'gaussian_mutation_standard_deviation={}'.format(mut_guass_sig))
         self._logger.info(
