@@ -5,14 +5,12 @@ import pickle
 import subprocess as sub
 import time
 import logging
-from tqdm import trange
-from configparser import ConfigParser
 
 from datetime import datetime
+from road_factory import get_road
 from uuid import uuid4
 
 import simulation_config as cfg
-from data_handler import get_values
 
 CWD = os.getcwd()
 
@@ -112,6 +110,11 @@ def translate_scenario_list(scenario_list):
         str(num_of_pedestrians) + "\n"
     logger.debug('Number of pedestrians is set to {}'.format(
         str(num_of_pedestrians)))
+
+    # Select the road.
+    road_flag = {}
+    road_flag = get_road(scenario_list, road_flag)
+    scenario_flag.update(road_flag)
 
     # Set target speed of ego vehicle.
     # scenario_flag['target_speed='] =  "\n--target_speed=" + str(scenario_list[?] / 3.6)

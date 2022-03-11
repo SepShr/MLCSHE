@@ -1,8 +1,8 @@
 # Search hyperparameters
-scenario_population_size = 2  # Size of the scenario population
-mlco_population_size = 2  # Size of the MLC output population
+scenario_population_size = 5  # Size of the scenario population
+mlco_population_size = 5  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
-number_of_generations = 2
+number_of_generations = 5
 random_seed = 10
 
 # Evolution hyperparameters
@@ -15,8 +15,8 @@ integer_mutation_probability = 0.5
 bitflip_mutation_probability = 1
 
 # Problem-specific parameters
-scenario_enumLimits = [[0, 2], [0, 6], [0, 1]]
-total_mlco_messages = 10
+scenario_enumLimits = [[0, 2], [0, 6], [0, 1], [0, 3], [0, 3], [0, 0], [0, 2]]
+total_mlco_messages = 900
 total_obstacles_per_message = 3
 frame_width = 800.0
 frame_height = 480.0
