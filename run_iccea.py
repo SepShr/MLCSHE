@@ -39,7 +39,8 @@ def main():
     ]
 
     # Setup logger.
-    setup_logger(file_log_level='DEBUG', stream_log_level='INFO')
+    setup_logger(file_name='CCEA', file_log_level='DEBUG',
+                 stream_log_level='INFO')
 
     # User does not need to modify anything but `problem.py`
     solution = solver.solve(

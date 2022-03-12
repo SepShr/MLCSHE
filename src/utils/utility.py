@@ -590,7 +590,7 @@ def violate_safety_requirement(complete_solution):
         return False
 
 
-def setup_logger(file_log_level='DEBUG', stream_log_level='INFO'):
+def setup_logger(file_name: str, file_log_level='DEBUG', stream_log_level='INFO'):
     """Initilizes and formats the root logger. It also sets the log
     levels for the log file and stream handler.
     """
@@ -609,7 +609,7 @@ def setup_logger(file_log_level='DEBUG', stream_log_level='INFO'):
     # parser = configparser.ConfigParser()
     # parser.set()
 
-    log_id = str(timestamp) + '_CCEA' + '.log'
+    log_id = str(timestamp) + '_' + file_name + '.log'
     log_file = os.path.join('results', log_id)
     logging.basicConfig(filename=log_file,
                         format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
