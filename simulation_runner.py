@@ -6,10 +6,9 @@ import time
 from tqdm import trange
 
 import simulation_config as cfg
-from data_handler import get_values
 from simulation_utils import (copy_to_host, reset_sim_setup, run_carla_and_pylot,
                               scenario_finished, stop_container,
-                              update_sim_config)
+                              update_sim_config, get_values)
 
 
 class Simulator():
