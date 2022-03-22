@@ -1,91 +1,171 @@
-import os
-import signal
+from concurrent.futures import ProcessPoolExecutor
+import pickle
 import random
-import subprocess as sub
+import logging
 
 import numpy as np
 from deap import tools
-from problem_utils import (run_carla, run_pylot, update_sim_config)
-# evaluate, evaluate_joint_fitness\
-from src.utils.utility import (breed_mlco, collaborate,
+from src.utils.utility import (collaborate,
                                create_complete_solution, evaluate_individual,
                                find_individual_collaborator,
                                find_max_fv_individual,
                                identify_nominal_indices,
                                index_in_complete_solution,
                                max_rank_change_fitness, measure_heom_distance,
-                               rank_change, violate_safety_requirement)
+                               rank_change, setup_logbook_file, violate_safety_requirement)
 
 
 class ICCEA:
-    def __init__(self, creator, toolbox, enumLimits):
+    def __init__(self, creator, toolbox, simulator, first_population_enumLimits=None, second_population_enumLimits=None):
         self.toolbox = toolbox
         self.creator = creator
-        self.enumLimits = enumLimits
+        self.p1_enumLimits = first_population_enumLimits
+        self.p2_enumLimits = second_population_enumLimits
 
-    def solve(self, max_gen):
+        # Setup logger and logbook.
+        self._logger = logging.getLogger(__name__)
+        self._logbook_file = setup_logbook_file()
+
+        self.simulator = simulator
+
+    def solve(self, max_gen, hyperparameters, seed=None):
+        self._logger.info("CCEA search started.")
+        self._logger.info(
+            'Maximum number of generations is: {}'.format(max_gen))
+
+        # Set the random module seed.
+        random.seed(seed)
+        self._logger.info('Random seed is set to: {}'.format(seed))
+
         # Instantiate individuals and populations
         popScen = self.toolbox.popScen()
         popMLCO = self.toolbox.popMLCO()
         arcScen = self.toolbox.clone(popScen)
         arcMLCO = self.toolbox.clone(popMLCO)
-        solutionArchive = []
+        complete_solution_archive = []
+        solution_archive = []
 
-        print('popScen is: ' + str(popScen))
-        print('PopMLCO is: ' + str(popMLCO))
+        # Adding multiple statistics.
+        stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
+        stats_size = tools.Statistics(key=len)
+        mstats = tools.MultiStatistics(fitness=stats_fit, size=stats_size)
+        mstats.register("avg", np.mean, axis=0)
+        mstats.register("std", np.std, axis=0)
+        mstats.register("min", np.min, axis=0)
+        mstats.register("max", np.max, axis=0)
+
+        # Instantiating logbook that records search-specific statistics.
+        logbook = tools.Logbook()
+
+        # FIXME: Maybe add the number of evaluations
+        logbook.header = "gen", "type", "fitness", "size"
+        logbook.chapters["fitness"].header = "min", "avg", "max", "std"
+        logbook.chapters["size"].header = "min", "avg", "max"
+
+        # Set the hyperparameter values.
+        min_dist,\
+            ts, \
+            cxpb, \
+            mut_guass_mu, \
+            mut_guass_sig, \
+            mut_guass_pb, \
+            mut_int_pb, \
+            mut_bit_pb = hyperparameters
+        # self._logger.info(
+        #     'Minimum distance threshold is set to: {}'.format(min_dist))
+        # self._logger.info(
+        #     'Tournament selection size is set to: {}'.format(ts))
+        # self._logger.info(
+        #     'Crossover probability (rate) is set to: {}'.format(cxpb))
+        # self._logger.info(
+        #     'Gaussian mutation mean is set to: {}'.format(mut_guass_mu))
+        # self._logger.info(
+        #     'Gaussian mutation standard deviation is set to: {}'.format(mut_guass_sig))
+        # self._logger.info(
+        #     'Gaussian mutation probability (rate) is set to: {}'.format(mut_guass_pb))
+        # self._logger.info(
+        #     'Integer mutation probability (rate) is set to: {}'.format(mut_int_pb))
+        # self._logger.info(
+        #     'Bitflip mutation probability (rate) is set to: {}'.format(mut_bit_pb))
+        self._logger.info(
+            'minimum_distance_threshold={}'.format(min_dist))
+        self._logger.info('tournament_selection_size={}'.format(ts))
+        self._logger.info('crossover_probability={}'.format(cxpb))
+        self._logger.info('gaussian_mutation_mean={}'.format(mut_guass_mu))
+        self._logger.info(
+            'gaussian_mutation_standard_deviation={}'.format(mut_guass_sig))
+        self._logger.info(
+            'gaussian_mutation_probability={}'.format(mut_guass_pb))
+        self._logger.info('integer_mutation_probability={}'.format(mut_int_pb))
+        self._logger.info('bitflip_mutation_probability={}'.format(mut_bit_pb))
 
         # Cooperative Coevolutionary Search
         for num_gen in range(max_gen):
-            print('the current generation is: ' + str(num_gen))
+            # self._logger.info('The current generation is: {}'.format(num_gen))
+            self._logger.info('current_generation={}'.format(num_gen))
+            # self._logger.debug(
+            #     'The Scenario population is: {}'.format(popScen))
+            self._logger.debug('scenario_population={}'.format(popScen))
+            # self._logger.debug('The MLCO population is: {}'.format(popMLCO))
+            self._logger.debug('mlco_population={}'.format(popMLCO))
             # Create complete solutions and evaluate individuals
             completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
 
             # Record the complete solutions that violate the requirement r
-            # solutionArchive.append(
+            # complete_solution_archive.append(
             #     cs for cs in completeSolSet if violate_safety_requirement(cs))
             for cs in completeSolSet:
-                # if violate_safety_requirement(cs):  # DEBUG: to add all complete solutions
-                solutionArchive.append(cs)
+                complete_solution_archive.append(cs)
+                # FIXME: Fix the below function.
+                if violate_safety_requirement(cs):
+                    solution_archive.append(cs)
 
-            # Some probes
-            # fitness_scen_list = [ind.fitness.values[0] for ind in popScen]
-            # avg_fitness_scen = sum(fitness_scen_list) / len(popScen)
-            # print('the avg for popScen fitness is: ' + str(avg_fitness_scen))
+            # Compiling statistics on the populations and completeSolSet.
+            record_scenario = mstats.compile(popScen)
+            record_mlco = mstats.compile(popMLCO)
+            record_complete_solution = mstats.compile(completeSolSet)
 
-            # fitness_mlco_list = [ind.fitness.values[0] for ind in popMLCO]
-            # avg_fitness_mlco = sum(fitness_mlco_list) / len(popMLCO)
-            # print('the avg for popMLCO fitness is: ' + str(avg_fitness_mlco))
+            logbook.record(gen=num_gen, type='scen',
+                           **record_scenario)
+            logbook.record(gen=num_gen, type='mlco', **record_mlco)
+            logbook.record(gen=num_gen, type='cs',
+                           **record_complete_solution)
 
-            # print best complete solution found
+            print(logbook.stream)
+
+            # with open(self._logbook_file, 'wt') as lb_file:
+            #     print(logbook.stream, file=lb_file)
+
             best_solution = sorted(
-                solutionArchive, key=lambda x: x.fitness.values[0])[-1]
-            print(f'len(solutionArchive): {len(solutionArchive)}')
-            print(
-                f'the best complete solution in solutionArchive: {best_solution} (fitness: {best_solution.fitness.values[0]})')
+                complete_solution_archive, key=lambda x: x.fitness.values[0])[-1]
+            # self._logger.info('Size of the complete_solution_archive at generation {} is: {}'.format(
+            #     num_gen, len(complete_solution_archive)))
+            self._logger.info('at generation={}, complete_solution_archive_size={}'.format(
+                num_gen, len(complete_solution_archive)))
+            # self._logger.info(
+            #     'The best complete solution in complete_solution_archive: {} (fitness={})'.format(best_solution, best_solution.fitness.values[0]))
+            self._logger.info(
+                'best_complete_solution={} | fitness={}'.format(best_solution, best_solution.fitness.values[0]))
+
+            if num_gen == max_gen - 1:
+                break
 
             # Evolve archives and populations for the next generation
-            min_distance = 0.2
             arcScen = self.update_archive(
-                popScen, popMLCO, completeSolSet, min_distance
+                popScen, popMLCO, completeSolSet, min_dist
             )
             arcMLCO = self.update_archive(
-                popMLCO, popScen, completeSolSet, min_distance
+                popMLCO, popScen, completeSolSet, min_dist
             )
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
-            ts = 2
-            cxpb = 0.5
-            mut_bit_pb = 1
-            mut_guass_mu = 0
-            mut_guass_sig = 0.125
-            mut_guass_pb = 0.5
-            mut_int_pb = 0.5
-            popScen = self.breed_scenario(
-                popScen, arcScen, self.enumLimits, ts, cxpb, mut_bit_pb,
+            # Breed the next generation of populations.
+            popScen = self.breed(
+                popScen, arcScen, self.p1_enumLimits, ts, cxpb, mut_bit_pb,
                 mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
-            popMLCO = self.breed_scenario(
-                popMLCO, arcMLCO, self.enumLimits, ts, cxpb, mut_bit_pb,
+            popMLCO = self.breed_mlco(
+                popMLCO, arcMLCO, ts, cxpb,
                 mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
 
             popScen += arcScen
@@ -93,9 +173,11 @@ class ICCEA:
             # popScen.append(x for x in arcScen)
             # popMLCO.append(x for x in arcMLCO)
 
-            print('popScen is: ' + str(popScen))
-            print('PopMLCO is: ' + str(popMLCO))
-        return solutionArchive
+        # Record the complete logbook.
+        with open(self._logbook_file, 'wb') as lb_file:
+            pickle.dump(logbook, lb_file)
+
+        return complete_solution_archive, solution_archive
 
     def evaluate_joint_fitness(self, c):
         """Evaluates the joint fitness of a complete solution.
@@ -103,54 +185,16 @@ class ICCEA:
         It takes the complete solution as input and returns its joint
         fitness as output.
         """
-        # # Returns a random value for now.
-        # return (random.uniform(-5.0, 5.0),)
-
+        # For benchmarking problems.
         # x = c[0][0]
         # y = c[1][0]
+
         x = c[0]
         y = c[1]
 
-        joint_fitness_value = self.toolbox.problem_jfit(x, y)
-        # joint_fitness_value = simulate_and_evaluate_vehicle_distance(x, y)
+        joint_fitness_value = self.toolbox.problem_jfit(self.simulator, x, y)
 
         return (joint_fitness_value,)
-
-    # def simulate_and_evaluate_vehicle_distance(self, scenario_list, mlco_list):
-    #     """Runs a simulator using `scenario_list` and `mlco_list`
-    #     and evaluates the result of the simulation given its safety
-    #     requirement metric.
-    #     """
-    #     # Update the configuration of the simulation and the serialized mlco_list
-    #     update_sim_config(scenario_list, mlco_list)
-
-    #     # Run Carla and Pylot in the docker container with appropriate config
-    #     carla_proc = run_carla()
-    #     pylot_proc = run_pylot()
-
-    #     # Confirm that the pylot and carla are interfacing.
-
-    #     # Either measure jfit at run time or assess the report or log after the simulation.
-    #     # extract_jfit_value_from_sim()
-
-    #     # Option #1: Record information from pylot during run and evaluate that.
-    #     # Option #2: Get a handle on Carla, add a sensor to the vehicle and record the output.
-
-    #     # Kill the processes.
-    #     os.kill(carla_proc.pid, signal.SIGINT)
-    #     os.kill(pylot_proc.pid, signal.SIGTERM)
-    #     # FIXME: The processes spawned in the docker have a different pid and
-    #     # will not be killed using the above command.
-
-    #     # Reset the simulation setup.
-    #     # Log or print that simulation is being reset.
-    #     print("Resetting simulation setup via restarting the docker image...")
-    #     docker_reset_proc = sub.run(
-    #         "docker restart pylot", stdout=sub.PIPE, shell=True)
-    #     if docker_reset_proc.returncode != 0:
-    #         print("The docker image DID NOT restart")
-    #     else:
-    #         print("Successfully restarted the docker image.")
 
     def evaluate(
             self, first_population, first_archive,
@@ -174,12 +218,6 @@ class ICCEA:
         """
         # Exception handling must be added.
 
-        # Deep copy the inputs
-        # population_one = deepcopy(first_population)
-        # population_two = deepcopy(second_population)
-        # archive_one = deepcopy(first_archive)
-        # archive_two = deepcopy(second_archive)
-
         first_component_class = type(first_population[0])
         complete_solutions_set = collaborate(
             first_archive,
@@ -189,6 +227,12 @@ class ICCEA:
             joint_class,
             first_component_class,
             min_num_evals)
+
+        # # Evaluate joint fitness evaluations in parallel.
+        # with ProcessPoolExecutor() as executor:
+        #     evaluted_complete_solutions = executor.map(self.evaluate_joint_fitness, complete_solutions_set)
+        #     for c, value in zip(complete_solutions_set, evaluted_complete_solutions):
+        #         c.fitness.values = value
 
         # Evaluate joint fitness and record its value.
         for c in complete_solutions_set:
@@ -205,8 +249,8 @@ class ICCEA:
 
         return complete_solutions_set, first_population, second_population
 
-    def breed_scenario(
-            self, popScen, arcScen, enumLimits, tournSize, cxpb,
+    def breed(
+            self, population, archive, enumLimits, tournSize, cxpb,
             mutbpb, mutgmu, mutgsig, mutgpb, mutipb):
         """Breeds, i.e., performs selection, crossover (exploitation) and
         mutation (exploration) on individuals of the Scenarios. It takes an old
@@ -243,12 +287,12 @@ class ICCEA:
         self.toolbox.register("crossover", tools.cxUniform, indpb=cxpb)
 
         # # Find the complement (population minus the archive).
-        # breeding_population = [ele for ele in popScen if ele not in arcScen]
-        breeding_population = popScen
+        # breeding_population = [ele for ele in popScen if ele not in archive]
+        breeding_population = population
 
         # Select 2 parents, cx and mut them until satisfied.
         offspring_list = []
-        size = len(popScen) - len(arcScen)
+        size = len(population) - len(archive)
         while size > 0:
             # Select 2 parents from the breeding_population via the select
             # fucntion.
@@ -259,7 +303,7 @@ class ICCEA:
             # offspring = list(offspring_pair[random.getrandbits(1)])
             offspring = offspring_pair[random.getrandbits(1)]
             # Mutate the offspring.
-            offspring = self.mutate_scenario(
+            offspring = self.mutate_flat_hetero_individual(
                 offspring, enumLimits, mutbpb, mutgmu,
                 mutgsig, mutgpb, mutipb
             )
@@ -268,14 +312,74 @@ class ICCEA:
 
         return offspring_list
 
-    def mutate_scenario(
-            self, scenario, intLimits, mutbpb, mutgmu,
+    def breed_mlco(
+            self, population, archive, tournSize, cxpb,
+            mutgmu, mutgsig, mutgpb, mutipb):
+        """Breeds, i.e., performs selection, crossover (exploitation) and
+        mutation (exploration) on individuals of the Scenarios. It takes an old
+        generation of scenarios as input and returns an evolved generation.
+
+        :param popScen: the population of scenarios.
+        :param arcScen: the list of all memebrs of the archive.
+        :param enumLimits: a 2D list that contains a lower and upper
+                           limits for the mutation of elements in a
+                           scenario of type int.
+        :param tournSize: the size of the tournament to be used by the
+                          tournament selection algorithm.
+        :param cxpb: the probability that a crossover happens between
+                     two individuals.
+        :param mutbpb: the probability that a binary element might be
+                       mutated by the `tools.mutFlipBit()` function.
+        :param mutgmu: the normal distribution mean used in
+                       `tools.mutGaussian()`.
+        :param mutgsig: the normal distribution standard deviation used
+                        in `tools.mutGaussian()`.
+        :param mutgpb: the probability that a real element might be
+                       mutated by the `tools.mutGaussian()` function.
+        :param mutipb: the probability that a integer element might be
+                       mutated by the `mutUniformInt()` function.
+        :returns: a list of bred scenario individuals (that will be
+                  appended to the archive of scenarios to form the next
+                  generation of the population).
+        """
+        # # Find the complement (population minus the archive).
+        # breeding_population = [ele for ele in popScen if ele not in archive]
+        breeding_population = population
+
+        # Select 2 parents, cx and mut them until satisfied.
+        offspring_list = []
+        size = len(population) - len(archive)
+        while size > 0:
+            # Select 2 parents from the breeding_population via the select
+            # fucntion.
+            parents = self.toolbox.select(
+                breeding_population, k=2, tournsize=tournSize)
+            # Perform crossover.
+            offspring_pair = self.toolbox.crossover(
+                parents[0], parents[1], indpb=cxpb)
+            # # Choose a random offspring and typecast it into list.
+            # offspring = list(offspring_pair[random.getrandbits(1)])
+            offspring = offspring_pair[random.getrandbits(1)]
+            # Mutate the offspring.
+            offspring = self.toolbox.mutate_mlco(
+                offspring, mutgmu,
+                mutgsig, mutgpb, mutipb
+            )
+
+            offspring_list.append(offspring)
+            size = size - 1
+
+        return offspring_list
+
+    def mutate_flat_hetero_individual(
+            self, individual, intLimits, mutbpb, mutgmu,
             mutgsig, mutgpb, mutipb):
-        """Mutates a scenario individual. Input is an unmutated scenario, while
-        the output is a mutated scenario. The function applies one of the 3
-        mutators to the elements depending on their type, i.e., `mutGaussian()`
-        (Guass distr) to Floats, `mutFlipBit()` (bitflip) to Booleans and
-        `mutUniformInt()` (integer-randomization) to Integers.
+        """Mutates a flat list of heterogeneous types individual. Input is
+        an unmutated scenario, while the output is a mutated individual.
+        The function applies one of the 3 mutators to the elements depending
+        on their type, i.e., `mutGaussian()` (Guass distr) to Floats,
+        `mutFlipBit()` (bitflip) to Booleans and `mutUniformInt()` 
+        (integer-randomization) to Integers.
 
         :param scenario: a scenario type individual to be mutated by the
                          function.
@@ -299,11 +403,11 @@ class ICCEA:
 
         # LIMITATION: assumes a specific format for intLimits.
 
-        cls = type(scenario)
+        cls = type(individual)
         mutatedScen = []
 
-        for i in range(len(scenario)):
-            buffer = [scenario[i]]
+        for i in range(len(individual)):
+            buffer = [individual[i]]
 
             if type(buffer[0]) is int:
                 buffer = tools.mutUniformInt(
@@ -399,7 +503,7 @@ class ICCEA:
             archive_complete_solution_flat, arc_nom_indices = \
                 self.prepare_for_distance_evaluation(archive_complete_solution)
             if arc_nom_indices != nominal_values_indices:
-                print(
+                self._logger.error(
                     'The nominal values between ' +
                     str(archive_complete_solution) +
                     ' and ' + str(main_complete_solution) +
@@ -559,7 +663,8 @@ class ICCEA:
 
             # Check if all individuals of pop have been considered archive.
             if not pop_minus_archive_and_ineligible:
-                print('No individual left to be considered for archive membership.')
+                self._logger.info(
+                    "No individual left to be considered for archive membership.")
                 break
 
             # Calculate the individual fitness of pop_prime individuals,
@@ -771,7 +876,7 @@ class ICCEA:
             archive_individual_flat, arc_nom_indices = \
                 self.prepare_for_distance_evaluation(archive[i])
             if arc_nom_indices != nominal_values_indices:
-                print(
+                self._logger.error(
                     'The nominal values between ' +
                     str(archive[i]) +
                     ' and ' + str(candidate) +

@@ -2,13 +2,18 @@
 Set of utility functions which are independent from the `problem` structure.
 """
 
+from deap import tools
+from datetime import datetime
+import logging
+import os
+import pathlib
 import random
 from copy import deepcopy
 
 import numpy as np
 
 
-def initialize_hetero_vector(class_, limits):
+def initialize_hetero_vector(limits, class_=None):
     """Initializes a heterogeneous vector of type `class_` based on the values
     in `limits`.
 
@@ -37,7 +42,10 @@ def initialize_hetero_vector(class_, limits):
             if type(limits[i][0]) == int:
                 x += [random.randint(limits[i][0], limits[i][1])]
 
-    return class_(x)
+    if class_:
+        return class_(x)
+    else:
+        return x
 
 
 def create_complete_solution(element, other_element, first_component_class):
@@ -228,6 +236,65 @@ def collaborate(
     return complete_solutions_set_unique_typecasted
 
 
+def mutate_flat_hetero_individual(
+        individual, intLimits, mutbpb, mutgmu,
+        mutgsig, mutgpb, mutipb):
+    """Mutates a flat list of heterogeneous types individual. Input is
+    an unmutated flat_hetero_individual, while the output is a mutated 
+    individual.
+
+    The function applies one of the 3 mutators to the elements depending
+    on their type, i.e., `mutGaussian()` (Guass distr) to Floats,
+    `mutFlipBit()` (bitflip) to Booleans and `mutUniformInt()` 
+    (integer-randomization) to Integers.
+
+    :param scenario: a scenario type individual to be mutated by the
+                        function.
+    :param intLimits: a 2D list that contains a lower and upper
+                        limits for the mutation of elements in a
+                        scenario that are of type int.
+    :param mutbpb: the probability that a binary element might be
+                    mutated by the `tools.mutFlipBit()` function.
+    :param mutgmu: the normal distribution mean used in
+                    `tools.mutGaussian()`.
+    :param mutgsig: the normal distribution standard deviation used
+                    by `tools.mutGaussian()`.
+    :param mutgpb: the probability that a real element might be
+                    mutated by the `tools.mutGaussian()` function.
+    :param mutipb: the probability that a integer element might be
+                    mutated by the `mutUniformInt()` function.
+    """
+
+    # LIMITATION: assumes a specific format for intLimits.
+    #  FIXME: Write an assertion to check intLimits format.
+
+    cls = type(individual)
+    mutated_individual = []
+
+    for i in range(len(individual)):
+        buffer = [individual[i]]
+
+        if type(buffer[0]) is int:
+            buffer = tools.mutUniformInt(
+                buffer, low=intLimits[i][0],
+                up=intLimits[i][1], indpb=mutipb
+            )
+            buffer = list(buffer[0])
+
+        if type(buffer[0]) is bool:
+            buffer = tools.mutFlipBit(buffer, indpb=mutbpb)
+            buffer = list(buffer[0])
+
+        if type(buffer[0]) is float:
+            buffer = tools.mutGaussian(buffer, mu=mutgmu,
+                                       sigma=mutgsig, indpb=mutgpb)
+            buffer = list(buffer[0])
+
+        mutated_individual += buffer
+
+    return cls(mutated_individual)
+
+
 def evaluate_individual(individual, complete_solution_set, index):
     """Aggregates joint fitness values that an individual has been invovled in.
 
@@ -252,17 +319,6 @@ def evaluate_individual(individual, complete_solution_set, index):
     individual_fitness_value = max(values_joint_fitness_involved)
 
     return (individual_fitness_value,)
-
-
-def breed_mlco(outputMLC):
-    """Breeds, i.e., performs selection, crossover (exploitation) and mutation
-    (exploration) on individuals of the MLC output population.
-
-    It takes an old generation of MLC ouptputs as input and return an
-    evovled generation.
-    """
-    # return outputMLC
-    return print("breedMLCO() returned.\n")
 
 
 def identify_nominal_indices(flat_list):
@@ -532,3 +588,75 @@ def violate_safety_requirement(complete_solution):
         return True
     else:
         return False
+
+
+def setup_logger(file_name: str, file_log_level='DEBUG', stream_log_level='INFO'):
+    """Initilizes and formats the root logger. It also sets the log
+    levels for the log file and stream handler.
+    """
+    # Create the results folder if it does not exist.
+    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+    # Setup logger.
+    logger = logging.getLogger()
+
+    # Get current timestamp to use as a unique ID.
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # # Create a log folder for a run.
+    # log_folder = os.path.join('results', str(timestamp))
+    # pathlib.Path(log_folder).mkdir(parents=True, exist_ok=True)
+
+    # parser = configparser.ConfigParser()
+    # parser.set()
+
+    log_id = str(timestamp) + '_' + file_name + '.log'
+    log_file = os.path.join('results', log_id)
+    logging.basicConfig(filename=log_file,
+                        format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+
+    # Set logger's logging level.
+    if file_log_level == 'DEBUG':
+        logger.setLevel(logging.DEBUG)
+    elif file_log_level == 'INFO':
+        logger.setLevel(logging.INFO)
+    elif file_log_level == 'WARNING':
+        logger.setLevel(logging.WARNING)
+    elif file_log_level == 'ERROR':
+        logger.setLevel(logging.ERROR)
+    else:
+        raise ValueError(
+            "file_log_level can only be DEBUG, INFO, WARNING or ERROR.")
+
+    # Initialize and format the stream_handler.
+    stream_handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+    stream_handler.setFormatter(formatter)
+
+    # Set stream_handler logging level.
+    if stream_log_level == 'DEBUG':
+        stream_handler.setLevel(logging.DEBUG)
+    elif stream_log_level == 'INFO':
+        stream_handler.setLevel(logging.INFO)
+    elif stream_log_level == 'WARNING':
+        stream_handler.setLevel(logging.WARNING)
+    elif stream_log_level == 'ERROR':
+        stream_handler.setLevel(logging.ERROR)
+    else:
+        raise ValueError(
+            "stream_log_level can only be DEBUG, INFO, WARNING or ERROR.")
+
+    logger.addHandler(stream_handler)
+
+
+def setup_logbook_file():
+    # Create the results folder if it does not exist.
+    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+
+    # Get current timestamp to use as a unique ID.
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    logbook_id = str(timestamp) + '_logbook' + '.log'
+    logbook_file = os.path.join('results', logbook_id)
+
+    return logbook_file

@@ -141,5 +141,6 @@ __pycache__
 *.pkl
 *.p
 
-# Results log files
-/results/*
+# Folders
+/results
+/temp
