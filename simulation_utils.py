@@ -250,7 +250,7 @@ def update_config_file(
 # FIXME: Maybe add the simulation ID (counter) to the log file's name.
 
 
-def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.container_name):
+def update_sim_config(scenario_list, mlco_list, simulation_id: str, container_name: str = cfg.container_name):
     """Updates the configuration file that is used by Pylot to run
     the simulation. It adds the flags based on scenario and mlco to
     the configuation file, and copies it into the container.
@@ -266,7 +266,7 @@ def update_sim_config(scenario_list, mlco_list, container_name: str = cfg.contai
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     simulation_log_file_name = str(
-        timestamp) + "_sim" + '.log'  # + uuid4().hex
+        timestamp) + '_sim_' + simulation_id + '.log'  # + uuid4().hex
     log_file_name = '/home/erdos/workspace/results/' + simulation_log_file_name
 
     simulation_flag['--log_fil_name='] = "--log_fil_name=" + \

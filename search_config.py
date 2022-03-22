@@ -16,7 +16,7 @@ bitflip_mutation_probability = 1
 
 # Problem-specific parameters
 scenario_enumLimits = [[0, 2], [0, 6], [0, 1], [0, 3], [0, 3], [0, 0], [0, 2]]
-total_mlco_messages = 900
+total_mlco_messages = 700
 total_obstacles_per_message = 3
 frame_width = 800.0
 frame_height = 480.0

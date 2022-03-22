@@ -1,3 +1,4 @@
+from concurrent.futures import ProcessPoolExecutor
 import pickle
 import random
 import logging
@@ -116,6 +117,7 @@ class ICCEA:
             #     cs for cs in completeSolSet if violate_safety_requirement(cs))
             for cs in completeSolSet:
                 complete_solution_archive.append(cs)
+                # FIXME: Fix the below function.
                 if violate_safety_requirement(cs):
                     solution_archive.append(cs)
 
@@ -124,7 +126,6 @@ class ICCEA:
             record_mlco = mstats.compile(popMLCO)
             record_complete_solution = mstats.compile(completeSolSet)
 
-            # FIXME: Find the number of evaluations.
             logbook.record(gen=num_gen, type='scen',
                            **record_scenario)
             logbook.record(gen=num_gen, type='mlco', **record_mlco)
@@ -226,6 +227,12 @@ class ICCEA:
             joint_class,
             first_component_class,
             min_num_evals)
+
+        # # Evaluate joint fitness evaluations in parallel.
+        # with ProcessPoolExecutor() as executor:
+        #     evaluted_complete_solutions = executor.map(self.evaluate_joint_fitness, complete_solutions_set)
+        #     for c, value in zip(complete_solutions_set, evaluted_complete_solutions):
+        #         c.fitness.values = value
 
         # Evaluate joint fitness and record its value.
         for c in complete_solutions_set:

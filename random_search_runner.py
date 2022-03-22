@@ -15,8 +15,7 @@ from src.utils.utility import (create_complete_solution,
                                initialize_hetero_vector, setup_logbook_file,
                                setup_logger)
 
-# TIME_BUDGET = 86_400  # Search time budget in seconds (currently == 24 hr).
-TIME_BUDGET = 3600
+TIME_BUDGET = 86_400  # Search time budget in seconds (currently == 24 hr).
 
 scen_pop_size = cfg.scenario_population_size  # Size of the scenario population
 mlco_pop_size = cfg.mlco_population_size  # Size of the MLC output population
@@ -115,9 +114,10 @@ def main():
     # Initialize start and end time.
     start_time = time.time()
     end_time = time.time()
+    elapsed_time = end_time - start_time
 
     # Search the scenario and mlco parameter space randomly until the time is up.
-    while end_time - start_time < TIME_BUDGET:
+    while elapsed_time < TIME_BUDGET:
 
         # Create a random scenario.
         scenario = initialize_hetero_vector(scen_enumLimits, creator.Scenario)
@@ -144,7 +144,7 @@ def main():
 
         # Report the best complete solution.
         best_solution = sorted(
-            complete_solutions, key=lambda x: x.fitness.values[0])[-1]
+            complete_solutions, key=lambda x: x.fitness.values[0])[0]
         logger.info(
             'best_complete_solution={} | fitness={}'.format(best_solution, best_solution.fitness.values[0]))
 
@@ -160,6 +160,10 @@ def main():
 
         logger.info('complete_solutions_size={}'.format(
             len(complete_solutions)))
+
+        elapsed_time = end_time - start_time
+        logger.info('elapsed_time={}'.format(elapsed_time))
+        logger.info('remaining_time={}'.format(TIME_BUDGET - elapsed_time))
 
     # Record the list of found sceanrios.
     scenarios_file = setup_file('_scenarios')
@@ -185,5 +189,5 @@ def main():
 
 
 if __name__ == "__main__":
-    setup_logger()
+    setup_logger(file_name='RS')
     main()
