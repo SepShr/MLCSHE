@@ -147,6 +147,8 @@ class ICCEA:
             #     'The best complete solution in complete_solution_archive: {} (fitness={})'.format(best_solution, best_solution.fitness.values[0]))
             self._logger.info(
                 'best_complete_solution={} | fitness={}'.format(best_solution, best_solution.fitness.values[0]))
+            # self._logger.debug('complete_solutions={}'.format(
+            #     complete_solution_archive))
 
             if num_gen == max_gen - 1:
                 break
@@ -164,9 +166,16 @@ class ICCEA:
             popScen = self.breed(
                 popScen, arcScen, self.p1_enumLimits, ts, cxpb, mut_bit_pb,
                 mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
-            popMLCO = self.breed_mlco(
-                popMLCO, arcMLCO, ts, cxpb,
-                mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
+
+            # Handle benchmark problems that have similar populations.
+            if self.p2_enumLimits:
+                popMLCO = self.breed(
+                    popMLCO, arcMLCO, self.p2_enumLimits, ts, cxpb, mut_bit_pb,
+                    mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
+            else:
+                popMLCO = self.breed_mlco(
+                    popMLCO, arcMLCO, ts, cxpb,
+                    mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
 
             popScen += arcScen
             popMLCO += arcMLCO

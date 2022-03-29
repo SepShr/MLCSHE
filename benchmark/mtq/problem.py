@@ -9,8 +9,6 @@ from deap import base, creator, tools
 import benchmark.mtq.search_config as cfg
 from src.utils.utility import initialize_hetero_vector, mutate_flat_hetero_individual
 
-# FIXME: This should be imported from problem_utils.py
-
 scen_pop_size = cfg.scenario_population_size  # Size of the scenario population
 mlco_pop_size = cfg.mlco_population_size  # Size of the MLC output population
 min_distance = cfg.min_distance  # Minimum distance between members of an archive
@@ -19,28 +17,28 @@ min_distance = cfg.min_distance  # Minimum distance between members of an archiv
 enumLimits = cfg.enumLimits
 
 
-def joint_fitness_mtq(x, y):
+def joint_fitness_mtq(simulator, x, y):
     """This is the problem-specific joint fitness evaluation.
     """
     # The MTQ problem.
 
-    cf = 10  # Correction factor that controls the granularity of x and y.
+    cf = 1  # Correction factor that controls the granularity of x and y.
 
     h_1 = 50
     x_1 = 0.75
     y_1 = 0.75
     s_1 = 1.6
     f_1 = h_1 * \
-        (1 - ((16.0/s_1) * pow((x/cf - x_1), 2)) -
-         ((16.0/s_1) * pow((y/cf - y_1), 2)))
+        (1 - ((16.0/s_1) * pow((x[0]/cf - x_1), 2)) -
+         ((16.0/s_1) * pow((y[0]/cf - y_1), 2)))
 
     h_2 = 150
     x_2 = 0.25
     y_2 = 0.25
     s_2 = 1.0/32.0
     f_2 = h_2 * \
-        (1 - ((16.0/s_2) * pow((x/cf - x_2), 2)) -
-         ((16.0/s_2) * pow((y/cf - y_2), 2)))
+        (1 - ((16.0/s_2) * pow((x[0]/cf - x_2), 2)) -
+         ((16.0/s_2) * pow((y[0]/cf - y_2), 2)))
 
     return max(f_1, f_2)
 
@@ -61,7 +59,7 @@ toolbox.register(
 
 toolbox.register(
     "mlco", initialize_hetero_vector,
-    creator.OutputMLC, limits=enumLimits
+    class_=creator.OutputMLC, limits=enumLimits
 )
 
 toolbox.register(

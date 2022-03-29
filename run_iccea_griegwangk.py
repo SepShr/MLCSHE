@@ -3,7 +3,7 @@ iCCEA Runner.
 """
 from src.main.ICCEA import ICCEA
 from src.utils.utility import setup_logger
-from benchmark.mtq import problem
+from benchmark.griegwangk import problem
 from simulation_runner import Simulator
 
 import benchmark.mtq.search_config as cfg
@@ -38,7 +38,7 @@ def main():
     ]
 
     # Setup logger.
-    setup_logger(file_name='CCEA_MTQ', file_log_level='DEBUG',
+    setup_logger(file_name='CCEA_GRWGNK', file_log_level='DEBUG',
                  stream_log_level='INFO')
 
     # User does not need to modify anything but `problem.py`
