@@ -10,8 +10,6 @@ import benchmark.mtq.search_config as cfg
 
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
-# FIXME: Refactor enumLimits
-
 
 def main():
     # Instantiate simulator instance.
