@@ -1,8 +1,145 @@
-from cgi import test
-from datetime import datetime
+'''
+This code contains the class PairwiseDistance to calculate the
+distance matrix for a list of vectors. It also contains the functions
+that are used by ICCEA to calculate the distance for reference. At
+the later section of the code, various examples of using pdist and
+the implemented class is available.
+
+## Encodings
+mlco = [
+        [t0,
+        t1,
+        bbox_t0_x_min,
+        bbox_t0_y_min,
+        bbox_t0_x_max,
+        bbox_t0_y_max,
+        bbox_t1_x_min,
+        bbox_t1_y_min,
+        bbox_t1_x_max,
+        bbox_t1_y_max,
+        label], 
+    ...]
+
+scen = [x1, x2, x3, x4, x5, x6, x7]
+
+- A CS is a triple-nested heterogeneous list. --> flatten 3 times.
+'''
+
 from timeit import Timer
 from scipy import spatial
 import numpy as np
+
+
+class PairwiseDistance:
+    """Calculates and updates a pairwise distance matrix for a set of complete solutions.
+    """
+
+    def __init__(self, vectors, numeric_ranges, categorical_indices) -> None:
+        """X is the 2D list of vectors of the same size.
+        """
+        self.vectors = vectors
+        self.squareform_distance_matrix = np.zeros(len(vectors))
+        self.numeric_ranges = numeric_ranges
+        self.categorical_indices = categorical_indices
+        # FIXME: self.compact_distance_matrix = ??
+
+    def compute_distance_matrix(self, vectors, cat_ix, num_ranges):
+        """Computes the pairwise distance between all vectors.
+        """
+        squareform_distance_matrix = []
+        for vec_index in range(len(vectors)):
+            squareform_distance_matrix += [measure_heom_distance([vectors[vec_index]] + vectors,
+                                                                 cat_ix,
+                                                                 num_ranges)[1:]]
+        self.squareform_distance_matrix = squareform_distance_matrix
+        print('sqf_distance_matrix is: ' + str(squareform_distance_matrix))
+
+    def measure_heom_distance(
+        self,
+        X: list,
+        cat_ix: list,
+        num_range: list,
+        normalised: str = "abs"
+    ) -> list:
+        """Calculate the Heterogeneous Euclidean-Overlap Metric (HEOM)- difference
+        between a list located at X[0] and the rest of the lists of similar size.
+        (TODO: what do you mean by the lists of 'similar' size?)
+
+        :param X: X is a 2D list of flattened heterogeneuous lists.
+        :param cat_ix: is a list of indices of the categorical values.
+        :param nan_equivalents: list of values that are considered as
+                                missing values.
+        :param normalised: normalization method, can be "normal"
+                           (uses the data range within X), "std" (uses
+                           standard deviation) or "abs" (uses absolute
+                           range of the data).
+        :return: a list of normalized distance (TODO: is this correct?)
+
+        Assumptions:
+        1. There is no missing data.
+        """
+
+        assert len(X) > 1  # measure distance between at least two lists
+        for col in range(1, len(X)):
+            # the length of each list must be the same
+            assert len(X[col-1]) == len(X[col])
+
+        if normalised == "abs":
+            assert num_range is not None
+
+        cat_ix = cat_ix
+        row_x = len(X)
+        col_x = len(X[0])
+
+        # Initialize numeric_range list.
+        numeric_range = []
+        for i in range(len(X[0])):
+            numeric_range.append(1)
+
+        # Initialize the results array
+        results_array = np.zeros((row_x, col_x))
+
+        # Calculate the distance for categorical elements
+        for index in cat_ix:
+            for row in range(1, row_x):
+                if X[0][index] != X[row][index]:
+                    results_array[row][index] = 1
+
+        # Get numerical indices without missing values elements
+        num_ix = [i for i in range(col_x) if i not in cat_ix]
+
+        # Calculate range for numeric values.
+        # TODO: check issue #8
+        for i in range(len(X[0])):
+            if i in num_ix:
+                if normalised == "abs":
+                    numeric_range = num_range
+                elif normalised == "std":
+                    # ???: why multiply by 4?
+                    numeric_range[i] = 4 * calculate_std(X, i)
+                elif normalised == "normal":
+                    numeric_range[i] = calculate_max(
+                        X, i) - calculate_min(X, i)
+                    if numeric_range[i] == 0.0:
+                        numeric_range[i] = 0.0001
+                        # To avoid division by zero in case of similar values.
+                else:
+                    raise ValueError(
+                        "normalized can only be abs, std, or normal.")
+
+        # Calculate the distance for numerical elements
+        for index in num_ix:
+            for row in range(1, row_x):
+                column_difference = X[0][index] - X[row][index]
+                results_array[row, index] = \
+                    np.abs(column_difference) / \
+                    numeric_range[index]
+
+        heom_distance_values = \
+            list(np.sqrt(np.sum(np.square(results_array)/col_x, axis=1)))
+        return heom_distance_values
+
+# Functions used in the previous versionof distance evaluation.
 
 
 def gather_values_in_np_array(two_d_list, numeric_value_index):
@@ -149,45 +286,27 @@ def measure_heom_distance(
     return heom_distance_values
 
 
-'''
-#Encoding
-mlco = [
-        [t0,
-        t1,
-        bbox_t0_x_min,
-        bbox_t0_y_min,
-        bbox_t0_x_max,
-        bbox_t0_y_max,
-        bbox_t1_x_min,
-        bbox_t1_y_min,
-        bbox_t1_x_max,
-        bbox_t1_y_max,
-        label], 
-    ...]
-
-scen = [x1, x2, x3, x4, x5, x6, x7]
-
-- A CS is a triple-nested heterogeneous list. --> flatten 3 times.
-
-#Test data
-test_data = [
-            [1, 0, 5.0, 1, 1, 21, 4],
-            [4, 1, -7.8, 8, 1, 2, 2],
-            [2, -1, -9.8, 10, 3, 2, 91]
-        ]
-        category_indices = [0, 3, 6]
-
-'''
-test_data = [
-            [1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1,
-                1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4],
-            [4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8,
-                8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2],
-            [2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8,
-                10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91]
+# Test data.
+test_data_1 = [
+    [1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1,
+     1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4],
+    [4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8,
+     8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2, 4, 1, -7.8, 8, 1, 2, 2],
+    [2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8,
+     10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91]
+]
+test_data_2 = [
+    [1, 0, 5.0, 1, 1, 21, 4],
+    [4, 1, -7.8, 8, 1, 2, 2],
+    [2, -1, -9.8, 10, 3, 2, 91]
 ]
 category_indices = [0, 3, 6]
+# To be used with test_data_2 for pdist.
+weights = [1/5, 1/4, 1/20, 1/10, 1/4, 1/20, 1/100]
+# To be used with test_data_2 for HEOM distance.
+numeric_ranges = [1, 4, 20, 1, 3, 25, 1]
 
+# Timeit the pdist function for larger test_data.
 dist_timer = Timer("""spatial.distance.pdist(test_data, metric='euclidean')""",
                    setup="""from scipy import spatial; test_data = [
             [1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1, 1, 21, 4, 1, 0, 5.0, 1,
@@ -479,178 +598,33 @@ dist_timer = Timer("""spatial.distance.pdist(test_data, metric='euclidean')""",
             [2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8,
                 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91, 2, -1, -9.8, 10, 3, 2, 91]
 ]""")
-
 print(dist_timer.timeit(100))
-time_before_dist = datetime.now()
-dist = spatial.distance.pdist(test_data, metric='euclidean')
-time_after_dist = datetime.now()
+
+# Various distance evaluations.
+dist = spatial.distance.pdist(test_data_1, metric='euclidean')
 print('dist is: ' + str(dist))
-time_diff_dist = time_after_dist - time_before_dist
-print('dist execution time is:')
 
 dist_sqf = spatial.distance.squareform(dist)
 print('dist_sqf is: ' + str(dist_sqf))
 
-heom_dist = measure_heom_distance(test_data, category_indices)
-print('heom_dist is: ' + str(heom_dist))
-
-heom_dist_sqf = spatial.distance.squareform(heom_dist)
-print('heom_dist_sqf is: ' + str(heom_dist_sqf))
-
-
-dist_hamming = spatial.distance.pdist(test_data, metric='hamming')
+dist_hamming = spatial.distance.pdist(test_data_1, metric='hamming')
 print('dist_hamming is: ' + str(dist_hamming))
 
-ranges = [1/70, 1/250, 1/250]
-# normalized_dist = dist**ranges
-# print(str(normalized_dist))
-
 normalized_dist = spatial.distance.pdist(
-    test_data, metric='seuclidean')
+    test_data_1, metric='seuclidean')
 print('normalized_dist is: ' + str(normalized_dist))
 
 final_dist = normalized_dist + dist_hamming
 print('final pdist is: ' + str(final_dist))
-final_dist = final_dist**[0.5]
 
+final_dist = final_dist**[0.5]
 print('final pdist is: ' + str(final_dist))
 
 final_dist_sqf = spatial.distance.squareform(final_dist)
-
 print('final pdist sqf is: ' + str(final_dist_sqf))
 
-
-test_data_2 = [
-    [1, 0, 5.0, 1, 1, 21, 4],
-    [4, 1, -7.8, 8, 1, 2, 2],
-    [2, -1, -9.8, 10, 3, 2, 91]
-]
-weights = [1/5, 1/4, 1/20, 1/10, 1/4, 1/20, 1/100]
-
-dist_2 = spatial.distance.pdist(test_data_2, metric='cityblock', w=weights)
-
-print('dist_2 is: ' + str(dist_2))
-
-dist_2_normalized = dist_2**[1/7]
-
-print('dist_2_normalized is: ' + str(dist_2_normalized))
-
 dist_2_unweighted = spatial.distance.pdist(test_data_2, 'euclidean')
-
 print('dist_2_unweighted is: ' + str(dist_2_unweighted))
-
-numeric_ranges = [1, 4, 20, 1, 3, 25, 1]
-
-
-class PairwiseDistance:
-    """Calculates and updates a pairwise distance matrix for a set of complete solutions.
-    """
-
-    def __init__(self, vectors, numeric_ranges, categorical_indices) -> None:
-        """X is the 2D list of vectors of the same size.
-        """
-        self.vectors = vectors
-        self.squareform_distance_matrix = np.zeros(len(vectors))
-        self.numeric_ranges = numeric_ranges
-        self.categorical_indices = categorical_indices
-        # FIXME: self.compact_distance_matrix = ??
-
-    def compute_distance_matrix(self, vectors, cat_ix, num_ranges):
-        """Computes the pairwise distance between all vectors.
-        """
-        squareform_distance_matrix = []
-        for vec_index in range(len(vectors)):
-            squareform_distance_matrix += [measure_heom_distance([vectors[vec_index]] + vectors,
-                                                                 cat_ix,
-                                                                 num_ranges)[1:]]
-        self.squareform_distance_matrix = squareform_distance_matrix
-        print('sqf_distance_matrix is: ' + str(squareform_distance_matrix))
-
-    def measure_heom_distance(
-        self,
-        X: list,
-        cat_ix: list,
-        num_range: list,
-        normalised: str = "abs"
-    ) -> list:
-        """Calculate the Heterogeneous Euclidean-Overlap Metric (HEOM)- difference
-        between a list located at X[0] and the rest of the lists of similar size.
-        (TODO: what do you mean by the lists of 'similar' size?)
-
-        :param X: X is a 2D list of flattened heterogeneuous lists.
-        :param cat_ix: is a list of indices of the categorical values.
-        :param nan_equivalents: list of values that are considered as
-                                missing values.
-        :param normalised: normalization method, can be "normal"
-                           (uses the data range within X), "std" (uses
-                           standard deviation) or "abs" (uses absolute
-                           range of the data).
-        :return: a list of normalized distance (TODO: is this correct?)
-
-        Assumptions:
-        1. There is no missing data.
-        """
-
-        assert len(X) > 1  # measure distance between at least two lists
-        for col in range(1, len(X)):
-            # the length of each list must be the same
-            assert len(X[col-1]) == len(X[col])
-
-        if normalised == "abs":
-            assert num_range is not None
-
-        cat_ix = cat_ix
-        row_x = len(X)
-        col_x = len(X[0])
-
-        # Initialize numeric_range list.
-        numeric_range = []
-        for i in range(len(X[0])):
-            numeric_range.append(1)
-
-        # Initialize the results array
-        results_array = np.zeros((row_x, col_x))
-
-        # Calculate the distance for categorical elements
-        for index in cat_ix:
-            for row in range(1, row_x):
-                if X[0][index] != X[row][index]:
-                    results_array[row][index] = 1
-
-        # Get numerical indices without missing values elements
-        num_ix = [i for i in range(col_x) if i not in cat_ix]
-
-        # Calculate range for numeric values.
-        # TODO: check issue #8
-        for i in range(len(X[0])):
-            if i in num_ix:
-                if normalised == "abs":
-                    numeric_range = num_range
-                elif normalised == "std":
-                    # ???: why multiply by 4?
-                    numeric_range[i] = 4 * calculate_std(X, i)
-                elif normalised == "normal":
-                    numeric_range[i] = calculate_max(
-                        X, i) - calculate_min(X, i)
-                    if numeric_range[i] == 0.0:
-                        numeric_range[i] = 0.0001
-                        # To avoid division by zero in case of similar values.
-                else:
-                    raise ValueError(
-                        "normalized can only be abs, std, or normal.")
-
-        # Calculate the distance for numerical elements
-        for index in num_ix:
-            for row in range(1, row_x):
-                column_difference = X[0][index] - X[row][index]
-                results_array[row, index] = \
-                    np.abs(column_difference) / \
-                    numeric_range[index]
-
-        heom_distance_values = \
-            list(np.sqrt(np.sum(np.square(results_array)/col_x, axis=1)))
-        return heom_distance_values
-
 
 test_distance = PairwiseDistance(
     vectors=test_data_2, numeric_ranges=numeric_ranges, categorical_indices=category_indices)
