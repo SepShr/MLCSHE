@@ -7,22 +7,45 @@ the implemented class is available.
 
 ## Encodings
 mlco = [
-        [t0,
-        t1,
-        bbox_t0_x_min,
-        bbox_t0_y_min,
-        bbox_t0_x_max,
-        bbox_t0_y_max,
-        bbox_t1_x_min,
-        bbox_t1_y_min,
-        bbox_t1_x_max,
-        bbox_t1_y_max,
-        label], 
+        [
+            label: 0 -> vehicle, 1 -> person,
+            t0: [0, ??],
+            t1: [0, ??],
+            bbox_t0_x_min: [0, 750], # Assuming a minimum of 50 px for bbox size.
+            bbox_t0_y_min: [0, 550],
+            bbox_t0_x_max: [50, 800],
+            bbox_t0_y_max: [50, 600],
+            bbox_t1_x_min: [0, 750],
+            bbox_t1_y_min: [0, 550],
+            bbox_t1_x_max: [50, 800],
+            bbox_t1_y_max: [50, 600],
+        ], 
     ...]
 
-scen = [x1, x2, x3, x4, x5, x6, x7]
+- Example:
+mlco_1 = [0, 5., 352.5, 102., 176.6, 253.9, 396.3, 3.7, 57.1, 509.2, 590.]
+mlco_2 = [1, 253.2, 466., 638.3, 478.1, 800., 599.5, 747.6, 800., 166.4, 301.3]
 
+scen = [
+    time_of_day: 0 -> noon, 1 -> sunset, 2 -> night,
+    weather: 0-> clear, 1 -> cloudy, 2 -> wet, 3 -> wet cloudy, 4 -> medium rain, 5 -> hard rain, 6 -> soft rain,
+    pedestrian: 0 -> 0, 1 -> 18,
+    road curve: 0 -> straight, 1 -> right, 2 -> left, 3 -> not clear!,
+    road ID: 0, 1, 2,
+    road length: 0, 1, 2 (from shortest to longest),
+    path: 0 -> follow road, 1 -> 1st exit, 2 -> 2nd exit
+    ]
+
+- Example:
+scen_1 = [0, 2, 1, 2, 0, 1, 1]
+scen_2 = [2, 6, 0, 3, 2, 0, 0]
+
+cs = [scen, mlco]
 - A CS is a triple-nested heterogeneous list. --> flatten 3 times.
+
+## Flattening
+- Currently, the flatten funciton is recursive. A potentially better alternative is provided below:
+flattened_list = lambda my_list: sum(map(flattened_list,my_list),[]) if isinstance(my_list,list) else [my_list]
 '''
 
 from timeit import Timer
@@ -139,7 +162,8 @@ class PairwiseDistance:
             list(np.sqrt(np.sum(np.square(results_array)/col_x, axis=1)))
         return heom_distance_values
 
-# Functions used in the previous versionof distance evaluation.
+# Functions used in the previous version of distance evaluation.
+# Will be removed after the class PairwiseDistance is finalized.
 
 
 def gather_values_in_np_array(two_d_list, numeric_value_index):
