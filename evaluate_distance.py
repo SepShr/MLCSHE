@@ -43,11 +43,15 @@ scen_2 = [2, 6, 0, 3, 2, 0, 0]
 cs = [scen, mlco]
 - A CS is a triple-nested heterogeneous list. --> flatten 3 times.
 
+-Example:
+cs = [[scen_1, mlco_1], [scen_2, mlco_2], [scen_1, mlco_2], [scen_2, mlco_1]]
+
 ## Flattening
 - Currently, the flatten funciton is recursive. A potentially better alternative is provided below:
 flattened_list = lambda my_list: sum(map(flattened_list,my_list),[]) if isinstance(my_list,list) else [my_list]
 '''
 
+import stat
 from timeit import Timer
 from scipy import spatial
 import numpy as np
@@ -57,23 +61,25 @@ class PairwiseDistance:
     """Calculates and updates a pairwise distance matrix for a set of complete solutions.
     """
 
-    def __init__(self, vectors, numeric_ranges, categorical_indices) -> None:
+    def __init__(self, vectors=[], numeric_ranges=[], categorical_indices=[], cs_list=None) -> None:
         """X is the 2D list of vectors of the same size.
         """
-        self.vectors = vectors
-        self.squareform_distance_matrix = np.zeros(len(vectors))
+        if cs_list is not None:
+            self.vectors = self.prepare_for_pdist_eval(cs_list)
+        else:
+            self.vectors = vectors
         self.numeric_ranges = numeric_ranges
         self.categorical_indices = categorical_indices
-        # FIXME: self.compact_distance_matrix = ??
+        # TODO: add compact representation. (self.compact_distance_matrix = ??)
 
     def compute_distance_matrix(self, vectors, cat_ix, num_ranges):
         """Computes the pairwise distance between all vectors.
         """
         squareform_distance_matrix = []
         for vec_index in range(len(vectors)):
-            squareform_distance_matrix += [measure_heom_distance([vectors[vec_index]] + vectors,
-                                                                 cat_ix,
-                                                                 num_ranges)[1:]]
+            squareform_distance_matrix += [self.measure_heom_distance([vectors[vec_index]] + vectors,
+                                                                      cat_ix,
+                                                                      num_ranges)[1:]]
         self.squareform_distance_matrix = squareform_distance_matrix
         print('sqf_distance_matrix is: ' + str(squareform_distance_matrix))
 
@@ -86,7 +92,6 @@ class PairwiseDistance:
     ) -> list:
         """Calculate the Heterogeneous Euclidean-Overlap Metric (HEOM)- difference
         between a list located at X[0] and the rest of the lists of similar size.
-        (TODO: what do you mean by the lists of 'similar' size?)
 
         :param X: X is a 2D list of flattened heterogeneuous lists.
         :param cat_ix: is a list of indices of the categorical values.
@@ -138,14 +143,14 @@ class PairwiseDistance:
                 if normalised == "abs":
                     numeric_range = num_range
                 elif normalised == "std":
-                    # ???: why multiply by 4?
-                    numeric_range[i] = 4 * calculate_std(X, i)
+                    # 4 sigma contains 95% of the distribution.
+                    numeric_range[i] = 4 * self._calculate_std(X, i)
                 elif normalised == "normal":
-                    numeric_range[i] = calculate_max(
-                        X, i) - calculate_min(X, i)
+                    numeric_range[i] = self._calculate_max(
+                        X, i) - self._calculate_min(X, i)
                     if numeric_range[i] == 0.0:
-                        numeric_range[i] = 0.0001
                         # To avoid division by zero in case of similar values.
+                        numeric_range[i] = 0.0001
                 else:
                     raise ValueError(
                         "normalized can only be abs, std, or normal.")
@@ -162,152 +167,86 @@ class PairwiseDistance:
             list(np.sqrt(np.sum(np.square(results_array)/col_x, axis=1)))
         return heom_distance_values
 
-# Functions used in the previous version of distance evaluation.
-# Will be removed after the class PairwiseDistance is finalized.
+    # FIXME: Move to utils.py?
 
+    @classmethod
+    def prepare_for_pdist_eval(cls, cs_list):
+        """Trasforms a nested list of complete solutions into a 2D list.
+        """
+        return [cls.flatten_list(vec) for vec in cs_list]
 
-def gather_values_in_np_array(two_d_list, numeric_value_index):
-    """Gathers all numeric values from a 2D list, located at a specific column.
+    # FIXME: Move to utils.py?
 
-    :param two_d_list: a 2D list.
-    :param numeric_value_index: the index of a numeric value, i.e.,
-                                a coloumn in the 2D array.
+    @classmethod
+    def flatten_list(cls, nested_list):
+        """flattens a nested list into a 1D list.
+        """
+        return sum(map(cls.flatten_list, nested_list), []) if isinstance(nested_list, list) else [nested_list]
 
-    :returns: a numpy array.
-    """
-    # DOES NOT HANDLE NOMINAL VALUE INPUTS.
-    # DOES NOT HANDLE CASES WERE THE NUMERIC VALUE INDEX IS OUT OF RANGE.
-    numeric_values_array = np.zeros(len(two_d_list))
+    # The following static and class methods are used to determine
+    @staticmethod
+    def _gather_values_in_np_array(two_d_list, numeric_value_index):
+        """Gathers all numeric values from a 2D list, located at a specific column.
 
-    for i in range(len(two_d_list)):
-        numeric_values_array[i] = two_d_list[i][numeric_value_index]
+        :param two_d_list: a 2D list.
+        :param numeric_value_index: the index of a numeric value, i.e.,
+                                    a coloumn in the 2D array.
 
-    return numeric_values_array
+        :returns: a numpy array.
+        """
+        # DOES NOT HANDLE NOMINAL VALUE INPUTS.
+        # DOES NOT HANDLE CASES WERE THE NUMERIC VALUE INDEX IS OUT OF RANGE.
+        numeric_values_array = np.zeros(len(two_d_list))
 
+        for i in range(len(two_d_list)):
+            numeric_values_array[i] = two_d_list[i][numeric_value_index]
 
-def gather_values_in_list(two_d_list, numeric_value_index):
-    """Gathers all the numeric values from a 2D list, located at a specific
-    column.
+        return numeric_values_array
 
-    :param two_d_list: a 2D list.
-    :param numeric_value_index: the index of a numeric value, i.e.,
-                                a coloumn in the 2D array.
+    @staticmethod
+    def _gather_values_in_list(two_d_list, numeric_value_index):
+        """Gathers all the numeric values from a 2D list, located at a specific
+        column.
 
-    :returns: a list.
-    """
-    # DOES NOT HANDLE NOMINAL VALUE INPUTS.
-    # DOES NOT HANDLE CASES WERE THE NUMERIC VALUE INDEX IS OUT OF RANGE.
-    numeric_values_list = []
+        :param two_d_list: a 2D list.
+        :param numeric_value_index: the index of a numeric value, i.e.,
+                                    a coloumn in the 2D array.
 
-    for i in range(len(two_d_list)):
-        numeric_values_list.append(two_d_list[i][numeric_value_index])
+        :returns: a list.
+        """
+        # DOES NOT HANDLE NOMINAL VALUE INPUTS.
+        # DOES NOT HANDLE CASES WERE THE NUMERIC VALUE INDEX IS OUT OF RANGE.
+        numeric_values_list = []
 
-    return numeric_values_list
+        for i in range(len(two_d_list)):
+            numeric_values_list.append(two_d_list[i][numeric_value_index])
 
+        return numeric_values_list
 
-def calculate_std(two_d_list, numeric_value_index):
-    """Calculates the standard deviation for the numeric values whose index is
-    provided.
+    @classmethod
+    def _calculate_std(cls, two_d_list, numeric_value_index):
+        """Calculates the standard deviation for the numeric values whose index is
+        provided.
 
-    The values are in a 2D list.
-    """
-    X = gather_values_in_np_array(two_d_list, numeric_value_index)
+        The values are in a 2D list.
+        """
+        X = cls._gather_values_in_np_array(two_d_list, numeric_value_index)
 
-    return np.std(X)
+        return np.std(X)
 
+    @classmethod
+    def _calculate_max(cls, two_d_list, numeric_value_index):
+        """Calculates the maximum value along a column of a 2D list."""
+        X = cls._gather_values_in_list(two_d_list, numeric_value_index)
 
-def calculate_max(two_d_list, numeric_value_index):
-    """Calculates the maximum value along a column of a 2D list."""
-    X = gather_values_in_list(two_d_list, numeric_value_index)
+        return max(X)
 
-    return max(X)
+    @classmethod
+    def _calculate_min(cls, two_d_list, numeric_value_index):
+        """Calculates the minimum value along a column of a 2D list."""
+        X = cls._gather_values_in_list(two_d_list, numeric_value_index)
 
-
-def calculate_min(two_d_list, numeric_value_index):
-    """Calculates the minimum value along a column of a 2D list."""
-    X = gather_values_in_list(two_d_list, numeric_value_index)
-
-    return min(X)
-
-
-def measure_heom_distance(
-        X: list,
-        cat_ix: list,
-        nan_equivalents: list = [np.nan, 0],
-        normalised: str = "normal"
-) -> list:
-    """Calculate the Heterogeneous Euclidean-Overlap Metric (HEOM)- difference
-    between a list located at X[0] and the rest of the lists of similar size.
-    (TODO: what do you mean by the lists of 'similar' size?)
-
-    :param X: X is a 2D list of flattened heterogeneuous lists.
-    :param cat_ix: is a list of indices of the categorical values.
-    :param nan_equivalents: list of values that are considered as
-                            missing values.
-    :param normalised: normalization method, can be "normal" or "std".
-    :return: a list of normalized distance (TODO: is this correct?)
-    """
-
-    assert len(X) > 1  # measure distance between at least two lists
-    for col in range(1, len(X)):
-        # the length of each list must be the same
-        assert len(X[col-1]) == len(X[col])
-
-    nan_eqvs = nan_equivalents  # FIXME: `nan_eqvs` is never used later
-    cat_ix = cat_ix
-    row_x = len(X)
-    col_x = len(X[0])
-
-    # Initialize numeric_range list.
-    numeric_range = []
-    for i in range(len(X[0])):
-        numeric_range.append(1)
-
-    # Initialize the results array
-    results_array = np.zeros((row_x, col_x))
-
-    # Get indices for missing values, if any
-
-    # Calculate the distance for missing values elements
-    # Hint: the distance for missing values is equal to one!
-
-    # Get categorical indices without missing values elements
-
-    # Calculate the distance for categorical elements
-    for index in cat_ix:
-        for row in range(1, row_x):
-            if X[0][index] != X[row][index]:
-                results_array[row][index] = 1
-
-    # Get numerical indices without missing values elements
-    num_ix = [i for i in range(col_x) if i not in cat_ix]
-
-    # Calculate range for numeric values.
-    # TODO: check issue #8
-    for i in range(len(X[0])):
-        if i in num_ix:
-            if normalised == "std":
-                # ???: why multiply by 4?
-                numeric_range[i] = 4 * calculate_std(X, i)
-            else:
-                numeric_range[i] = calculate_max(X, i) - calculate_min(X, i)
-                if numeric_range[i] == 0.0:
-                    numeric_range[i] = 0.0001
-                    # To avoid division by zero in case of similar values.
-
-    # Calculate the distance for numerical elements
-    for index in num_ix:
-        for row in range(1, row_x):
-            column_difference = X[0][index] - X[row][index]
-            results_array[row, index] = \
-                np.abs(column_difference) / \
-                numeric_range[index]
-
-            # USE THE ABSOLUTE VALUE FOR DIFFERENCE
-
-    heom_distance_values = \
-        list(np.sqrt(np.sum(np.square(results_array)/col_x, axis=1)))
-    return heom_distance_values
+        return min(X)
 
 
 # Test data.
@@ -329,6 +268,26 @@ category_indices = [0, 3, 6]
 weights = [1/5, 1/4, 1/20, 1/10, 1/4, 1/20, 1/100]
 # To be used with test_data_2 for HEOM distance.
 numeric_ranges = [1, 4, 20, 1, 3, 25, 1]
+
+# A more realistic dataset.
+scen_1 = [0, 2, 1, 2, 0, 1, 1]
+scen_2 = [2, 6, 0, 3, 2, 0, 0]
+mlco_1 = [0, 5., 352.5, 102., 176.6, 253.9, 396.3, 3.7, 57.1, 509.2, 590.]
+mlco_2 = [1, 253.2, 466., 638.3, 478.1, 800., 599.5, 747.6, 800., 166.4, 301.3]
+cat_ix_2 = [0, 1, 2, 3, 4, 5, 6, 7]
+num_range_2 = [1, 1, 1, 1, 1, 1, 1, 1, 500,
+               500, 800, 600, 800, 600, 800, 600, 800, 600]
+
+test_data_3 = [
+    [0, 2, 1, 2, 0, 1, 1, 0, 5., 352.5, 102., 176.6,
+        253.9, 396.3, 3.7, 57.1, 509.2, 590.],
+    [0, 2, 1, 2, 0, 1, 1, 1, 253.2, 466., 638.3,
+        478.1, 800., 599.5, 747.6, 800., 166.4, 301.3],
+    [2, 6, 0, 3, 2, 0, 0, 0, 5., 352.5, 102., 176.6,
+        253.9, 396.3, 3.7, 57.1, 509.2, 590.],
+    [2, 6, 0, 3, 2, 0, 0, 1, 253.2, 466., 638.3,
+        478.1, 800., 599.5, 747.6, 800., 166.4, 301.3]
+]
 
 # Timeit the pdist function for larger test_data.
 dist_timer = Timer("""spatial.distance.pdist(test_data, metric='euclidean')""",
@@ -650,8 +609,17 @@ print('final pdist sqf is: ' + str(final_dist_sqf))
 dist_2_unweighted = spatial.distance.pdist(test_data_2, 'euclidean')
 print('dist_2_unweighted is: ' + str(dist_2_unweighted))
 
-test_distance = PairwiseDistance(
+test_distance_1 = PairwiseDistance(
     vectors=test_data_2, numeric_ranges=numeric_ranges, categorical_indices=category_indices)
-test_distance.compute_distance_matrix(vectors=test_distance.vectors,
-                                      cat_ix=test_distance.categorical_indices,
-                                      num_ranges=test_distance.numeric_ranges)
+test_distance_1.compute_distance_matrix(vectors=test_distance_1.vectors,
+                                        cat_ix=test_distance_1.categorical_indices,
+                                        num_ranges=test_distance_1.numeric_ranges)
+
+test_distance_2 = PairwiseDistance(
+    vectors=test_data_3, numeric_ranges=num_range_2, categorical_indices=cat_ix_2
+)
+test_distance_2.compute_distance_matrix(vectors=test_distance_2.vectors,
+                                        cat_ix=test_distance_2.categorical_indices,
+                                        num_ranges=test_distance_2.numeric_ranges)
+
+# %%
