@@ -78,6 +78,18 @@ class PairwiseDistance:
 
         return arrays_dict
 
+    @classmethod
+    def prepare_for_pdist_eval(cls, cs_list):
+        """Trasforms a nested list of complete solutions into a 2D list.
+        """
+        return [cls.flatten_list(vec) for vec in cs_list]
+
+    @classmethod
+    def flatten_list(cls, nested_list):
+        """flattens a nested list into a 1D list.
+        """
+        return sum(map(cls.flatten_list, nested_list), []) if isinstance(nested_list, list) else [nested_list]
+
     @staticmethod
     def normalize_array(input_array: np.array, weights: np.array) -> np.array:
         return input_array / weights
