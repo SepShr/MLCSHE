@@ -50,19 +50,19 @@ cs = [[scen_1, mlco_1], [scen_2, mlco_2], [scen_1, mlco_2], [scen_2, mlco_1]]
 - Currently, the flatten funciton is recursive. A potentially better alternative is provided below:
 flattened_list = lambda my_list: sum(map(flattened_list,my_list),[]) if isinstance(my_list,list) else [my_list]
 '''
-
-import stat
 from timeit import Timer
-from scipy import spatial
+from scipy.spatial.distance import pdist, squareform
 import numpy as np
 
+# TODO: add an update function.
 
-class PairwiseDistance:
+
+class PairwiseDistanceHEOM:
     """Calculates and updates a pairwise distance matrix for a set of complete solutions.
     """
 
-    def __init__(self, vectors=[], numeric_ranges=[], categorical_indices=[], cs_list=None) -> None:
-        """X is the 2D list of vectors of the same size.
+    def __init__(self, vectors: list = [], numeric_ranges: list = [], categorical_indices: list = [], cs_list: list = None) -> None:
+        """
         """
         if cs_list is not None:
             self.vectors = self.prepare_for_pdist_eval(cs_list)
@@ -70,9 +70,8 @@ class PairwiseDistance:
             self.vectors = vectors
         self.numeric_ranges = numeric_ranges
         self.categorical_indices = categorical_indices
-        # TODO: add compact representation. (self.compact_distance_matrix = ??)
 
-    def compute_distance_matrix(self, vectors, cat_ix, num_ranges):
+    def compute_HEOM_pdist_matrix(self, vectors, cat_ix, num_ranges):
         """Computes the pairwise distance between all vectors.
         """
         squareform_distance_matrix = []
@@ -80,8 +79,7 @@ class PairwiseDistance:
             squareform_distance_matrix += [self.measure_heom_distance([vectors[vec_index]] + vectors,
                                                                       cat_ix,
                                                                       num_ranges)[1:]]
-        self.squareform_distance_matrix = squareform_distance_matrix
-        print('sqf_distance_matrix is: ' + str(squareform_distance_matrix))
+        self.HEOM_pdist_matrix_sqf = squareform_distance_matrix
 
     def measure_heom_distance(
         self,
@@ -115,8 +113,7 @@ class PairwiseDistance:
         if normalised == "abs":
             assert num_range is not None
 
-        cat_ix = cat_ix
-        row_x = len(X)
+        row_x, col_x = len(X)
         col_x = len(X[0])
 
         # Initialize numeric_range list.
@@ -137,7 +134,6 @@ class PairwiseDistance:
         num_ix = [i for i in range(col_x) if i not in cat_ix]
 
         # Calculate range for numeric values.
-        # TODO: check issue #8
         for i in range(len(X[0])):
             if i in num_ix:
                 if normalised == "abs":
@@ -583,43 +579,38 @@ dist_timer = Timer("""spatial.distance.pdist(test_data, metric='euclidean')""",
 ]""")
 print(dist_timer.timeit(100))
 
-# Various distance evaluations.
-dist = spatial.distance.pdist(test_data_1, metric='euclidean')
-print('dist is: ' + str(dist))
-
-dist_sqf = spatial.distance.squareform(dist)
-print('dist_sqf is: ' + str(dist_sqf))
-
-dist_hamming = spatial.distance.pdist(test_data_1, metric='hamming')
-print('dist_hamming is: ' + str(dist_hamming))
-
-normalized_dist = spatial.distance.pdist(
-    test_data_1, metric='seuclidean')
-print('normalized_dist is: ' + str(normalized_dist))
-
-final_dist = normalized_dist + dist_hamming
-print('final pdist is: ' + str(final_dist))
-
-final_dist = final_dist**[0.5]
-print('final pdist is: ' + str(final_dist))
-
-final_dist_sqf = spatial.distance.squareform(final_dist)
-print('final pdist sqf is: ' + str(final_dist_sqf))
-
-dist_2_unweighted = spatial.distance.pdist(test_data_2, 'euclidean')
-print('dist_2_unweighted is: ' + str(dist_2_unweighted))
-
-test_distance_1 = PairwiseDistance(
+test_distance_1 = PairwiseDistanceHEOM(
     vectors=test_data_2, numeric_ranges=numeric_ranges, categorical_indices=category_indices)
 test_distance_1.compute_distance_matrix(vectors=test_distance_1.vectors,
                                         cat_ix=test_distance_1.categorical_indices,
                                         num_ranges=test_distance_1.numeric_ranges)
 
-test_distance_2 = PairwiseDistance(
+test_distance_2 = PairwiseDistanceHEOM(
     vectors=test_data_3, numeric_ranges=num_range_2, categorical_indices=cat_ix_2
 )
 test_distance_2.compute_distance_matrix(vectors=test_distance_2.vectors,
                                         cat_ix=test_distance_2.categorical_indices,
                                         num_ranges=test_distance_2.numeric_ranges)
 
-# %%
+
+# # input
+# input_array = np.array([
+#     [0, 0, 0, 0],
+#     [10, 20, 3, 1],
+#     [0, 100, 2, 0]
+# ])
+# categorical_indexes = [2, 3]
+# # normalization factor; NOTE: 1 for a categorical variable
+# weights = np.array([10, 100, 1, 1])
+# print(f'input_array\n{input_array}\n\n'
+#         f'categorical_indexes={categorical_indexes}\n\n'
+#         f'weights={weights}\n')
+
+# # expected output (compute the dist for each dimension and average them; )
+# # If the dim is numeric, use the numeric diff
+# # If the dim is nominal, 0 if they are the same; otherwise 1
+# expected_distance = [
+#     (10 / 10 + 20 / 100 + 1 + 1) / 4,   # dist between 1st and 2nd
+#     (0 + 100 / 100 + 1 + 0) / 4,        # dist between 1st and 3rd
+#     (10 / 10 + 80 / 100 + 1 + 1) / 4    # dist between 2nd and 3rd
+# ]
