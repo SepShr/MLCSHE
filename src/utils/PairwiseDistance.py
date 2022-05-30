@@ -122,7 +122,7 @@ class PairwiseDistance:
     def prepare_for_dist_eval(cls, cs_list):
         """Trasforms a nested list of complete solutions into a 2D list.
         """
-        return [flatten_list(vec) for vec in cs_list]
+        return [flatten_list(list(vec)) for vec in cs_list]
 
     @staticmethod
     def normalize_array(input_array: np.array, weights: np.array) -> np.array:

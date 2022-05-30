@@ -1,5 +1,7 @@
 import unittest
+
 import numpy as np
+from deap import base, creator
 from src.utils.PairwiseDistance import PairwiseDistance
 
 
@@ -98,6 +100,10 @@ class TestCalculatePdist(unittest.TestCase):
         self.assertTrue(np.allclose(computed_dist_mtx, expected_dist_mtx))
 
     def test_realistic_cs_list_1(self):
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        creator.create("Individual", list,
+                       fitness=creator.FitnessMin, unsafe=bool)
+
         scen_1 = [0, 2, 1, 2, 0, 1, 1]
         scen_2 = [2, 6, 0, 3, 2, 0, 0]
         mlco_1 = [0, 5., 352.5, 102., 176.6,
@@ -106,10 +112,10 @@ class TestCalculatePdist(unittest.TestCase):
                   800., 599.5, 747.6, 800., 166.4, 301.3]
 
         test_cs_list_1 = [
-            [scen_1, mlco_1],
-            [scen_1, mlco_2],
-            [scen_2, mlco_1],
-            [scen_2, mlco_2]
+            creator.Individual([scen_1, mlco_1]),
+            creator.Individual([scen_1, mlco_2]),
+            creator.Individual([scen_2, mlco_1]),
+            creator.Individual([scen_2, mlco_2])
         ]
         cat_ix_2 = [0, 1, 2, 3, 4, 5, 6, 7]
         num_range_2 = [1, 1, 1, 1, 1, 1, 1, 1, 500,
