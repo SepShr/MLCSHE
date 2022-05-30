@@ -660,3 +660,9 @@ def setup_logbook_file():
     logbook_file = os.path.join('results', logbook_id)
 
     return logbook_file
+
+
+def flatten_list(nested_list):
+    """Flattens a nested list into a 1D list.
+    """
+    return sum(map(flatten_list, nested_list), []) if isinstance(nested_list, list) else [nested_list]
