@@ -4,3 +4,4 @@ matplotlib==3.4.3
 matplotlib-inline==0.1.2
 numpy==1.21.2
 tqdm==4.62.3
+scipy==1.8.0

@@ -2,15 +2,19 @@ from deap import creator
 from src.main.ICCEA import ICCEA
 import unittest
 import problem
+import search_config as cfg
+from simulation_runner import Simulator
 
 
 class TestBreedScenario(unittest.TestCase):
     def test_breed_scenario_testInput1(self):
         # make a solver instance
+        simulator = Simulator()
         solver = ICCEA(
             creator=problem.creator,
             toolbox=problem.toolbox,
-            enumLimits=problem.enumLimits
+            simulator=simulator,
+            first_population_enumLimits=cfg.scenario_enumLimits
         )
 
         # prepare test input
@@ -30,7 +34,7 @@ class TestBreedScenario(unittest.TestCase):
         mut_int_pb = 1
 
         # run the function under test
-        bred_scenarios = solver.breed_scenario(
+        bred_scenarios = solver.breed(
             p, a, lmt, ts, cxpb,  mut_bit_pb,
             mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
 

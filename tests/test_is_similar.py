@@ -2,15 +2,19 @@ from deap import creator
 from src.main.ICCEA import ICCEA
 import unittest
 import problem
+import search_config as cfg
+from simulation_runner import Simulator
 
 
 class TestIsSimilar(unittest.TestCase):
     def test_is_similar_testInput1(self):
         # make a solver instance
+        simulator = Simulator()
         solver = ICCEA(
             creator=problem.creator,
             toolbox=problem.toolbox,
-            enumLimits=problem.enumLimits
+            simulator=simulator,
+            first_population_enumLimits=cfg.scenario_enumLimits
         )
 
         # Test values
