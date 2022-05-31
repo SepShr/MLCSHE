@@ -12,15 +12,16 @@ class TestCalculateCdist(unittest.TestCase):
         mlco_2 = [1, 253.2, 466., 638.3, 478.1,
                   800., 599.5, 747.6, 800., 166.4, 301.3]
 
-        cs_list_1 = [
-            [scen_1, mlco_1],
-            [scen_1, mlco_2]
-        ]
+        cs_1 = [scen_1, mlco_1]
+        cs_2 = [scen_1, mlco_2]
+        cs_3 = [scen_2, mlco_1]
+        cs_4 = [scen_2, mlco_2]
 
-        cs_list_2 = [
-            [scen_2, mlco_1],
-            [scen_2, mlco_2]
-        ]
+        cs_list_1 = [cs_1, cs_2]
+
+        cs_list_2 = [cs_3, cs_4]
+
+        expected_cs_list = [cs_1, cs_2, cs_3, cs_4]
 
         cat_ix = [0, 1, 2, 3, 4, 5, 6, 7]
         num_range = [1, 1, 1, 1, 1, 1, 1, 1, 500,
@@ -46,3 +47,4 @@ class TestCalculateCdist(unittest.TestCase):
         ])
 
         self.assertTrue(np.allclose(computed_dist_mtx, expected_dist_mtx))
+        self.assertEqual(test_distance.cs_list, expected_cs_list)
