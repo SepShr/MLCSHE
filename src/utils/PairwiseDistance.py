@@ -7,7 +7,7 @@ class PairwiseDistance:
     """Calculates and updates a pairwise distance matrix for a set of complete solutions.
     """
 
-    def __init__(self, vectors: list = [], numeric_ranges: list = [], categorical_indices: list = [], cs_list: list = None) -> None:
+    def __init__(self, cs_list: list = None, numeric_ranges: list = [], categorical_indices: list = []) -> None:
         """
         :param vectors: a list of same_length flat vectors.
         :param numeric_ranges: a list of absolute ranges for the numeric parameters.
@@ -19,7 +19,8 @@ class PairwiseDistance:
             self.vectors = np.asarray(self.prepare_for_dist_eval(cs_list))
             self.cs_list = cs_list
         else:
-            self.vectors = np.asarray(vectors)
+            raise ValueError("cs_list cannot be None.")
+            # self.vectors = np.asarray(vectors)
         # normalization factor; NOTE: 1 for a categorical variable
         self.numeric_ranges = np.asarray(numeric_ranges)
         self.categorical_indices = categorical_indices
