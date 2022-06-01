@@ -134,3 +134,29 @@ class TestCalculatePdist(unittest.TestCase):
         ])
 
         self.assertTrue(np.allclose(computed_dist_mtx, expected_dist_mtx))
+
+    def test_pdist_performance(self):
+
+        import random
+        import time
+
+        num_repeat = 10
+        dim = 30
+        num_vectors = 5000
+        cat_indexes = [1, 3, 5, 7, 9, 11]
+        cs_list = []
+        for i in range(num_vectors):
+            random_vector = []
+            for j in range(dim):
+                if j in cat_indexes:
+                    random_vector.append(random.randint(0, 10))
+                else:
+                    random_vector.append(random.randint(0, 100) / 10)
+            cs_list.append(random_vector)
+
+        start_time = time.time()
+        for i in range(num_repeat):
+            PairwiseDistance(cs_list=cs_list, numeric_ranges=[10 for i in range(dim)], categorical_indices=cat_indexes)
+        end_time = time.time()
+        print(f'\nperformance-testing: dim={dim}, num_vectors={num_vectors}, cat_indexes={cat_indexes}\n'
+              f'pdist average execution time(s): {(end_time - start_time)/10:.3f}')
