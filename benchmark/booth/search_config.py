@@ -4,6 +4,7 @@ mlco_population_size = 20  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
 number_of_generations = 100
 random_seed = None
+max_num_evals = 51200
 
 # Evolution hyperparameters
 tournament_selection = 2
