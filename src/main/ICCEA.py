@@ -28,10 +28,11 @@ class ICCEA:
 
         self.simulator = simulator
 
-    def solve(self, max_gen, hyperparameters, seed=None):
+    def solve(self, max_gen, hyperparameters, max_num_evals, seed=None):
         self._logger.info("CCEA search started.")
         self._logger.info(
             'Maximum number of generations is: {}'.format(max_gen))
+        self._max_num_evals = max_num_evals
 
         # Set the random module seed.
         random.seed(seed)
@@ -137,6 +138,9 @@ class ICCEA:
             # with open(self._logbook_file, 'wt') as lb_file:
             #     print(logbook.stream, file=lb_file)
 
+            # Get the number of evaluated complete solutions.
+            num_evals = len(complete_solution_archive)
+
             best_solution = sorted(
                 complete_solution_archive, key=lambda x: x.fitness.values[0])[-1]
             # self._logger.info('Size of the complete_solution_archive at generation {} is: {}'.format(
@@ -150,7 +154,7 @@ class ICCEA:
             # self._logger.debug('complete_solutions={}'.format(
             #     complete_solution_archive))
 
-            if num_gen == max_gen - 1:
+            if (num_gen >= max_gen - 1) or (num_evals >= self._max_num_evals):
                 break
 
             # Evolve archives and populations for the next generation
