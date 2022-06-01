@@ -9,7 +9,6 @@ class PairwiseDistance:
 
     def __init__(self, cs_list: list = None, numeric_ranges: list = [], categorical_indices: list = []) -> None:
         """
-        :param vectors: a list of same_length flat vectors.
         :param numeric_ranges: a list of absolute ranges for the numeric parameters.
         :param categorical_indices: a list of indices for catogircal parameters.
         :param cs_list: a list of complete solutions.
@@ -26,13 +25,13 @@ class PairwiseDistance:
         self.categorical_indices = categorical_indices
         self.dist_matrix_sq = self.calculate_pdist(
             input_array=self.vectors,
-            weights=self.numeric_ranges,
+            num_ranges=self.numeric_ranges,
             cat_indices=self.categorical_indices
         )
 
-    def calculate_pdist(self, input_array: np.array, weights: np.array, cat_indices: list) -> np.array:
+    def calculate_pdist(self, input_array: np.array, num_ranges: np.array, cat_indices: list) -> np.array:
         # Normalize the input data.
-        normalized_array = self.normalize_array(input_array, weights)
+        normalized_array = self.normalize_array(input_array, num_ranges)
 
         # Split nominal and numeric arrays.
         arrays = self.split_array(normalized_array, cat_indices)
@@ -126,8 +125,8 @@ class PairwiseDistance:
         return [flatten_list(list(vec)) for vec in cs_list]
 
     @staticmethod
-    def normalize_array(input_array: np.array, weights: np.array) -> np.array:
-        return input_array / weights
+    def normalize_array(input_array: np.array, num_ranges: np.array) -> np.array:
+        return input_array / num_ranges
 
     def __repr__(self) -> str:
         return self.__str__()
