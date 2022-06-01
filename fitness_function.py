@@ -77,7 +77,13 @@ def fitness_function(cs, max_dist: float, cs_list: list, dist_matrix: np.array, 
     """
     cs_region = find_cs_region(cs, max_dist, cs_list, dist_matrix)
     p_safe = estimate_safe_cs_probability(cs_region)
+    assert 0 <= p_safe <= 1
     confidence_interval = wilson(p_safe, len(cs_region))
     conf_int_dist = confidence_interval_dist(confidence_interval)
+    assert 0 <= conf_int_dist <= 0.5
     conf_int_len = confidence_interval[1] - confidence_interval[0]
-    return (1 - 2 * conf_int_dist) * ((w_ci * (1 - conf_int_len)) + (w_p * (1 - abs(p_safe - 0.5))))
+    assert 0 <= conf_int_len <= 1
+    fitness_value = (1 - 2 * conf_int_dist) * \
+                    ((w_ci * (1 - conf_int_len)) + (w_p * (1 - abs(p_safe - 0.5)))) / (w_ci + w_p)
+    assert 0 <= fitness_value <= 1
+    return fitness_value
