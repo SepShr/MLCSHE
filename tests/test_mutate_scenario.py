@@ -1,7 +1,5 @@
 from deap import creator
-from src.main.ICCEA import ICCEA
 import unittest
-import problem
 from problem_utils import mutate_scenario
 
 

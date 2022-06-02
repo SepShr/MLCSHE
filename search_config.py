@@ -24,3 +24,5 @@ frame_height = 480.0
 min_boundingbox_size = 50.0
 obstacle_label_enum_limits = [-1, 1]
 null_obstacle = [0.0, 0.0, 0.0, 0.0, -1]
+num_trajectories = 2
+duration = 550
