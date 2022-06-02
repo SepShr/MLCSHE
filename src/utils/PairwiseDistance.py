@@ -29,7 +29,7 @@ class PairwiseDistance:
             cat_indices=self.categorical_indices
         )
 
-    def calculate_pdist(self, input_array: np.array, num_ranges: np.array, cat_indices: list) -> np.array:
+    def calculate_pdist(self, input_array: np.array, num_ranges: np.array, cat_indices: list, weight_num: float = 1.0, weight_cat: float = 1.0) -> np.array:
         # Normalize the input data.
         normalized_array = self.normalize_array(input_array, num_ranges)
 
@@ -43,9 +43,9 @@ class PairwiseDistance:
         # Cannot be higher than 1 in principle.
         nominal_dist = pdist(arrays['nominal'], metric='hamming')
         # Distance between Mixed Types (https://www.coursera.org/lecture/cluster-analysis/2-4-distance-betweencategorical-attributes-ordinal-attributes-and-mixed-types-KnvRC)
-        return squareform((numeric_dist + nominal_dist) / 2)
+        return squareform((weight_num * numeric_dist + weight_cat * nominal_dist) / 2)
 
-    def calculate_cdist(self, dist_matrix: np.array, calculated_vectors: np.array, new_vectors: np.array, num_ranges: np.array, cat_indices: list):
+    def calculate_cdist(self, dist_matrix: np.array, calculated_vectors: np.array, new_vectors: np.array, num_ranges: np.array, cat_indices: list, weight_num: float = 1.0, weight_cat: float = 1.0):
         # Split to nominal and numeric arrays for both calculated and new vectors.
         calculated_split = self.split_array(
             self.normalize_array(calculated_vectors, num_ranges), cat_indices)
@@ -60,7 +60,8 @@ class PairwiseDistance:
             XA=calculated_split['nominal'],
             XB=new_split['nominal'],
             metric='hamming')
-        final_cdist = (numeric_cdist + nominal_cdist) / 2
+        final_cdist = (weight_num * numeric_cdist +
+                       weight_cat * nominal_cdist) / 2
 
         final_cdist_transpose = np.transpose(final_cdist)
 
