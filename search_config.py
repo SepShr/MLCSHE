@@ -25,4 +25,6 @@ min_boundingbox_size = 50.0
 obstacle_label_enum_limits = [-1, 1]
 null_obstacle = [0.0, 0.0, 0.0, 0.0, -1]
 num_trajectories = 2
-duration = 550
+duration = 900
+min_trajectory_duration = 50
+null_trajectory = [-1, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

@@ -1,6 +1,7 @@
+from copy import deepcopy
 from deap import base, creator
 import unittest
-from problem_utils import initialize_mlco, mutate_mlco
+from problem_utils import initialize_mlco, mutate_mlco, mutate_time
 
 
 class TestMutateMLCO(unittest.TestCase):
@@ -11,7 +12,8 @@ class TestMutateMLCO(unittest.TestCase):
         creator.create("OutputMLC", creator.Individual)
         self.c = creator.OutputMLC
 
-        self.duration = 550
+        self.min_duration = 50
+        self.duration = 900
         self.frame_width = 800
         self.frame_height = 600
         self.min_bbox_size = 50
@@ -20,7 +22,7 @@ class TestMutateMLCO(unittest.TestCase):
         self.guassian_mutation_std = 0.125
         self.guassian_mutation_probability = 1
         self.integer_mutation_probability = 1
-        self.null_trajectory = [-1, 0.0, 0.0, 0.0,
+        self.null_trajectory = [-1, 0, 0, 0.0,
                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         x_min_lb = 0.0
         x_min_ub = self.frame_width - self.min_bbox_size
@@ -54,3 +56,10 @@ class TestMutateMLCO(unittest.TestCase):
 
         self.assertNotEqual(mutated_mlco, initial_mlco)
         self.assertIsInstance(mutated_mlco, self.c)
+
+    def test_mutate_time(self):
+        time_list = [450, 800]
+        mutated_time = mutate_time(time_list=deepcopy(time_list), mutipb=self.integer_mutation_probability,
+                                   duration=self.duration, min_duration=self.min_duration)
+
+        self.assertNotEqual(time_list, mutated_time)

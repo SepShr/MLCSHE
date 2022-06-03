@@ -43,7 +43,7 @@ cs = [[scen_1, mlco_1], [scen_2, mlco_2], [scen_1, mlco_2], [scen_2, mlco_1]]
 from copy import deepcopy
 from deap import tools
 import logging
-from random import randint, uniform
+from random import randint, random, uniform
 
 import search_config as cfg
 
@@ -63,32 +63,29 @@ logger = logging.getLogger(__name__)
 # Initialization functions
 
 
-def initialize_mlco(class_, num_traj: int, duration: float):
+def initialize_mlco(class_, num_traj: int, duration: int = cfg.duration):
     pass
     trajectory_list = []
-    for i in range(num_traj):
+    for _ in range(num_traj):
         traj_label = randint(-1, 1)
-        if traj_label == -1:
-            trajectory_list.append(
-                [-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        else:
-            trajectory_list.append(create_obs_traj(traj_label, duration))
+        trajectory_list.append(create_obs_traj(traj_label, duration))
     return class_(trajectory_list)
 
 
 def create_obs_traj(
     obstacle_label: int,
-    duration: float,
+    duration: int = cfg.duration,
+    min_duration: int = cfg.min_trajectory_duration,
     frame_width=cfg.frame_width,
     frame_height=cfg.frame_height,
     min_bbox_size=cfg.min_boundingbox_size
 ):
     """mlco = [
         [
-            label: 0 -> vehicle, 1 -> person,
-            t0: [0, ??],
-            t1: [0, ??],
-            bbox_t0_x_min: [0, 750], # Assuming a minimum of 50 px for bbox size.
+            label: [-1, 1],  # 0 -> vehicle, 1 -> person,
+            t0: [0, duration],
+            t1: [0, duration],
+            bbox_t0_x_min: [0, 750],  # Assuming a minimum of 50 px for bbox size.
             bbox_t0_x_max: [50, 800],
             bbox_t0_y_min: [0, 550],
             bbox_t0_y_max: [50, 600],
@@ -100,11 +97,13 @@ def create_obs_traj(
     ...]
     """
     if obstacle_label == -1:
-        return [-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        return cfg.null_trajectory
     else:
         # NOTE: No trajectory is started less than 10 time units to the end.
-        t0 = round(uniform(0.0, duration-10.0), 3)
-        t1 = round(uniform(t0, duration), 3)
+        # t0 = round(uniform(0.0, duration-10.0), 3)
+        # t1 = round(uniform(t0, duration), 3)
+        t0 = randint(0, duration - min_duration)
+        t1 = randint(t0 + min_duration, duration)
         obstacle_trajectory = [obstacle_label, t0, t1]
         # Add the bounding box at t0.
         obstacle_trajectory += create_random_bbox(
@@ -136,9 +135,11 @@ def mutate_mlco(
     """Mutates a mlco individual."""
     # TODO: Use multiprocessing for each obstacle
     _class = type(mlco)
+
+    mlco_deepcopy = deepcopy(mlco)
     mutated_mlco = []
 
-    for trajectory in mlco:
+    for trajectory in mlco_deepcopy:
         trajectory = mutate_traj(
             trajectory, traj_enumLimits,
             mutgmu, mutgsig, mutgpb, mutipb)
@@ -152,7 +153,7 @@ def mutate_traj(mlco_element, traj_enum_limit, mutgmu, mutgsig, mutgpb, mutipb):
     Currently the shape of the mlco_element is assumed to be:
     `[int, flt, flt, int, int, int, int, int, int, int, int]`
     for now:
-    `[int, flt, flt, flt, flt, flt, flt, flt, flt, flt, flt]`
+    `[int, int, int, flt, flt, flt, flt, flt, flt, flt, flt]`
 
     NOTE: The implementation must change when the target mlc changes!
     """
@@ -167,7 +168,7 @@ def mutate_traj(mlco_element, traj_enum_limit, mutgmu, mutgsig, mutgpb, mutipb):
 
     # if mutated_label == -1:
     if mutated_label[0] == -1:
-        return [-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        return cfg.null_trajectory
     else:
         if mlco_element_label == -1:
             return create_obs_traj(mutated_label[0])
@@ -182,14 +183,21 @@ def mutate_traj(mlco_element, traj_enum_limit, mutgmu, mutgsig, mutgpb, mutipb):
             return mutated_label + mutated_time + mutated_bbox_t0 + mutated_bbox_t1
 
 
-def mutate_time(time_list, mutgmu, mutgsig, mutgpb):
-    mutated_time = list(tools.mutGaussian(
-        time_list, mu=mutgmu, sigma=mutgsig, indpb=mutgpb)[0])
-    if mutated_time[0] >= mutated_time[1]:
-        if mutated_time[0] < 60.0:
-            mutated_time[1] += 50.0
-        else:
-            mutated_time[0] += -50.0
+def mutate_time(time_list, mutipb, duration: int = cfg.duration, min_duration: int = cfg.min_trajectory_duration):
+    # mutated_time = list(tools.mutUniformInt(
+    #     time_list, low=, up=, indpb=mutgpb)[0])
+    # if mutated_time[0] >= mutated_time[1]:
+    #     if mutated_time[0] < 60.0:
+    #         mutated_time[1] += 50.0
+    #     else:
+    #         mutated_time[0] += -50.0
+    mutated_time = time_list
+    if random() <= mutipb:
+        t0_ub = duration - min_duration
+        mutated_time[0] = randint(0, t0_ub)
+
+    if random() <= mutipb:
+        mutated_time[1] = randint(mutated_time[0] + min_duration, duration)
 
     return mutated_time
 
