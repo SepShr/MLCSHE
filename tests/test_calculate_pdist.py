@@ -156,7 +156,18 @@ class TestCalculatePdist(unittest.TestCase):
 
         start_time = time.time()
         for i in range(num_repeat):
-            PairwiseDistance(cs_list=cs_list, numeric_ranges=[10 for i in range(dim)], categorical_indices=cat_indexes)
+            PairwiseDistance(cs_list=cs_list, numeric_ranges=[
+                             10 for i in range(dim)], categorical_indices=cat_indexes)
         end_time = time.time()
         print(f'\nperformance-testing: dim={dim}, num_vectors={num_vectors}, cat_indexes={cat_indexes}\n'
               f'pdist average execution time(s): {(end_time - start_time)/10:.3f}')
+
+    def test_pdist_null(self):
+        cat_indices = []
+        num_ranges = [[0.0, 1.0]]
+        cs_list = []
+
+        empty_distance = PairwiseDistance(
+            cs_list=cs_list, numeric_ranges=num_ranges, categorical_indices=cat_indices)
+
+        self.assertEqual(empty_distance.dist_matrix_sq, [])

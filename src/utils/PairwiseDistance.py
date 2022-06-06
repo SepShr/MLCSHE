@@ -14,20 +14,25 @@ class PairwiseDistance:
         :param cs_list: a list of complete solutions.
         NOTE: Vectors are a list of flattened complete solutions.
         """
-        if cs_list is not None:
-            self.vectors = np.asarray(self.prepare_for_dist_eval(cs_list))
-            self.cs_list = cs_list
-        else:
-            raise ValueError("cs_list cannot be None.")
-            # self.vectors = np.asarray(vectors)
+        assert cs_list is not None, "cs_list cannot be None."
+
         # normalization factor; NOTE: 1 for a categorical variable
         self.numeric_ranges = np.asarray(numeric_ranges)
         self.categorical_indices = categorical_indices
-        self.dist_matrix_sq = self.calculate_pdist(
-            input_array=self.vectors,
-            num_ranges=self.numeric_ranges,
-            cat_indices=self.categorical_indices
-        )
+
+        if cs_list != []:
+            self.vectors = np.asarray(self.prepare_for_dist_eval(cs_list))
+            self.cs_list = cs_list
+            self.dist_matrix_sq = self.calculate_pdist(
+                input_array=self.vectors,
+                num_ranges=self.numeric_ranges,
+                cat_indices=self.categorical_indices
+            )
+        else:
+            self.vectors = []
+            self.dist_matrix_sq = []
+            # raise ValueError("cs_list cannot be empty.")
+            # self.vectors = np.asarray(vectors)
 
     def calculate_pdist(self, input_array: np.array, num_ranges: np.array, cat_indices: list, weight_num: float = 1.0, weight_cat: float = 1.0) -> np.array:
         # Normalize the input data.
