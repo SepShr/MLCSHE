@@ -53,7 +53,6 @@ from src.utils.utility import initialize_hetero_vector, mutate_flat_hetero_indiv
 total_mlco_messages = cfg.total_mlco_messages
 total_obstacles_per_message = cfg.total_obstacles_per_message
 obstacle_enumLimits = cfg.obstacle_label_enum_limits
-# %%
 obs_traj_enum_limits = [
     [-1, 1], [0.0, 400.0], [0.0, 400.0], [0, 750], [0, 550], [
         50, 800], [50, 600], [0, 750], [0.0, 550], [50, 800], [50, 600]
@@ -430,3 +429,75 @@ def problem_joint_fitness(simulator, scenario, mlco):
     logger.info('joint_fitness_value={}'.format(DfC_min))
 
     return DfC_min
+
+
+def trajectory_to_obstacle(trajectory, duration):
+    """Creates a sequence (list) of obstacles for a given `trajectory`.
+    The size of the sequence is determined by `duration`. Where an 
+    obstacle does not exist, an empty list is returned.
+
+    A trajectory has the following shape:
+    trajectory = [label, t0, t1, x_min_t0, x_max_t0, y_min_t0, y_max_t0,
+    x_min_t1, x_max_t1, y_min_t1, y_max_t1]
+
+    and an obstacle has the following shape:
+    obstacle = [x_min, x_max, y_min, y_max, label]
+    """
+    assert len(trajectory) == 11
+
+    obs_label = trajectory[0]
+    assert obs_label in [-1, 0, 1]
+
+    # Initialize the obstacle sequence.
+    obs_seq = [[] for _ in range(duration)]
+
+    if obs_label == -1:
+        pass  # Discard if the label in null, i.e., -1.
+    else:
+        t0 = trajectory[1]  # Start time of the trajectory.
+        t1 = trajectory[2]  # End time of the trajectory.
+
+        num_msg = t1 - t0  # Number of steps between t0 and t1.
+
+        bbox_t0 = trajectory[3:7]  # Start bounding box.
+        bbox_t1 = trajectory[7:]  # End bounding box.
+
+        # Calculate the size of the steps for each bbox paramter.
+        steps = [(element1 - element2)/num_msg for (element1,
+                                                    element2) in zip(bbox_t1, bbox_t0)]
+
+        # Add the start and end bbox to the obstacle sequence.
+        obs_seq[t0].append(bbox_t0 + [obs_label])
+        obs_seq[t1].append(bbox_t1 + [obs_label])
+
+        # Calculate the in between obstacles using linear interpolation.
+        for i in range(t0 + 1, t1):
+            obs_seq[i].append(
+                [ele1 + ele2 for (ele1, ele2) in zip(obs_seq[i-1][0][1:], steps)] + [obs_label])
+
+    return obs_seq
+
+# NOTE: Use initialize_mlco for testing!
+
+
+def translate_mlco(mlco, duration):
+    # list_of_obs_sequences = []
+    # for trajectory in mlco:
+    #     list_of_obs_sequences.append(
+    #         trajectory_to_obstacle(trajectory, duration))
+
+    list_of_obs_sequences = [trajectory_to_obstacle(
+        trajectory, duration) for trajectory in mlco]
+
+    obs_seq_combined = []
+    for i in range(duration):
+        obs_instance_combined = []
+        for sequence in list_of_obs_sequences:
+            obs_instance_combined += sequence[i]
+        obs_seq_combined.append(obs_instance_combined)
+
+    for obs in obs_seq_combined:
+        if obs == []:
+            obs.append(cfg.null_obstacle)
+
+    return obs_seq_combined
