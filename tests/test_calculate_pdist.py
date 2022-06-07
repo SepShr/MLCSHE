@@ -170,4 +170,4 @@ class TestCalculatePdist(unittest.TestCase):
         empty_distance = PairwiseDistance(
             cs_list=cs_list, numeric_ranges=num_ranges, categorical_indices=cat_indices)
 
-        self.assertEqual(empty_distance.dist_matrix_sq, [])
+        self.assertEqual(empty_distance.dist_matrix_sq.size, 0)
