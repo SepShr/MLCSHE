@@ -17,3 +17,5 @@ bitflip_mutation_probability = 1
 
 # Problem-specific parameters
 enumLimits = [[0.0, 1.0]]
+categorical_indices = []
+numeric_ranges = [1, 1]

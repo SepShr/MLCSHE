@@ -5,6 +5,8 @@ import logging
 
 import numpy as np
 from deap import tools
+from fitness_function import fitness_function
+from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import (collaborate,
                                create_complete_solution, evaluate_individual,
                                find_individual_collaborator,
@@ -16,7 +18,7 @@ from src.utils.utility import (collaborate,
 
 
 class ICCEA:
-    def __init__(self, creator, toolbox, simulator, first_population_enumLimits=None, second_population_enumLimits=None):
+    def __init__(self, creator, toolbox, simulator, pairwise_distance_cs, first_population_enumLimits=None, second_population_enumLimits=None):
         self.toolbox = toolbox
         self.creator = creator
         self.p1_enumLimits = first_population_enumLimits
@@ -27,6 +29,10 @@ class ICCEA:
         self._logbook_file = setup_logbook_file()
 
         self.simulator = simulator
+        self.pairwise_distance = pairwise_distance_cs
+
+        # self.pairwise_dist_scen = pairwise_distance_scen
+        # self.pairwise_dist_mlco = pairwise_distance_mlco
 
     def solve(self, max_gen, hyperparameters, max_num_evals, seed=None):
         self._logger.info("CCEA search started.")
@@ -113,14 +119,14 @@ class ICCEA:
             completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
 
-            # Record the complete solutions that violate the requirement r
-            # complete_solution_archive.append(
-            #     cs for cs in completeSolSet if violate_safety_requirement(cs))
+            # # Record the complete solutions that violate the requirement r
+            # # complete_solution_archive.append(
+            # #     cs for cs in completeSolSet if violate_safety_requirement(cs))
             for cs in completeSolSet:
                 complete_solution_archive.append(cs)
-                # FIXME: Fix the below function.
-                if violate_safety_requirement(cs):
-                    solution_archive.append(cs)
+            #     # FIXME: Fix the below function.
+            #     if violate_safety_requirement(cs):
+            #         solution_archive.append(cs)
 
             # Compiling statistics on the populations and completeSolSet.
             record_scenario = mstats.compile(popScen)
@@ -143,8 +149,8 @@ class ICCEA:
 
             best_solution = sorted(
                 complete_solution_archive, key=lambda x: x.fitness.values[0])[-1]
-            # self._logger.info('Size of the complete_solution_archive at generation {} is: {}'.format(
-            #     num_gen, len(complete_solution_archive)))
+            self._logger.info('Size of the complete_solution_archive at generation {} is: {}'.format(
+                num_gen, len(complete_solution_archive)))
             self._logger.info('at generation={}, complete_solution_archive_size={}'.format(
                 num_gen, len(complete_solution_archive)))
             # self._logger.info(
@@ -161,9 +167,15 @@ class ICCEA:
             arcScen = self.update_archive(
                 popScen, popMLCO, completeSolSet, min_dist
             )
+            # arcScen = self.update_archive_diverse_elitist(
+            #     popScen, 7, min_dist
+            # )
             arcMLCO = self.update_archive(
                 popMLCO, popScen, completeSolSet, min_dist
             )
+            # arcMLCO = self.update_archive_diverse_elitist(
+            #     popMLCO, 7, min_dist
+            # )
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.
@@ -247,9 +259,20 @@ class ICCEA:
         #     for c, value in zip(complete_solutions_set, evaluted_complete_solutions):
         #         c.fitness.values = value
 
+        # FIXME: Enable parallel processing.
         # Evaluate joint fitness and record its value.
+        # for c in complete_solutions_set:
+        #     c.fitness.values = self.evaluate_joint_fitness(c)
+
         for c in complete_solutions_set:
-            c.fitness.values = self.evaluate_joint_fitness(c)
+            c.safety_req_value = self.evaluate_joint_fitness(c)
+
+        # Calculate the pairwise distance between all simulated complete solutions.
+        self.pairwise_distance.update_dist_matrix(complete_solutions_set)
+
+        for c in complete_solutions_set:
+            c.fitness.values = (fitness_function(
+                cs=c, cs_list=self.pairwise_distance.cs_list, dist_matrix=self.pairwise_distance.dist_matrix_sq),)
 
         # Evaluate individual fitness values.
         for individual in first_population:
@@ -676,8 +699,8 @@ class ICCEA:
 
             # Check if all individuals of pop have been considered archive.
             if not pop_minus_archive_and_ineligible:
-                self._logger.info(
-                    "No individual left to be considered for archive membership.")
+                # self._logger.info(
+                #     "No individual left to be considered for archive membership.")
                 break
 
             # Calculate the individual fitness of pop_prime individuals,
@@ -770,6 +793,9 @@ class ICCEA:
                 if not self.is_similar_individual(
                         candidate, archive_p, min_distance):
                     archive_p.append(candidate)
+                # if self.is_different(
+                #         candidate, archive_p, min_distance):
+                #     archive_p.append(candidate)
             else:
                 # Add the first member of the archive
                 archive_p.append(candidate)
@@ -910,5 +936,19 @@ class ICCEA:
 
         if sum(similarity_list) == len(distance_values):
             return True
+        else:
+            return False
+
+    def is_different(self, candidate, archive, dist_threshold):
+        assert candidate is not None, "candidate cannot be None."
+        assert candidate != [], "candidate cannot be an empty list."
+        assert archive is not None, "archive cannot be None."
+
+        if len(archive) == 0:
+            return True
+
+        for member in archive:
+            if self.pairwise_distance.get_distance(candidate, member) >= dist_threshold:
+                return True
         else:
             return False

@@ -8,6 +8,7 @@ solve.
 from deap import base, creator, tools
 import benchmark.mtq.search_config as cfg
 from src.utils.utility import initialize_hetero_vector, mutate_flat_hetero_individual
+from fitness_function import fitness_function
 
 scen_pop_size = cfg.scenario_population_size  # Size of the scenario population
 mlco_pop_size = cfg.mlco_population_size  # Size of the MLC output population
@@ -40,12 +41,21 @@ def joint_fitness_mtq(simulator, x, y):
         (1 - ((16.0/s_2) * pow((x[0]/cf - x_2), 2)) -
          ((16.0/s_2) * pow((y[0]/cf - y_2), 2)))
 
-    return max(f_1, f_2)
+    # result = max(f_1, f_2) - 40.0
+    # print(result)
+
+    return max(f_1, f_2) - 40.0
+    # return max(f_1, f_2)
+
+
+# def joint_fitness_mtq(simulator, x, y):
+#     simulate_mtq(simulator, x, y)
 
 
 # Create fitness and individual datatypes.
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))   # Maximization
-creator.create("Individual", list, fitness=creator.FitnessMax)  # Maximization
+creator.create("Individual", list, fitness=creator.FitnessMax,
+               safety_req_value=float)  # Maximization
 creator.create("Scenario", creator.Individual)
 creator.create("OutputMLC", creator.Individual)
 

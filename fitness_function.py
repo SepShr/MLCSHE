@@ -2,7 +2,7 @@
 This module contains the necessary functions to calculate the
 boundary-seeking fitness function.
 """
-from math import sqrt
+from math import copysign, sqrt
 
 import numpy as np
 
@@ -27,7 +27,8 @@ def estimate_safe_cs_probability(cs_region) -> float:
     `cs_region`.
     """
     n_evaluated = len(cs_region)
-    n_safe = len([cs for cs in cs_region if cs.unsafe is False])
+    n_safe = len([cs for cs in cs_region if copysign(
+        1.0, cs.safety_req_value[0]) == 1.0])
     return n_safe / n_evaluated
 
 
@@ -58,7 +59,7 @@ def confidence_interval_dist(confidence_interval, target_probability=0.5) -> flo
         return 0
 
 
-def fitness_function(cs, max_dist: float, cs_list: list, dist_matrix: np.array, w_ci, w_p) -> float:
+def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float = 0.5, w_ci: float = 1.0, w_p: float = 1.0) -> float:
     """Returns a fitness values which measures the distance of
     `cs` from the boundary region. The fitness values also
     relies on the number of complete solutions in the neighbourhood
@@ -84,6 +85,7 @@ def fitness_function(cs, max_dist: float, cs_list: list, dist_matrix: np.array, 
     conf_int_len = confidence_interval[1] - confidence_interval[0]
     assert 0 <= conf_int_len <= 1
     fitness_value = (1 - 2 * conf_int_dist) * \
-                    ((w_ci * (1 - conf_int_len)) + (w_p * (1 - abs(p_safe - 0.5)))) / (w_ci + w_p)
+                    ((w_ci * (1 - conf_int_len)) +
+                     (w_p * (1 - abs(p_safe - 0.5)))) / (w_ci + w_p)
     assert 0 <= fitness_value <= 1
     return fitness_value

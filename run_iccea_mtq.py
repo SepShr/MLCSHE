@@ -2,6 +2,7 @@
 iCCEA Runner.
 """
 from src.main.ICCEA import ICCEA
+from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
 from benchmark.mtq import problem
 from simulation_runner import Simulator
@@ -15,10 +16,18 @@ def main():
     # Instantiate simulator instance.
     simulator = Simulator()
 
+    # Instantiate pairwise distance instance.
+    pairwise_distance = PairwiseDistance(
+        cs_list=[],
+        numeric_ranges=cfg.numeric_ranges,
+        categorical_indices=cfg.categorical_indices
+    )
+
     solver = ICCEA(
         creator=problem.creator,
         toolbox=problem.toolbox,
         simulator=simulator,
+        pairwise_distance_cs=pairwise_distance,
         # more parameters can be added to better define the problem
         first_population_enumLimits=cfg.enumLimits,
         second_population_enumLimits=cfg.enumLimits
