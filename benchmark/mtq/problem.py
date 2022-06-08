@@ -18,7 +18,7 @@ min_distance = cfg.min_distance  # Minimum distance between members of an archiv
 enumLimits = cfg.enumLimits
 
 
-def joint_fitness_mtq(simulator, x, y):
+def compute_safety_req_value(simulator, x, y):
     """This is the problem-specific joint fitness evaluation.
     """
     # The MTQ problem.
@@ -44,12 +44,8 @@ def joint_fitness_mtq(simulator, x, y):
     # result = max(f_1, f_2) - 40.0
     # print(result)
 
-    return max(f_1, f_2) - 40.0
+    return max(f_1, f_2) - 100.0
     # return max(f_1, f_2)
-
-
-# def joint_fitness_mtq(simulator, x, y):
-#     simulate_mtq(simulator, x, y)
 
 
 # Create fitness and individual datatypes.
@@ -81,7 +77,7 @@ toolbox.register(
     toolbox.mlco, n=mlco_pop_size
 )
 
-toolbox.register("problem_jfit", joint_fitness_mtq)
+toolbox.register("compute_safety_req_value", compute_safety_req_value)
 
 toolbox.register(
     "select", tools.selTournament,

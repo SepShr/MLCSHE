@@ -1,6 +1,6 @@
 # Search hyperparameters
-scenario_population_size = 20  # Size of the scenario population
-mlco_population_size = 20  # Size of the MLC output population
+scenario_population_size = 15  # Size of the scenario population
+mlco_population_size = 15  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
 number_of_generations = 100
 random_seed = None

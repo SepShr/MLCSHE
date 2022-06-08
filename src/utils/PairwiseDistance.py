@@ -118,6 +118,7 @@ class PairwiseDistance:
 
         new_dist_matrix = np.vstack((h_array_1, h_array_2))
 
+        # print(f'calculate_vectors are: {calculated_vectors}')
         # update calculated set of complete solutions
         calculated_vectors = np.append(calculated_vectors, new_vectors, axis=0)
 
@@ -135,6 +136,7 @@ class PairwiseDistance:
         if cs_list != []:
             if self.dist_matrix_sq.size != 0:
                 new_vectors = np.asarray(self.prepare_for_dist_eval(cs_list))
+                # print(f'new_vectors are: {new_vectors}')
                 self.dist_matrix_sq, self.vectors = self.calculate_cdist(
                     self.dist_matrix_sq, self.vectors, new_vectors, self.numeric_ranges, self.categorical_indices)
                 self.cs_list += cs_list

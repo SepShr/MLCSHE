@@ -115,10 +115,12 @@ class ICCEA:
             self._logger.debug('scenario_population={}'.format(popScen))
             # self._logger.debug('The MLCO population is: {}'.format(popMLCO))
             self._logger.debug('mlco_population={}'.format(popMLCO))
+
             # Create complete solutions and evaluate individuals
+            # print('evaluation started')
             completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
-
+            # print('evaluation complete')
             # # Record the complete solutions that violate the requirement r
             # # complete_solution_archive.append(
             # #     cs for cs in completeSolSet if violate_safety_requirement(cs))
@@ -162,20 +164,16 @@ class ICCEA:
 
             if (num_gen >= max_gen - 1) or (num_evals >= self._max_num_evals):
                 break
-
+            print('updating archives')
             # Evolve archives and populations for the next generation
-            arcScen = self.update_archive(
-                popScen, popMLCO, completeSolSet, min_dist
-            )
-            # arcScen = self.update_archive_diverse_elitist(
-            #     popScen, 7, min_dist
+            # arcScen = self.update_archive(
+            #     popScen, popMLCO, completeSolSet, min_dist
             # )
-            arcMLCO = self.update_archive(
-                popMLCO, popScen, completeSolSet, min_dist
-            )
-            # arcMLCO = self.update_archive_diverse_elitist(
-            #     popMLCO, 7, min_dist
+            arcScen = self.update_archive_elitist(popScen, 7)
+            # arcMLCO = self.update_archive(
+            #     popMLCO, popScen, completeSolSet, min_dist
             # )
+            arcMLCO = self.update_archive_elitist(popMLCO, 7)
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.
@@ -204,7 +202,7 @@ class ICCEA:
 
         return complete_solution_archive, solution_archive
 
-    def evaluate_joint_fitness(self, c):
+    def evaluate_joint_fitness(self, cs_list):
         """Evaluates the joint fitness of a complete solution.
 
         It takes the complete solution as input and returns its joint
@@ -214,12 +212,20 @@ class ICCEA:
         # x = c[0][0]
         # y = c[1][0]
 
+        # for c in cs_list:
+        #     c.safety_req_value = self.get_safety_req_value(c)
+        map(self.get_safety_req_value, cs_list)
+        # Calculate the pairwise distance between all simulated complete solutions.
+        self.pairwise_distance.update_dist_matrix(cs_list)
+        for c in cs_list:
+            c.fitness.values = (fitness_function(
+                cs=c, cs_list=self.pairwise_distance.cs_list, dist_matrix=self.pairwise_distance.dist_matrix_sq),)
+
+    def get_safety_req_value(self, c):
         x = c[0]
         y = c[1]
 
-        joint_fitness_value = self.toolbox.problem_jfit(self.simulator, x, y)
-
-        return (joint_fitness_value,)
+        return self.toolbox.compute_safety_req_value(self.simulator, x, y)
 
     def evaluate(
             self, first_population, first_archive,
@@ -263,16 +269,17 @@ class ICCEA:
         # Evaluate joint fitness and record its value.
         # for c in complete_solutions_set:
         #     c.fitness.values = self.evaluate_joint_fitness(c)
+        self.evaluate_joint_fitness(complete_solutions_set)
 
-        for c in complete_solutions_set:
-            c.safety_req_value = self.evaluate_joint_fitness(c)
+        # for c in complete_solutions_set:
+        #     c.safety_req_value = self.get_safety_req_value(c)
 
-        # Calculate the pairwise distance between all simulated complete solutions.
-        self.pairwise_distance.update_dist_matrix(complete_solutions_set)
+        # # Calculate the pairwise distance between all simulated complete solutions.
+        # self.pairwise_distance.update_dist_matrix(complete_solutions_set)
 
-        for c in complete_solutions_set:
-            c.fitness.values = (fitness_function(
-                cs=c, cs_list=self.pairwise_distance.cs_list, dist_matrix=self.pairwise_distance.dist_matrix_sq),)
+        # for c in complete_solutions_set:
+        #     c.fitness.values = (fitness_function(
+        #         cs=c, cs_list=self.pairwise_distance.cs_list, dist_matrix=self.pairwise_distance.dist_matrix_sq),)
 
         # Evaluate individual fitness values.
         for individual in first_population:
@@ -599,7 +606,10 @@ class ICCEA:
                 c = joint_class(c)
                 # FIXME: Needs to be optimized!
                 if not self.individual_in_list(c, complete_solutions_set):
-                    c.fitness.values = self.evaluate_joint_fitness(c)
+
+                    print('in calculate_fit_given_archive')
+                    # c.fitness.values = self.evaluate_joint_fitness([c])
+                    self.evaluate_joint_fitness([c])
                     # counter_jfe += 1
                     # print(counter_jfe)
                     comp_sol_set_archive.append(c)
@@ -630,8 +640,11 @@ class ICCEA:
         for x in population:
             c = joint_class(create_complete_solution(
                 individual, x, first_item_class))
+            print(f'c is {c}')
             if not self.individual_in_list(c, complete_solutions_set):
-                c.fitness.values = self.evaluate_joint_fitness(c)
+                print('in calculate_fit_given_archive_and_i')
+                self.evaluate_joint_fitness(c)
+                # c.fitness.values = self.evaluate_joint_fitness(c)
                 complete_solutions_set.append(c)
                 fitness_value = max(
                     fit_given_archive[population.index(x)], c.fitness.values[0])

@@ -28,7 +28,7 @@ def estimate_safe_cs_probability(cs_region) -> float:
     """
     n_evaluated = len(cs_region)
     n_safe = len([cs for cs in cs_region if copysign(
-        1.0, cs.safety_req_value[0]) == 1.0])
+        1.0, cs.safety_req_value) == 1.0])
     return n_safe / n_evaluated
 
 
