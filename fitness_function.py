@@ -43,7 +43,8 @@ def find_cs_region(center_cs, max_dist, cs_list, dist_matrix_sq: np.array) -> li
                             complete solutions.
     """
     # NOTE: We have assumed that the dist_matrix_sq is in squareform. If it is condensed, another formula should be used.
-    return [cs for cs in cs_list if dist_matrix_sq[cs_list.index(center_cs), cs_list.index(cs)] <= max_dist]
+    center_cs_index = cs_list.index(center_cs)
+    return [cs for cs in cs_list if dist_matrix_sq[center_cs_index, cs_list.index(cs)] <= max_dist]
 
 
 def confidence_interval_dist(confidence_interval, target_probability=0.5) -> float:
