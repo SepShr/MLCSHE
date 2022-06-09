@@ -212,9 +212,10 @@ class ICCEA:
         # x = c[0][0]
         # y = c[1][0]
 
-        # for c in cs_list:
-        #     c.safety_req_value = self.get_safety_req_value(c)
-        map(self.get_safety_req_value, cs_list)
+        for c in cs_list:
+            c.safety_req_value = self.get_safety_req_value(c)
+        # map(self.get_safety_req_value, cs_list)  # ERROR: this does not save cs.safety_req_value for each cs in cs_list
+
         # Calculate the pairwise distance between all simulated complete solutions.
         self.pairwise_distance.update_dist_matrix(cs_list)
         for c in cs_list:
