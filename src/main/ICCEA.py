@@ -220,7 +220,11 @@ class ICCEA:
         self.pairwise_distance.update_dist_matrix(cs_list)
         for c in cs_list:
             c.fitness.values = (fitness_function(
-                cs=c, cs_list=self.pairwise_distance.cs_list, dist_matrix=self.pairwise_distance.dist_matrix_sq),)
+                cs=c,
+                cs_list=self.pairwise_distance.cs_list,
+                dist_matrix=self.pairwise_distance.dist_matrix_sq,
+                max_dist=0.05
+            ),)
 
     def get_safety_req_value(self, c):
         x = c[0]
