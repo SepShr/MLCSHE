@@ -37,16 +37,18 @@ class ICCEA:
     def solve(self, max_gen, hyperparameters, max_num_evals, seed=None):
         self._logger.info("CCEA search started.")
         self._logger.info(
-            'Maximum number of generations is: {}'.format(max_gen))
-        self._max_num_evals = max_num_evals
+            'max_number_of_generations={}'.format(max_gen))
+        self._logger.info('max_number_of_evaluations={}'.format(max_num_evals))
 
         # Set the random module seed.
         random.seed(seed)
-        self._logger.info('Random seed is set to: {}'.format(seed))
+        self._logger.info('random_seed={}'.format(seed))
 
         # Instantiate individuals and populations
         popScen = self.toolbox.popScen()
+        self._logger.info('scenario_population_size={}'.format(len(popScen)))
         popMLCO = self.toolbox.popMLCO()
+        self._logger.info('mlco_population_size={}'.format(len(popMLCO)))
         arcScen = self.toolbox.clone(popScen)
         arcMLCO = self.toolbox.clone(popMLCO)
         complete_solution_archive = []
@@ -78,22 +80,7 @@ class ICCEA:
             mut_guass_pb, \
             mut_int_pb, \
             mut_bit_pb = hyperparameters
-        # self._logger.info(
-        #     'Minimum distance threshold is set to: {}'.format(min_dist))
-        # self._logger.info(
-        #     'Tournament selection size is set to: {}'.format(ts))
-        # self._logger.info(
-        #     'Crossover probability (rate) is set to: {}'.format(cxpb))
-        # self._logger.info(
-        #     'Gaussian mutation mean is set to: {}'.format(mut_guass_mu))
-        # self._logger.info(
-        #     'Gaussian mutation standard deviation is set to: {}'.format(mut_guass_sig))
-        # self._logger.info(
-        #     'Gaussian mutation probability (rate) is set to: {}'.format(mut_guass_pb))
-        # self._logger.info(
-        #     'Integer mutation probability (rate) is set to: {}'.format(mut_int_pb))
-        # self._logger.info(
-        #     'Bitflip mutation probability (rate) is set to: {}'.format(mut_bit_pb))
+
         self._logger.info(
             'minimum_distance_threshold={}'.format(min_dist))
         self._logger.info('tournament_selection_size={}'.format(ts))
@@ -148,6 +135,7 @@ class ICCEA:
 
             # Get the number of evaluated complete solutions.
             num_evals = len(complete_solution_archive)
+            self._logger.info('num_of_evaluations={}'.format(num_evals))
 
             best_solution = sorted(
                 complete_solution_archive, key=lambda x: x.fitness.values[0])[-1]
@@ -162,9 +150,9 @@ class ICCEA:
             # self._logger.debug('complete_solutions={}'.format(
             #     complete_solution_archive))
 
-            if (num_gen >= max_gen - 1) or (num_evals >= self._max_num_evals):
+            if (num_gen >= max_gen - 1) or (num_evals >= max_num_evals):
                 break
-            print('updating archives')
+            self._logger.info("Updating archives...")
             # Evolve archives and populations for the next generation
             # arcScen = self.update_archive(
             #     popScen, popMLCO, completeSolSet, min_dist
@@ -177,6 +165,7 @@ class ICCEA:
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.
+            self._logger.info("Breeding the populations...")
             popScen = self.breed(
                 popScen, arcScen, self.p1_enumLimits, ts, cxpb, mut_bit_pb,
                 mut_guass_mu, mut_guass_sig, mut_guass_pb, mut_int_pb)
