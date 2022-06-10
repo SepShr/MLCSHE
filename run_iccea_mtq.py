@@ -50,7 +50,12 @@ def main():
 
     # User does not need to modify anything but `problem.py`
     solution = solver.solve(
-        max_gen=cfg.number_of_generations, hyperparameters=hyperparameters, max_num_evals=cfg.max_num_evals, seed=cfg.random_seed)
+        max_gen=cfg.number_of_generations,
+        hyperparameters=hyperparameters,
+        max_num_evals=cfg.max_num_evals,
+        radius=cfg.region_radius,
+        seed=cfg.random_seed
+    )
 
 
 if __name__ == "__main__":

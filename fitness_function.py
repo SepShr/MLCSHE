@@ -60,7 +60,7 @@ def confidence_interval_dist(confidence_interval, target_probability=0.5) -> flo
         return 0
 
 
-def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float = 0.5, w_ci: float = 1.0, w_p: float = 1.0) -> float:
+def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float, w_ci: float = 1.0, w_p: float = 1.0) -> float:
     """Returns a fitness values which measures the distance of
     `cs` from the boundary region. The fitness values also
     relies on the number of complete solutions in the neighbourhood

@@ -34,7 +34,9 @@ class ICCEA:
         # self.pairwise_dist_scen = pairwise_distance_scen
         # self.pairwise_dist_mlco = pairwise_distance_mlco
 
-    def solve(self, max_gen, hyperparameters, max_num_evals, seed=None):
+    def solve(self, max_gen, hyperparameters, max_num_evals, radius, seed=None):
+        self.radius = radius
+
         self._logger.info("CCEA search started.")
         self._logger.info(
             'max_number_of_generations={}'.format(max_gen))
@@ -135,12 +137,10 @@ class ICCEA:
 
             # Get the number of evaluated complete solutions.
             num_evals = len(complete_solution_archive)
-            self._logger.info('num_of_evaluations={}'.format(num_evals))
+            self._logger.info('num_evaluations={}'.format(num_evals))
 
             best_solution = sorted(
                 complete_solution_archive, key=lambda x: x.fitness.values[0])[-1]
-            self._logger.info('Size of the complete_solution_archive at generation {} is: {}'.format(
-                num_gen, len(complete_solution_archive)))
             self._logger.info('at generation={}, complete_solution_archive_size={}'.format(
                 num_gen, len(complete_solution_archive)))
             # self._logger.info(
@@ -212,7 +212,7 @@ class ICCEA:
                 cs=c,
                 cs_list=self.pairwise_distance.cs_list,
                 dist_matrix=self.pairwise_distance.dist_matrix_sq,
-                max_dist=0.05
+                max_dist=self.radius
             ),)
 
     def get_safety_req_value(self, c):

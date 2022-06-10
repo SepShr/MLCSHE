@@ -1,7 +1,8 @@
 # Search hyperparameters
-scenario_population_size = 15  # Size of the scenario population
-mlco_population_size = 15  # Size of the MLC output population
+scenario_population_size = 25  # Size of the scenario population
+mlco_population_size = 25  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
+region_radius = 0.05  # The radius of the region for fitness evaluations
 number_of_generations = 100
 random_seed = None
 max_num_evals = 51200
