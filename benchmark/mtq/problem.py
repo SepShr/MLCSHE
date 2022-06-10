@@ -25,7 +25,7 @@ def compute_safety_req_value(simulator, x, y):
 
     cf = 1  # Correction factor that controls the granularity of x and y.
 
-    h_1 = 50
+    h_1 = 150
     x_1 = 0.75
     y_1 = 0.75
     s_1 = 1.6
@@ -33,7 +33,7 @@ def compute_safety_req_value(simulator, x, y):
         (1 - ((16.0/s_1) * pow((x[0]/cf - x_1), 2)) -
          ((16.0/s_1) * pow((y[0]/cf - y_1), 2)))
 
-    h_2 = 150
+    h_2 = 50
     x_2 = 0.25
     y_2 = 0.25
     s_2 = 1.0/32.0
