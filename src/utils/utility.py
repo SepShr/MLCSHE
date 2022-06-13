@@ -2,7 +2,7 @@
 Set of utility functions which are independent from the `problem` structure.
 """
 
-from deap import tools
+from deap import tools, creator
 from datetime import datetime
 import logging
 import os
@@ -665,4 +665,8 @@ def setup_logbook_file():
 def flatten_list(nested_list):
     """Flattens a nested list into a 1D list.
     """
-    return sum(map(flatten_list, nested_list), []) if isinstance(nested_list, list) else [nested_list]
+    return sum(map(flatten_list, nested_list), []) \
+        if (isinstance(nested_list, list) or
+            isinstance(nested_list, creator.Individual) or
+            isinstance(nested_list, creator.Scenario) or
+            isinstance(nested_list, creator.OutputMLC)) else [nested_list]

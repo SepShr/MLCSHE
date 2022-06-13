@@ -154,14 +154,14 @@ class ICCEA:
                 break
             self._logger.info("Updating archives...")
             # Evolve archives and populations for the next generation
-            # arcScen = self.update_archive(
-            #     popScen, popMLCO, completeSolSet, min_dist
-            # )
-            arcScen = self.update_archive_elitist(popScen, 7)
-            # arcMLCO = self.update_archive(
-            #     popMLCO, popScen, completeSolSet, min_dist
-            # )
-            arcMLCO = self.update_archive_elitist(popMLCO, 7)
+            arcScen = self.update_archive(
+                popScen, popMLCO, completeSolSet, min_dist
+            )
+            # arcScen = self.update_archive_elitist(popScen, 7)
+            arcMLCO = self.update_archive(
+                popMLCO, popScen, completeSolSet, min_dist
+            )
+            # arcMLCO = self.update_archive_elitist(popMLCO, 7)
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.
@@ -600,12 +600,8 @@ class ICCEA:
                 c = joint_class(c)
                 # FIXME: Needs to be optimized!
                 if not self.individual_in_list(c, complete_solutions_set):
-
-                    print('in calculate_fit_given_archive')
                     # c.fitness.values = self.evaluate_joint_fitness([c])
                     self.evaluate_joint_fitness([c])
-                    # counter_jfe += 1
-                    # print(counter_jfe)
                     comp_sol_set_archive.append(c)
                     complete_solutions_set.append(c)
                 else:
@@ -634,10 +630,8 @@ class ICCEA:
         for x in population:
             c = joint_class(create_complete_solution(
                 individual, x, first_item_class))
-            print(f'c is {c}')
             if not self.individual_in_list(c, complete_solutions_set):
-                print('in calculate_fit_given_archive_and_i')
-                self.evaluate_joint_fitness(c)
+                self.evaluate_joint_fitness([c])
                 # c.fitness.values = self.evaluate_joint_fitness(c)
                 complete_solutions_set.append(c)
                 fitness_value = max(
