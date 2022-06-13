@@ -1,16 +1,15 @@
 """
 iCCEA Runner.
 """
+import benchmark.mtq.search_config as cfg
+from benchmark.mtq import problem
+from simulation_runner import Simulator
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
-from benchmark.mtq import problem
-from simulation_runner import Simulator
-
-import benchmark.mtq.search_config as cfg
-
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
+
 
 def main():
     # Instantiate simulator instance.

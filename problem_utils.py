@@ -62,7 +62,7 @@ logger = logging.getLogger(__name__)
 # Initialization functions
 
 
-def initialize_mlco(class_, num_traj: int, duration: int = cfg.duration):
+def initialize_mlco(class_, num_traj: int = cfg.num_trajectories, duration: int = cfg.duration):
     pass
     trajectory_list = []
     for _ in range(num_traj):
@@ -130,7 +130,7 @@ def create_random_bbox(frame_width=cfg.frame_width,
 
 
 def mutate_mlco(
-        mlco, mutgmu, mutgsig, mutgpb, mutipb, traj_enumLimits):
+        mlco, mutgmu, mutgsig, mutgpb, mutipb, traj_enumLimits=cfg.traj_enum_limits):
     """Mutates a mlco individual."""
     # TODO: Use multiprocessing for each obstacle
     _class = type(mlco)
@@ -198,6 +198,13 @@ def mutate_time(time_list, mutipb, duration: int = cfg.duration, min_duration: i
     if random() <= mutipb:
         mutated_time[1] = randint(mutated_time[0] + min_duration, duration)
 
+    # Repair values.
+    if mutated_time[1] - mutated_time[0] < min_duration:
+        if duration - mutated_time[1] >= min_duration:
+            mutated_time[1] += min_duration
+        else:
+            mutated_time[0] = mutated_time[0] - min_duration
+
     return mutated_time
 
 
@@ -211,75 +218,6 @@ def mutate_bbox(bbox: list, mutgmu, mutgsig, mutgpb):
     return mutated_bbox
 
 
-# def initialize_mlco(class_):
-#     """Initializes an mlco individual.
-#     """
-#     # Initialize number of obstacles per message.
-#     car_per_message = []
-#     person_per_message = []
-#     for i in range(total_mlco_messages):
-#         car_per_message.append(0)
-#         person_per_message.append(0)
-
-#     for i in range(total_mlco_messages):
-#         car_per_message[i] = randint(0, total_obstacles_per_message-1)
-#         person_per_message[i] = randint(
-#             0, total_obstacles_per_message-car_per_message[i]-1)
-
-#     not_an_obstacle_list = [0.0, 0.0, 0.0, 0.0, -1]
-
-#     mlco_list = []
-
-#     # Create obstacle message lists.
-#     for i in range(total_mlco_messages):
-#         obstacle_message = []
-#         obstacle_label = 0  # 'vehicle'
-#         car_obstacle_message = create_obstacle_message(
-#             label=obstacle_label, num=car_per_message[i])
-#         obstacle_message += car_obstacle_message
-
-#         obstacle_label = 1  # 'person'
-#         person_obstacle_message = create_obstacle_message(
-#             label=obstacle_label, num=person_per_message[i])
-#         obstacle_message += person_obstacle_message
-
-#         for i in range(total_obstacles_per_message - len(obstacle_message)):
-#             obstacle_message.append(not_an_obstacle_list)
-
-#         mlco_list.append(obstacle_message)
-#     return class_(mlco_list)
-
-
-# def create_obstacle_message(label, num):
-#     """
-#     Creates an `obstacle_message` for a specific obstacle (`label`).
-#     An obstacle_message is a number `num` of obstacles.
-#     """
-#     obstacle_message = []
-#     for i in range(num):
-#         obstacle_message.append(create_single_obstacle(obstacle_label=label))
-#     return obstacle_message
-
-
-# def create_single_obstacle(
-#         obstacle_label, frame_width: float = cfg.frame_width,
-#         frame_height: float = cfg.frame_height,
-#         min_bbox_size: float = cfg.min_boundingbox_size):
-#     """Create an obstacle list given a label.
-#     """
-#     x_min = round(uniform(0.0, frame_width - min_bbox_size), 3)
-#     x_max = round(uniform(x_min + min_bbox_size, frame_width), 3)
-#     y_min = round(uniform(0.0, frame_height - min_bbox_size), 3)
-#     y_max = round(uniform(y_min + min_bbox_size, frame_height), 3)
-
-#     obstacle_list = [x_min, x_max, y_min, y_max]
-
-#     # FIXME: Ensure that the labels exist in OBSTACLE_LABELS.
-#     obstacle_list.append(obstacle_label)
-
-#     return obstacle_list
-
-
 def mutate_scenario(
         scenario, scenario_enumLimits,
         mutbpb, mutgmu, mutgsig, mutgpb, mutipb):
@@ -288,61 +226,6 @@ def mutate_scenario(
     return mutate_flat_hetero_individual(scenario, scenario_enumLimits,
                                          mutbpb, mutgmu,
                                          mutgsig, mutgpb, mutipb)
-
-
-# def mutate_mlco(
-#         mlco, mutgmu, mutgsig, mutgpb, mutipb, enumLimits=obstacle_enumLimits):
-#     """Mutates a mlco individual."""
-#     # TODO: Use multiprocessing for each obstacle
-#     num_messages = len(mlco)
-#     # print('num messages is: ' + str(num_messages))
-#     num_obstacles_per_message = len(mlco[0])
-#     # print(f'obs_per_msg is: {num_obstacles_per_message}')
-
-#     for i in range(num_messages):
-#         for j in range(num_obstacles_per_message):
-#             mlco[i][j] = mutate_mlco_element(
-#                 mlco[i][j], enumLimits,
-#                 mutgmu, mutgsig, mutgpb, mutipb)
-#             # print(f'mlco[{i}][{j}] is: {mlco[i][j]}')
-
-#     return mlco
-
-
-# def mutate_mlco_element(mlco_element, label_enum_limit, mutgmu, mutgsig, mutgpb, mutipb):
-#     """Mutates an atomic element the mlco message.
-# #     Currently the shape of the mlco_element is assumed to be:
-# #     `[flt, flt, flt, flt, int]`
-
-# #     NOTE: The implementation must change when the target mlc changes!
-#     """
-#     mlco_element_label = [mlco_element[4]]
-#     # mlco_element_label = mlco_element[4]
-#     mlco_element_bbox = mlco_element[:4]
-
-#     # mutated_label = randint(label_enum_limit[0], label_enum_limit[1])
-#     mutated_label = list(tools.mutUniformInt(
-#         mlco_element_label, label_enum_limit[0], label_enum_limit[1], mutipb)[0])
-
-#     # if mutated_label == -1:
-#     if mutated_label[0] == -1:
-#         return [0.0, 0.0, 0.0, 0.0, -1]
-#     else:
-#         if mlco_element_label == -1:
-#             # if mlco_element_label[0] == -1:
-#             # return create_single_obstacle(mutated_label)
-#             return create_single_obstacle(mutated_label[0])
-#         else:
-#             mutated_mlco_element = list(tools.mutGaussian(
-#                 mlco_element_bbox, mu=mutgmu, sigma=mutgsig, indpb=mutgpb)[0])
-
-#             repaired_mlco_element = repair_obstacle_bbox(mutated_mlco_element)
-
-#             for i in range(len(repaired_mlco_element)):
-#                 repaired_mlco_element[i] = round(repaired_mlco_element[i], 3)
-
-#             # return repaired_mlco_element + [mutated_label]
-#             return mutated_mlco_element + mutated_label
 
 
 def repair_obstacle_bbox(
@@ -415,7 +298,7 @@ def repair_obstacle_bbox(
 # Define the problem's joint fitness function.
 
 
-def problem_joint_fitness(simulator, scenario, mlco):
+def compute_safety_req_value(simulator, scenario, mlco):
     """Joint fitness evaluation which runs the simulator.
     """
     scenario_deepcopy = deepcopy(scenario)
@@ -426,7 +309,7 @@ def problem_joint_fitness(simulator, scenario, mlco):
     DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = simulator.run_simulation(
         scenario_deepcopy, mlco_deepcopy)
 
-    logger.info('joint_fitness_value={}'.format(DfC_min))
+    logger.info('safety_req_value={}'.format(DfC_min))
 
     return DfC_min
 
@@ -480,7 +363,7 @@ def trajectory_to_obstacle(trajectory, duration):
 # NOTE: Use initialize_mlco for testing!
 
 
-def translate_mlco(mlco, duration):
+def mlco_to_obs_seq(mlco, duration=cfg.duration):
     # list_of_obs_sequences = []
     # for trajectory in mlco:
     #     list_of_obs_sequences.append(

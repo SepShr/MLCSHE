@@ -5,10 +5,10 @@ and `toolbox`.
 This is the only file that a user has to modify for a given problem to
 solve.
 """
-from deap import base, creator, tools
 import benchmark.mtq.search_config as cfg
-from src.utils.utility import initialize_hetero_vector, mutate_flat_hetero_individual
-from fitness_function import fitness_function
+from deap import base, creator, tools
+from src.utils.utility import (initialize_hetero_vector,
+                               mutate_flat_hetero_individual)
 
 scen_pop_size = cfg.scenario_population_size  # Size of the scenario population
 mlco_pop_size = cfg.mlco_population_size  # Size of the MLC output population

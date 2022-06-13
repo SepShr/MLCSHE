@@ -2,27 +2,32 @@
 iCCEA Runner.
 """
 
-from src.main.ICCEA import ICCEA
-from src.utils.utility import setup_logger
 import problem
-from simulation_runner import Simulator
-# from datetime import datetime
-
 import search_config as cfg
-
+from simulation_runner import Simulator
+from src.main.ICCEA import ICCEA
+from src.utils.PairwiseDistance import PairwiseDistance
+from src.utils.utility import setup_logger
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
-# FIXME: Refactor enumLimits
 
 
 def main():
     # Instantiate simulator instance.
     simulator = Simulator()
 
+    # Instantiate pairwise distance instance.
+    pairwise_distance = PairwiseDistance(
+        cs_list=[],
+        numeric_ranges=cfg.numeric_ranges,
+        categorical_indices=cfg.categorical_indices
+    )
+
     solver = ICCEA(
         creator=problem.creator,
         toolbox=problem.toolbox,
         simulator=simulator,
+        pairwise_distance_cs=pairwise_distance,
         # more parameters can be added to better define the problem
         first_population_enumLimits=cfg.scenario_enumLimits
     )
@@ -44,7 +49,11 @@ def main():
 
     # User does not need to modify anything but `problem.py`
     solution = solver.solve(
-        max_gen=cfg.number_of_generations, hyperparameters=hyperparameters, max_num_evals=cfg.max_num_evals, seed=cfg.random_seed)
+        max_gen=cfg.number_of_generations,
+        hyperparameters=hyperparameters,
+        max_num_evals=cfg.max_num_evals,
+        radius=cfg.region_radius,
+        seed=cfg.random_seed)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 # Search hyperparameters
-scenario_population_size = 5  # Size of the scenario population
-mlco_population_size = 5  # Size of the MLC output population
+scenario_population_size = 2  # Size of the scenario population
+mlco_population_size = 2  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
+region_radius = 0.5  # The radius of the region for fitness evaluations
 number_of_generations = 5
 random_seed = 10
 max_num_evals = 51200
@@ -17,7 +18,7 @@ bitflip_mutation_probability = 1
 
 # Problem-specific parameters
 scenario_enumLimits = [[0, 2], [0, 6], [0, 1], [0, 3], [0, 3], [0, 0], [0, 2]]
-total_mlco_messages = 700
+total_mlco_messages = 900
 total_obstacles_per_message = 3
 frame_width = 800.0
 frame_height = 480.0
@@ -28,3 +29,38 @@ num_trajectories = 2
 duration = 900
 min_trajectory_duration = 50
 null_trajectory = [-1, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+trajectory_numeric_ranges = [1, total_mlco_messages, total_mlco_messages,
+                             frame_width, frame_height, frame_width, frame_height,
+                             frame_width, frame_height, frame_width, frame_height]
+categorical_indices = [0, 1, 2, 3, 4, 5, 6, 7]
+numeric_ranges = [1, 1, 1, 1, 1, 1, 1,
+                  1, total_mlco_messages, total_mlco_messages,
+                  frame_width, frame_height, frame_width, frame_height,
+                  frame_width, frame_height, frame_width, frame_height]
+for i in range(num_trajectories - 1):
+    numeric_ranges += trajectory_numeric_ranges
+    categorical_indices.append(categorical_indices[-1] + 11)
+
+x_min_lb = 0.0
+x_min_ub = frame_width - min_boundingbox_size
+x_max_lb = min_boundingbox_size
+x_max_ub = frame_width
+y_min_lb = 0.0
+y_min_ub = frame_height - min_boundingbox_size
+y_max_lb = min_boundingbox_size
+y_max_ub = frame_height
+
+traj_enum_limits = [
+    [-1, 1],
+    [0.0, duration],
+    [0.0, duration],
+    [x_min_lb, x_min_ub],
+    [x_max_lb, x_max_ub],
+    [y_min_lb, y_min_ub],
+    [y_max_lb, y_max_ub],
+    [x_min_lb, x_min_ub],
+    [x_max_lb, x_max_ub],
+    [y_min_lb, y_min_ub],
+    [y_max_lb, y_max_ub],
+]

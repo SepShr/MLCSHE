@@ -214,6 +214,8 @@ class ICCEA:
                 dist_matrix=self.pairwise_distance.dist_matrix_sq,
                 max_dist=self.radius
             ),)
+            self._logger.info(
+                'joint_fitness_value={}'.format(c.fitness.values[0]))
 
     def get_safety_req_value(self, c):
         x = c[0]
