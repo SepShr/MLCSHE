@@ -9,7 +9,8 @@ class TestFitnessFunction(unittest.TestCase):
 
     def setUp(self):
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        creator.create("Individual", list, fitness=creator.FitnessMin, unsafe=bool)
+        creator.create("Individual", list,
+                       fitness=creator.FitnessMin, safety_req_value=float)
 
         self.cat_ix = [0, 1, 2, 3, 4, 5, 6, 7]
         self.num_range = [1, 1, 1, 1, 1, 1, 1,
@@ -24,13 +25,13 @@ class TestFitnessFunction(unittest.TestCase):
                   800., 599.5, 747.6, 800., 166.4, 301.3]
 
         cs_1 = creator.Individual([scen_1, mlco_1])
-        cs_1.unsafe = True
+        cs_1.safety_req_value = -0.6
         cs_2 = creator.Individual([scen_1, mlco_2])
-        cs_2.unsafe = True
+        cs_2.safety_req_value = -8.69
         cs_3 = creator.Individual([scen_2, mlco_1])
-        cs_3.unsafe = False
+        cs_3.safety_req_value = 0.01
         cs_4 = creator.Individual([scen_2, mlco_2])
-        cs_4.unsafe = False
+        cs_4.safety_req_value = 54.0
 
         test_cs_list = [cs_1, cs_2, cs_3, cs_4]
 
@@ -53,11 +54,13 @@ class TestFitnessFunction(unittest.TestCase):
         num_neighbors = 1000
         cs_list = []
         for i in range(num_neighbors):
-            scenario = [random.randint(0, 7) for j in range(7)]  # random scenario
+            scenario = [random.randint(0, 7)
+                        for j in range(7)]  # random scenario
             mlco = [random.randint(0, 7)]  # random mlco[0]
-            mlco += [random.randint(0, self.num_range[j+8]) for j in range(10)]  # random mlco[1:]
+            mlco += [random.randint(0, self.num_range[j+8])
+                     for j in range(10)]  # random mlco[1:]
             cs = creator.Individual([scenario, mlco])
-            cs.unsafe = bool(random.choice([True, False]))
+            cs.safety_req_value = random.uniform(-10.0, 10.0)
             cs_list.append(cs)
 
         # compute p-dist
@@ -84,11 +87,13 @@ class TestFitnessFunction(unittest.TestCase):
         num_neighbors = 1000
         cs_list = []
         for i in range(num_neighbors):
-            scenario = [random.randint(0, 7) for j in range(7)]  # random scenario
+            scenario = [random.randint(0, 7)
+                        for j in range(7)]  # random scenario
             mlco = [random.randint(0, 7)]  # random mlco[0]
-            mlco += [random.randint(0, self.num_range[j+8]) for j in range(10)]  # random mlco[1:]
+            mlco += [random.randint(0, self.num_range[j+8])
+                     for j in range(10)]  # random mlco[1:]
             cs = creator.Individual([scenario, mlco])
-            cs.unsafe = bool(random.choice([True, False]))
+            cs.safety_req_value = random.uniform(-10.0, 10.0)
             cs_list.append(cs)
 
         # compute p-dist and fitness value
