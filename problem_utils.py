@@ -174,7 +174,7 @@ def mutate_traj(mlco_element, traj_enum_limit, mutgmu, mutgsig, mutgpb, mutipb):
             return create_obs_traj(mutated_label[0])
         else:
             mutated_time = mutate_time(
-                mlco_element_time, mutgmu, mutgsig, mutgpb)
+                mlco_element_time, mutgpb)
             mutated_bbox_t0 = mutate_bbox(
                 mlco_element_bbox_t0, mutgmu, mutgsig, mutgpb)
             mutated_bbox_t1 = mutate_bbox(
