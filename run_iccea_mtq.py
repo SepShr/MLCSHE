@@ -3,7 +3,7 @@ iCCEA Runner.
 """
 import benchmark.mtq.search_config as cfg
 from benchmark.mtq import problem
-from simulation_runner import Simulator
+from Simulator import Simulator
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger

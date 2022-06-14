@@ -4,7 +4,7 @@ iCCEA Runner.
 from src.main.ICCEA import ICCEA
 from src.utils.utility import setup_logger
 from benchmark.booth import problem
-from simulation_runner import Simulator
+from Simulator import Simulator
 
 import benchmark.booth.search_config as cfg
 

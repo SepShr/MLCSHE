@@ -10,7 +10,7 @@ from deap import base, creator, tools
 
 import search_config as cfg
 from problem_utils import initialize_mlco, problem_joint_fitness
-from simulation_runner import Simulator
+from Simulator import Simulator
 from src.utils.utility import (create_complete_solution,
                                initialize_hetero_vector, setup_logbook_file,
                                setup_logger)

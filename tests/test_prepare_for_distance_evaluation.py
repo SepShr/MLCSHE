@@ -2,7 +2,7 @@ from src.main.ICCEA import ICCEA
 import unittest
 import problem
 import search_config as cfg
-from simulation_runner import Simulator
+from Simulator import Simulator
 from src.utils.PairwiseDistance import PairwiseDistance
 
 

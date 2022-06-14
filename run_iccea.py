@@ -4,7 +4,7 @@ iCCEA Runner.
 
 import problem
 import search_config as cfg
-from simulation_runner import Simulator
+from Simulator import Simulator
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
