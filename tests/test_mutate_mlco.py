@@ -1,8 +1,9 @@
+import random
 from copy import deepcopy
 from deap import base, creator
 import unittest
 from problem_utils import initialize_mlco, mutate_mlco, mutate_time
-
+from tqdm import trange
 
 class TestMutateMLCO(unittest.TestCase):
     def setUp(self) -> None:
@@ -58,8 +59,16 @@ class TestMutateMLCO(unittest.TestCase):
         self.assertIsInstance(mutated_mlco, self.c)
 
     def test_mutate_time(self):
-        time_list = [450, 800]
-        mutated_time = mutate_time(time_list=deepcopy(time_list), mutipb=self.integer_mutation_probability,
-                                   duration=self.duration, min_duration=self.min_duration)
-
-        self.assertNotEqual(time_list, mutated_time)
+        # repeat 10000 times considering the randomness in mutate_time()
+        for i in trange(10000):
+            # org_time = [random.randint(0, self.duration), random.randint(0, self.duration)]
+            org_time = [859, 343]
+            integer_mutation_probability = random.random()
+            mutated_time = mutate_time(time_list=org_time,
+                                       mutipb=integer_mutation_probability,
+                                       duration=self.duration,
+                                       min_duration=self.min_duration)
+            # note that org_time can be the same as mutated_time
+            self.assertTrue(0 <= mutated_time[0] <= self.duration)
+            self.assertTrue(0 <= mutated_time[1] <= self.duration)
+            self.assertTrue(mutated_time[1] - mutated_time[0] >= self.min_duration)

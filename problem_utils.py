@@ -40,6 +40,7 @@ cs = [scen, mlco]
 -Example:
 cs = [[scen_1, mlco_1], [scen_2, mlco_2], [scen_1, mlco_2], [scen_2, mlco_1]]
 '''
+import copy
 from copy import deepcopy
 from deap import tools
 import logging
@@ -190,20 +191,30 @@ def mutate_time(time_list, mutipb, duration: int = cfg.duration, min_duration: i
     #         mutated_time[1] += 50.0
     #     else:
     #         mutated_time[0] += -50.0
-    mutated_time = time_list
-    if random() <= mutipb:
-        t0_ub = duration - min_duration
-        mutated_time[0] = randint(0, t0_ub)
 
-    if random() <= mutipb:
-        mutated_time[1] = randint(mutated_time[0] + min_duration, duration)
+    # initialize mutated_time
+    mutated_time = copy.deepcopy(time_list)
 
-    # Repair values.
+    # mutate the start time
+    if random() <= mutipb:
+        mutated_time[0] = randint(0, duration)
+
+    # mutation the end time
+    if random() <= mutipb:
+        # no guarantee that "mutated_time[0] + min_duration < duration"
+        # therefore, it's better to randomly generate a value and fix it later
+        mutated_time[0] = randint(0, duration)
+
+    # Repair values to have min_duration between the start and end times
     if mutated_time[1] - mutated_time[0] < min_duration:
-        if duration - mutated_time[1] >= min_duration:
-            mutated_time[1] += min_duration
+        diff = min_duration - (mutated_time[1] - mutated_time[0])
+        if mutated_time[1] + diff <= duration:
+            mutated_time[1] += diff
+        elif mutated_time[0] - diff >= 0:
+            mutated_time[0] -= diff
         else:
-            mutated_time[0] = mutated_time[0] - min_duration
+            mutated_time[0] = 0
+            mutated_time[1] = min_duration
 
     return mutated_time
 
