@@ -6,6 +6,7 @@ import time
 import logging
 
 from datetime import datetime
+from problem_utils import mlco_to_obs_seq
 # from uuid import uuid4
 
 import simulation_config as cfg
@@ -257,7 +258,7 @@ def update_sim_config(scenario_list, mlco_list, simulation_id: str, container_na
     """
     # Set flags based on scenario_list and mlco_list.
     scenario_flag = translate_scenario_list(scenario_list)
-    mlco_flag = translate_mlco_list(mlco_list)
+    mlco_flag = translate_mlco_list(mlco_to_obs_seq(mlco_list))
 
     # Update the simulation flags.
     simulation_flag = {}
@@ -404,7 +405,8 @@ def get_values(filename):
                     traffic_lights_max = 0
                 if "lane" in line_ex:
                     logger.info("lane invasion")
-                    DfC_min = 0
+                    # DfC_min = 0
+                    DfC_min = -1  # To record safety violation.
                 if "sidewalk" in line_ex:
                     logger.info("sidewalk invasion")
                     DfC_min = 0
@@ -452,6 +454,9 @@ def get_values(filename):
                 DfP_min = DfP
             if normalised_distance_travelled > DT_max:
                 DT_max = normalised_distance_travelled
+
+            if DfC_min == 0:
+                DfC_min = -1  # To record safety violation.
 
     return DfC_min, DfV_min, DfP_min, DfM_min, DT_max, traffic_lights_max
 
