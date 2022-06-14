@@ -10,8 +10,8 @@ This document provides that installation guidelines on an ubuntu 20.04 LTS machi
 
 If your ubuntu machine is running as an AWS EC2 instance, please follow these steps first to setup your machine.
 
-+ Choose a *g4dn* image.
-+ Choose a *NVidia Machine Learning AMI*.
++ Choose a *g4dn* image, with a minimum size of *xlarge*.
++ Choose a *NVidia GPU-optimized AMI*.
 
 ## Steps
 
