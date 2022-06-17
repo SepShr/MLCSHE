@@ -1,11 +1,13 @@
+output_dir_name = 'CCEA_Pylot'
+
 # Search hyperparameters
-scenario_population_size = 2  # Size of the scenario population
-mlco_population_size = 2  # Size of the MLC output population
+scenario_population_size = 5  # Size of the scenario population
+mlco_population_size = 5  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
 region_radius = 0.5  # The radius of the region for fitness evaluations
-number_of_generations = 5
+number_of_generations = 15
 random_seed = 10
-max_num_evals = 51200
+max_num_evals = 500
 
 # Evolution hyperparameters
 tournament_selection = 2

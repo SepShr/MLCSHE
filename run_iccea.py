@@ -2,6 +2,8 @@
 iCCEA Runner.
 """
 
+from datetime import datetime
+import pathlib
 import problem
 import search_config as cfg
 from Simulator import Simulator
@@ -43,8 +45,14 @@ def main():
         cfg.bitflip_mutation_probability
     ]
 
+    # Get current timestamp to use as a unique ID.
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = pathlib.Path('results').joinpath(
+        timestamp + '_' + cfg.output_dir_name)
+    output_dir.mkdir(parents=True, exist_ok=True)  # Create the output folder.
+
     # Setup logger.
-    setup_logger(file_name='CCEA', file_log_level='DEBUG',
+    setup_logger(file_name='CCEA', output_directory=output_dir, file_log_level='DEBUG',
                  stream_log_level='INFO')
 
     # User does not need to modify anything but `problem.py`
@@ -53,6 +61,7 @@ def main():
         hyperparameters=hyperparameters,
         max_num_evals=cfg.max_num_evals,
         radius=cfg.region_radius,
+        output_dir=output_dir,
         seed=cfg.random_seed)
 
 

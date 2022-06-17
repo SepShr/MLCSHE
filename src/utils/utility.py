@@ -6,7 +6,7 @@ from deap import tools, creator
 from datetime import datetime
 import logging
 import os
-import pathlib
+from pathlib import Path
 import random
 from copy import deepcopy
 
@@ -590,12 +590,12 @@ def violate_safety_requirement(complete_solution):
         return False
 
 
-def setup_logger(file_name: str, file_log_level='DEBUG', stream_log_level='INFO'):
+def setup_logger(file_name: str, output_directory: Path = 'results', file_log_level='DEBUG', stream_log_level='INFO'):
     """Initilizes and formats the root logger. It also sets the log
     levels for the log file and stream handler.
     """
     # Create the results folder if it does not exist.
-    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+    Path(output_directory).mkdir(parents=True, exist_ok=True)
     # Setup logger.
     logger = logging.getLogger()
 
@@ -610,7 +610,7 @@ def setup_logger(file_name: str, file_log_level='DEBUG', stream_log_level='INFO'
     # parser.set()
 
     log_id = str(timestamp) + '_' + file_name + '.log'
-    log_file = os.path.join('results', log_id)
+    log_file = os.path.join(output_directory, log_id)
     logging.basicConfig(filename=log_file,
                         format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 
@@ -649,17 +649,23 @@ def setup_logger(file_name: str, file_log_level='DEBUG', stream_log_level='INFO'
     logger.addHandler(stream_handler)
 
 
-def setup_logbook_file():
+def setup_file(file_name: str, output_directory: Path = 'results', file_extension: str = '.log'):
     # Create the results folder if it does not exist.
-    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+    Path(output_directory).mkdir(parents=True, exist_ok=True)
 
     # Get current timestamp to use as a unique ID.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    logbook_id = str(timestamp) + '_logbook' + '.log'
-    logbook_file = os.path.join('results', logbook_id)
+    file_id = str(timestamp) + file_name + '.log'
 
-    return logbook_file
+    # file = output_directoty.joinpath(file_id)
+    file = os.path.join(output_directory, file_id)
+
+    return file
+
+
+def setup_logbook_file(output_dir: Path = 'results'):
+    return setup_file(file_name='_logbook', output_directory=output_dir)
 
 
 def flatten_list(nested_list):

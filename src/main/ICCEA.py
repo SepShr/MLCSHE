@@ -1,4 +1,5 @@
 from concurrent.futures import ProcessPoolExecutor
+import pathlib
 import pickle
 import random
 import logging
@@ -14,7 +15,7 @@ from src.utils.utility import (collaborate,
                                identify_nominal_indices,
                                index_in_complete_solution,
                                max_rank_change_fitness, measure_heom_distance,
-                               rank_change, setup_logbook_file, violate_safety_requirement)
+                               rank_change, setup_file, setup_logbook_file, violate_safety_requirement)
 
 
 class ICCEA:
@@ -24,18 +25,19 @@ class ICCEA:
         self.p1_enumLimits = first_population_enumLimits
         self.p2_enumLimits = second_population_enumLimits
 
-        # Setup logger and logbook.
-        self._logger = logging.getLogger(__name__)
-        self._logbook_file = setup_logbook_file()
-
         self.simulator = simulator
         self.pairwise_distance = pairwise_distance_cs
 
-        # self.pairwise_dist_scen = pairwise_distance_scen
-        # self.pairwise_dist_mlco = pairwise_distance_mlco
+        # Setup logger and logbook.
+        self._logger = logging.getLogger(__name__)
 
-    def solve(self, max_gen, hyperparameters, max_num_evals, radius, seed=None):
+    def solve(self, max_gen, hyperparameters, max_num_evals, radius, output_dir, seed=None):
         self.radius = radius
+        self._output_directory = output_dir
+
+        # Setup logbook.
+        self._logbook_file = setup_logbook_file(
+            output_dir=self._output_directory)
 
         self._logger.info("CCEA search started.")
         self._logger.info(
@@ -53,13 +55,23 @@ class ICCEA:
         self._logger.info('mlco_population_size={}'.format(len(popMLCO)))
         arcScen = self.toolbox.clone(popScen)
         arcMLCO = self.toolbox.clone(popMLCO)
+
         complete_solution_archive = []
         solution_archive = []
 
+        # Setup files to log populations and archives.
+        cs_archive_file = setup_file('_cs_archive', self._output_directory)
+        cs_list_gen_file = setup_file('_cs_list_gen', self._output_directory)
+        pop_scen_file = setup_file('_pop_scen', self._output_directory)
+        pop_mlco_file = setup_file('_pop_mlco', self._output_directory)
+        arc_scen_file = setup_file('_arc_scen', self._output_directory)
+        arc_mlco_file = setup_file('_arc_mlco', self._output_directory)
+
         # Adding multiple statistics.
         stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
-        stats_size = tools.Statistics(key=len)
-        mstats = tools.MultiStatistics(fitness=stats_fit, size=stats_size)
+        # stats_size = tools.Statistics(key=len)
+        # mstats = tools.MultiStatistics(fitness=stats_fit, size=stats_size)
+        mstats = tools.MultiStatistics(fitness=stats_fit)
         mstats.register("avg", np.mean, axis=0)
         mstats.register("std", np.std, axis=0)
         mstats.register("min", np.min, axis=0)
@@ -69,9 +81,10 @@ class ICCEA:
         logbook = tools.Logbook()
 
         # FIXME: Maybe add the number of evaluations
-        logbook.header = "gen", "type", "fitness", "size"
+        # logbook.header = "gen", "type", "fitness", "size"
+        logbook.header = "gen", "type", "fitness"
         logbook.chapters["fitness"].header = "min", "avg", "max", "std"
-        logbook.chapters["size"].header = "min", "avg", "max"
+        # logbook.chapters["size"].header = "min", "avg", "max"
 
         # Set the hyperparameter values.
         min_dist,\
@@ -96,28 +109,65 @@ class ICCEA:
         self._logger.info('bitflip_mutation_probability={}'.format(mut_bit_pb))
 
         # Cooperative Coevolutionary Search
-        for num_gen in range(max_gen):
-            # self._logger.info('The current generation is: {}'.format(num_gen))
+        for num_gen in range(1, max_gen+1):
             self._logger.info('current_generation={}'.format(num_gen))
-            # self._logger.debug(
-            #     'The Scenario population is: {}'.format(popScen))
             self._logger.debug('scenario_population={}'.format(popScen))
-            # self._logger.debug('The MLCO population is: {}'.format(popMLCO))
             self._logger.debug('mlco_population={}'.format(popMLCO))
+            self._logger.debug('scenario_archive={}'.format(arcScen))
+            self._logger.debug('mlco_archive={}'.format(arcMLCO))
 
             # Create complete solutions and evaluate individuals
-            # print('evaluation started')
             completeSolSet, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
-            # print('evaluation complete')
-            # # Record the complete solutions that violate the requirement r
-            # # complete_solution_archive.append(
-            # #     cs for cs in completeSolSet if violate_safety_requirement(cs))
+
             for cs in completeSolSet:
                 complete_solution_archive.append(cs)
-            #     # FIXME: Fix the below function.
-            #     if violate_safety_requirement(cs):
-            #         solution_archive.append(cs)
+
+            # Record the complete solutions archive.
+            with open(cs_archive_file, 'wt') as csaf:
+                for cs in complete_solution_archive:
+                    csaf.write('cs={}, jfit_value={}\n'.format(
+                        cs, cs.fitness.values[0]))
+
+            # Record the list of complete solutions per generation.
+            with open(cs_list_gen_file, 'at') as csgf:
+                csgf.write(
+                    '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
+                for cs in completeSolSet:
+                    csgf.write('cs={}, jfit_value={}\n'.format(
+                        cs, cs.fitness.values[0]))
+
+            # Record scenarios in popScen per generation.
+            with open(pop_scen_file, 'at') as psf:
+                psf.write(
+                    '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
+                for scen in popScen:
+                    psf.write('scen={}, fv={}\n'.format(
+                        scen, scen.fitness.values[0]))
+
+            # Record mlcos in popMLCO per generation.
+            with open(pop_mlco_file, 'at') as pmf:
+                pmf.write(
+                    '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
+                for mlco in popMLCO:
+                    pmf.write('mlco={}, fv={}\n'.format(
+                        mlco, mlco.fitness.values[0]))
+
+            # Record scenarios in arcScen per generation.
+            with open(arc_scen_file, 'at') as asf:
+                asf.write(
+                    '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
+                for scen in arcScen:
+                    asf.write('scen={}, fv={}\n'.format(
+                        scen, scen.fitness.values))
+
+            # Record mlcos in arcMLCO per generation.
+            with open(arc_mlco_file, 'at') as amf:
+                amf.write(
+                    '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
+                for mlco in arcMLCO:
+                    amf.write('mlco={}, fv={}\n'.format(
+                        mlco, mlco.fitness.values))
 
             # Compiling statistics on the populations and completeSolSet.
             record_scenario = mstats.compile(popScen)
@@ -130,27 +180,34 @@ class ICCEA:
             logbook.record(gen=num_gen, type='cs',
                            **record_complete_solution)
 
-            print(logbook.stream)
+            logbook_stream = logbook.stream
+            print(logbook_stream)
 
-            # with open(self._logbook_file, 'wt') as lb_file:
-            #     print(logbook.stream, file=lb_file)
+            with open(self._logbook_file, 'wt') as lb_file:
+                print(logbook, file=lb_file)
 
             # Get the number of evaluated complete solutions.
-            num_evals = len(complete_solution_archive)
-            self._logger.info('num_evaluations={}'.format(num_evals))
+            csa_len = len(complete_solution_archive)
+            self._logger.info(
+                'complete_solution_archive_len={}'.format(csa_len))
+            num_sim = self.simulator.simulation_counter
+            self._logger.info('num_simulations={}'.format(num_sim))
 
-            best_solution = sorted(
+            best_solution_overall = sorted(
                 complete_solution_archive, key=lambda x: x.fitness.values[0])[-1]
             self._logger.info('at generation={}, complete_solution_archive_size={}'.format(
                 num_gen, len(complete_solution_archive)))
-            # self._logger.info(
-            #     'The best complete solution in complete_solution_archive: {} (fitness={})'.format(best_solution, best_solution.fitness.values[0]))
             self._logger.info(
-                'best_complete_solution={} | fitness={}'.format(best_solution, best_solution.fitness.values[0]))
-            # self._logger.debug('complete_solutions={}'.format(
-            #     complete_solution_archive))
+                'best_complete_solution_overall={} | fitness={}'.format(best_solution_overall, best_solution_overall.fitness.values[0]))
 
-            if (num_gen >= max_gen - 1) or (num_evals >= max_num_evals):
+            best_solution_gen = sorted(
+                completeSolSet, key=lambda x: x.fitness.values[0])[-1]
+            self._logger.debug('complete_solutions={}'.format(
+                completeSolSet))
+            self._logger.info(
+                'best_complete_solution_gen={} | fitness={}'.format(best_solution_gen, best_solution_gen.fitness.values[0]))
+
+            if (num_gen >= max_gen) or (csa_len >= max_num_evals):
                 break
             self._logger.info("Updating archives...")
             # Evolve archives and populations for the next generation
@@ -186,7 +243,7 @@ class ICCEA:
             # popMLCO.append(x for x in arcMLCO)
 
         # Record the complete logbook.
-        with open(self._logbook_file, 'wb') as lb_file:
+        with open(pathlib.Path((self._logbook_file)+'.pkl'), 'wb') as lb_file:
             pickle.dump(logbook, lb_file)
 
         return complete_solution_archive, solution_archive
@@ -214,8 +271,8 @@ class ICCEA:
                 dist_matrix=self.pairwise_distance.dist_matrix_sq,
                 max_dist=self.radius
             ),)
-            self._logger.info(
-                'joint_fitness_value={}'.format(c.fitness.values[0]))
+            # self._logger.info(
+            #     'joint_fitness_value={}'.format(c.fitness.values[0]))
 
     def get_safety_req_value(self, c):
         x = c[0]
