@@ -1,4 +1,5 @@
 from concurrent.futures import ProcessPoolExecutor
+from copy import deepcopy
 import pathlib
 import pickle
 import random
@@ -11,7 +12,7 @@ from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import (collaborate,
                                create_complete_solution, evaluate_individual,
                                find_individual_collaborator,
-                               find_max_fv_individual,
+                               find_max_fv_individual, flatten_list,
                                identify_nominal_indices,
                                index_in_complete_solution,
                                max_rank_change_fitness, measure_heom_distance,
@@ -56,8 +57,9 @@ class ICCEA:
         arcScen = self.toolbox.clone(popScen)
         arcMLCO = self.toolbox.clone(popMLCO)
 
-        complete_solution_archive = []
-        solution_archive = []
+        # complete_solution_archive = []
+        self.cs_archive = []
+        self.solution_archive = []
 
         # Setup files to log populations and archives.
         cs_archive_file = setup_file('_cs_archive', self._output_directory)
@@ -116,26 +118,35 @@ class ICCEA:
             self._logger.debug('scenario_archive={}'.format(arcScen))
             self._logger.debug('mlco_archive={}'.format(arcMLCO))
 
+            # self.cs_archive = complete_solution_archive
+
             # Create complete solutions and evaluate individuals
-            completeSolSet, popScen, popMLCO = self.evaluate(
+            # completeSolSet, popScen, popMLCO = self.evaluate(
+            #     popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
+            popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
 
-            for cs in completeSolSet:
-                complete_solution_archive.append(cs)
+            # for cs in completeSolSet:
+            #     complete_solution_archive.append(cs)
 
             # Record the complete solutions archive.
             with open(cs_archive_file, 'wt') as csaf:
-                for cs in complete_solution_archive:
+                for cs in self.solution_archive:
                     csaf.write('cs={}, jfit_value={}\n'.format(
                         cs, cs.fitness.values[0]))
 
             # Record the list of complete solutions per generation.
+            # with open(cs_list_gen_file, 'at') as csgf:
+            #     csgf.write(
+            #         '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
+            #     for cs in completeSolSet:
+            #         csgf.write('cs={}, jfit_value={}\n'.format(
+            #             cs, cs.fitness.values[0]))
             with open(cs_list_gen_file, 'at') as csgf:
                 csgf.write(
                     '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
-                for cs in completeSolSet:
-                    csgf.write('cs={}, jfit_value={}\n'.format(
-                        cs, cs.fitness.values[0]))
+                for cs in self.cs_archive:
+                    csgf.write('cs={}\n'.format(cs))
 
             # Record scenarios in popScen per generation.
             with open(pop_scen_file, 'at') as psf:
@@ -172,7 +183,8 @@ class ICCEA:
             # Compiling statistics on the populations and completeSolSet.
             record_scenario = mstats.compile(popScen)
             record_mlco = mstats.compile(popMLCO)
-            record_complete_solution = mstats.compile(completeSolSet)
+            # record_complete_solution = mstats.compile(completeSolSet)
+            record_complete_solution = mstats.compile(self.solution_archive)
 
             logbook.record(gen=num_gen, type='scen',
                            **record_scenario)
@@ -187,38 +199,43 @@ class ICCEA:
                 print(logbook, file=lb_file)
 
             # Get the number of evaluated complete solutions.
-            csa_len = len(complete_solution_archive)
+            csa_len = len(self.cs_archive)
             self._logger.info(
                 'complete_solution_archive_len={}'.format(csa_len))
             num_sim = self.simulator.simulation_counter
             self._logger.info('num_simulations={}'.format(num_sim))
 
             best_solution_overall = sorted(
-                complete_solution_archive, key=lambda x: x.fitness.values[0])[-1]
-            self._logger.info('at generation={}, complete_solution_archive_size={}'.format(
-                num_gen, len(complete_solution_archive)))
+                self.solution_archive, key=lambda x: x.fitness.values[0])[-1]
+            # self._logger.info('at generation={}, complete_solution_archive_size={}'.format(
+            #     num_gen, len(complete_solution_archive)))
             self._logger.info(
                 'best_complete_solution_overall={} | fitness={}'.format(best_solution_overall, best_solution_overall.fitness.values[0]))
 
-            best_solution_gen = sorted(
-                completeSolSet, key=lambda x: x.fitness.values[0])[-1]
-            self._logger.debug('complete_solutions={}'.format(
-                completeSolSet))
-            self._logger.info(
-                'best_complete_solution_gen={} | fitness={}'.format(best_solution_gen, best_solution_gen.fitness.values[0]))
+            # best_solution_gen = sorted(
+            #     completeSolSet, key=lambda x: x.fitness.values[0])[-1]
+            # self._logger.debug('complete_solutions={}'.format(
+            #     completeSolSet))
+            # self._logger.info(
+            #     'best_complete_solution_gen={} | fitness={}'.format(best_solution_gen, best_solution_gen.fitness.values[0]))
 
             if (num_gen >= max_gen) or (csa_len >= max_num_evals):
                 break
             self._logger.info("Updating archives...")
             # Evolve archives and populations for the next generation
-            arcScen = self.update_archive(
-                popScen, popMLCO, completeSolSet, min_dist
-            )
-            # arcScen = self.update_archive_elitist(popScen, 7)
-            arcMLCO = self.update_archive(
-                popMLCO, popScen, completeSolSet, min_dist
-            )
-            # arcMLCO = self.update_archive_elitist(popMLCO, 7)
+            # arcScen = self.update_archive(
+            #     popScen, popMLCO, completeSolSet, min_dist
+            # )
+            # arcScen = self.update_archive_diverse_elitist(popScen, 3, min_dist)
+            arcScen = self.update_archive_diverse_best_random(
+                popScen, 5, min_dist)
+
+            # arcMLCO = self.update_archive(
+            #     popMLCO, popScen, completeSolSet, min_dist
+            # )
+            # arcMLCO = self.update_archive_diverse_elitist(popMLCO, 3, min_dist)
+            arcMLCO = self.update_archive_diverse_best_random(
+                popMLCO, 5, min_dist)
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.
@@ -246,7 +263,7 @@ class ICCEA:
         with open(pathlib.Path((self._logbook_file)+'.pkl'), 'wb') as lb_file:
             pickle.dump(logbook, lb_file)
 
-        return complete_solution_archive, solution_archive
+        return self.solution_archive
 
     def evaluate_joint_fitness(self, cs_list):
         """Evaluates the joint fitness of a complete solution.
@@ -258,21 +275,36 @@ class ICCEA:
         # x = c[0][0]
         # y = c[1][0]
 
-        for c in cs_list:
+        # Ensure that no repetitive simulation would run.
+        # print(f'cs_list is: {cs_list}')
+        new_cs_list = [
+            c for c in cs_list if not self.individual_in_list(c, self.cs_archive)]
+        # print(f'new_cs_list is: {new_cs_list}')
+
+        for c in new_cs_list:
             c.safety_req_value = self.get_safety_req_value(c)
-        # map(self.get_safety_req_value, cs_list)  # ERROR: this does not save cs.safety_req_value for each cs in cs_list
+            # Add cs that have been simulated to cs_archive.
+            self.cs_archive.append(c)
+
+        # print(self.cs_archive)
 
         # Calculate the pairwise distance between all simulated complete solutions.
-        self.pairwise_distance.update_dist_matrix(cs_list)
-        for c in cs_list:
+        self.pairwise_distance.update_dist_matrix(new_cs_list)
+
+        self.solution_archive.clear()
+
+        self.solution_archive = [deepcopy(c) for c in self.cs_archive]
+
+        # for c in cs_list:
+        for c in self.solution_archive:
             c.fitness.values = (fitness_function(
                 cs=c,
                 cs_list=self.pairwise_distance.cs_list,
                 dist_matrix=self.pairwise_distance.dist_matrix_sq,
                 max_dist=self.radius
             ),)
-            # self._logger.info(
-            #     'joint_fitness_value={}'.format(c.fitness.values[0]))
+
+        # FIXME: return a cs_list with fv per generation.
 
     def get_safety_req_value(self, c):
         x = c[0]
@@ -312,38 +344,27 @@ class ICCEA:
             first_component_class,
             min_num_evals)
 
-        # # Evaluate joint fitness evaluations in parallel.
-        # with ProcessPoolExecutor() as executor:
-        #     evaluted_complete_solutions = executor.map(self.evaluate_joint_fitness, complete_solutions_set)
-        #     for c, value in zip(complete_solutions_set, evaluted_complete_solutions):
-        #         c.fitness.values = value
-
         # FIXME: Enable parallel processing.
-        # Evaluate joint fitness and record its value.
-        # for c in complete_solutions_set:
-        #     c.fitness.values = self.evaluate_joint_fitness(c)
+
         self.evaluate_joint_fitness(complete_solutions_set)
 
-        # for c in complete_solutions_set:
-        #     c.safety_req_value = self.get_safety_req_value(c)
-
-        # # Calculate the pairwise distance between all simulated complete solutions.
-        # self.pairwise_distance.update_dist_matrix(complete_solutions_set)
-
-        # for c in complete_solutions_set:
-        #     c.fitness.values = (fitness_function(
-        #         cs=c, cs_list=self.pairwise_distance.cs_list, dist_matrix=self.pairwise_distance.dist_matrix_sq),)
-
         # Evaluate individual fitness values.
+        # for individual in first_population:
+        #     individual.fitness.values = evaluate_individual(
+        #         individual, complete_solutions_set, 0)
         for individual in first_population:
             individual.fitness.values = evaluate_individual(
-                individual, complete_solutions_set, 0)
+                individual, self.solution_archive, 0)
 
+        # for individual in second_population:
+        #     individual.fitness.values = evaluate_individual(
+        #         individual, complete_solutions_set, 1)
         for individual in second_population:
             individual.fitness.values = evaluate_individual(
-                individual, complete_solutions_set, 1)
+                individual, self.solution_archive, 1)
 
-        return complete_solutions_set, first_population, second_population
+        # return complete_solutions_set, first_population, second_population
+        return first_population, second_population
 
     def breed(
             self, population, archive, enumLimits, tournSize, cxpb,
@@ -627,8 +648,10 @@ class ICCEA:
         # base = deepcopy(base_individual)
         # target = deepcopy(target_individual)
 
-        base = self.flatten(base_individual)
-        target = self.flatten(target_individual)
+        # base = self.flatten(base_individual)
+        # target = self.flatten(target_individual)
+        base = flatten_list(base_individual)
+        target = flatten_list(target_individual)
 
         if base == target:
             return True
@@ -636,13 +659,15 @@ class ICCEA:
             return False
 
     def individual_in_list(self, individual, individuals_list):
-        evaluation_list = []
+        # evaluation_list = []
         for cs in individuals_list:
             if self.individual_is_equal(individual, cs):
-                evaluation_list.append(1)
-            else:
-                evaluation_list.append(0)
-        return sum(evaluation_list) > 0
+                # evaluation_list.append(1)
+                return True
+            # else:
+            #     evaluation_list.append(0)
+        # return sum(evaluation_list) > 0
+        return False
 
     def calculate_fit_given_archive(self, archive, population, complete_solutions_set):
         # Initialization of variables
