@@ -161,9 +161,8 @@ def translate_mlco_list(mlco_list, container_name=cfg.container_name, file_name=
 def pickle_to_file(item_to_be_pickled, file_name: str):
     """Pickles an object and adds it to a file.
     """
-    file = open(file_name, 'wb')
-    pickle.dump(item_to_be_pickled, file)
-    file.close()
+    with open(file_name, 'wb') as file:
+        pickle.dump(item_to_be_pickled, file)
 
 
 def start_container(container_name: str = cfg.container_name):
@@ -235,18 +234,15 @@ def update_config_file(
     pathlib.Path('temp/').mkdir(parents=True, exist_ok=True)
     simulation_config_file = os.path.join('temp', simulation_config_file_name)
     # Find the lines that contain proper flags and updates them.
-    base_config = open(base_config_file, 'rt')
-    simulation_config = open(simulation_config_file, 'wt')
-    for line in base_config:
-        for key in simulation_flag:
-            if line.__contains__(key):
-                simulation_config.write(simulation_flag[key])
-                break
-        else:
-            simulation_config.write(line)
-
-    base_config.close()
-    simulation_config.close()
+    with open(base_config_file, 'rt') as base_config:
+        with open(simulation_config_file, 'wt') as simulation_config:
+            for line in base_config:
+                for key in simulation_flag:
+                    if line.__contains__(key):
+                        simulation_config.write(simulation_flag[key])
+                        break
+                else:
+                    simulation_config.write(line)
 
 # FIXME: Maybe add the simulation ID (counter) to the log file's name.
 
@@ -371,7 +367,7 @@ def scenario_finished():
     """
     cmd = [cfg.script_directory +
            'copy_pylot_finished_file.sh', cfg.container_name]
-    sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    sub.run(cmd, stdout=sub.PIPE, stderr=sub.DEVNULL)
     if os.path.exists(cfg.base_directory + "finished.txt"):
         return True
     return False
