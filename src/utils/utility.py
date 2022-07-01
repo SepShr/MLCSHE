@@ -303,17 +303,13 @@ def evaluate_individual(individual, complete_solution_set, index):
     the complete solution; it returns the aggregate fitness value for
     `individual` as a real value.
     """
-    weights_joint_fitness_involved = []
     values_joint_fitness_involved = []
 
     # Add the joint fitness values of complete solutions in which
     # individual has been a part of.
     for cs in complete_solution_set:
         if cs[index] == individual:
-            weights_joint_fitness_involved += [cs.fitness.values]
-
-    for i in weights_joint_fitness_involved:
-        values_joint_fitness_involved += list([i[0]])
+            values_joint_fitness_involved.append(cs.fitness.values[0])
 
     # Aggregate the joint fitness values. For now, maximum values is used.
     individual_fitness_value = max(values_joint_fitness_involved)
