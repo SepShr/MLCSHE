@@ -1,5 +1,6 @@
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from copy import deepcopy
+from itertools import cycle, repeat, zip_longest
 import pathlib
 import pickle
 import random
@@ -123,7 +124,7 @@ class ICCEA:
             # Create complete solutions and evaluate individuals
             # completeSolSet, popScen, popMLCO = self.evaluate(
             #     popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
-            popScen, popMLCO = self.evaluate(
+            cs_archive_gen, popScen, popMLCO = self.evaluate(
                 popScen, arcScen, popMLCO, arcMLCO, self.creator.Individual, 1)
 
             # for cs in completeSolSet:
@@ -136,17 +137,12 @@ class ICCEA:
                         cs, cs.fitness.values[0]))
 
             # Record the list of complete solutions per generation.
-            # with open(cs_list_gen_file, 'at') as csgf:
-            #     csgf.write(
-            #         '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
-            #     for cs in completeSolSet:
-            #         csgf.write('cs={}, jfit_value={}\n'.format(
-            #             cs, cs.fitness.values[0]))
             with open(cs_list_gen_file, 'at') as csgf:
                 csgf.write(
                     '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
-                for cs in self.cs_archive:
-                    csgf.write('cs={}\n'.format(cs))
+                for cs in cs_archive_gen:
+                    csgf.write('cs={}, jfit_value={}\n'.format(
+                        cs, cs.fitness.values[0]))
 
             # Record scenarios in popScen per generation.
             with open(pop_scen_file, 'at') as psf:
@@ -183,8 +179,8 @@ class ICCEA:
             # Compiling statistics on the populations and completeSolSet.
             record_scenario = mstats.compile(popScen)
             record_mlco = mstats.compile(popMLCO)
-            # record_complete_solution = mstats.compile(completeSolSet)
-            record_complete_solution = mstats.compile(self.solution_archive)
+            record_complete_solution = mstats.compile(cs_archive_gen)
+            # record_complete_solution = mstats.compile(self.solution_archive)
 
             logbook.record(gen=num_gen, type='scen',
                            **record_scenario)
@@ -212,12 +208,12 @@ class ICCEA:
             self._logger.info(
                 'best_complete_solution_overall={} | fitness={}'.format(best_solution_overall, best_solution_overall.fitness.values[0]))
 
-            # best_solution_gen = sorted(
-            #     completeSolSet, key=lambda x: x.fitness.values[0])[-1]
+            best_solution_gen = sorted(
+                cs_archive_gen, key=lambda x: x.fitness.values[0])[-1]
             # self._logger.debug('complete_solutions={}'.format(
             #     completeSolSet))
-            # self._logger.info(
-            #     'best_complete_solution_gen={} | fitness={}'.format(best_solution_gen, best_solution_gen.fitness.values[0]))
+            self._logger.info(
+                'best_complete_solution_gen={} | fitness={}'.format(best_solution_gen, best_solution_gen.fitness.values[0]))
 
             if (num_gen >= max_gen) or (csa_len >= max_num_evals):
                 break
@@ -296,15 +292,27 @@ class ICCEA:
         self.solution_archive = [deepcopy(c) for c in self.cs_archive]
 
         # for c in cs_list:
-        for c in self.solution_archive:
-            c.fitness.values = (fitness_function(
-                cs=c,
-                cs_list=self.pairwise_distance.cs_list,
-                dist_matrix=self.pairwise_distance.dist_matrix_sq,
-                max_dist=self.radius
-            ),)
+        # for c in self.solution_archive:
+        #     c.fitness.values = (fitness_function(
+        #         cs=c,
+        #         cs_list=self.pairwise_distance.cs_list,
+        #         dist_matrix=self.pairwise_distance.dist_matrix_sq,
+        #         max_dist=self.radius
+        #     ),)
+
+        # Calculate fitness values for all complete solutions in parallel.
+        # FIXME: Do we need to reevaluate solution_archive every generation?
+        with ProcessPoolExecutor() as executor:
+            # results = [executor.submit(fitness_function, c, self.pairwise_distance.cs_list,
+            #                            self.pairwise_distance.dist_matrix_sq, self.radius) for c in self.solution_archive]
+            # for cs, result in zip(self.solution_archive, results):
+            #     cs.fitness.values = (result.result(),)
+
+            for cs, result in zip(self.solution_archive, executor.map(fitness_function, self.solution_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius))):
+                cs.fitness.values = (result,)
 
         # FIXME: return a cs_list with fv per generation.
+        return [c for c in self.solution_archive if self.individual_in_list(c, cs_list)]
 
     def get_safety_req_value(self, c):
         x = c[0]
@@ -346,7 +354,7 @@ class ICCEA:
 
         # FIXME: Enable parallel processing.
 
-        self.evaluate_joint_fitness(complete_solutions_set)
+        cs_list_per_gen = self.evaluate_joint_fitness(complete_solutions_set)
 
         # Evaluate individual fitness values.
         # for individual in first_population:
@@ -364,7 +372,7 @@ class ICCEA:
                 individual, self.solution_archive, 1)
 
         # return complete_solutions_set, first_population, second_population
-        return first_population, second_population
+        return cs_list_per_gen, first_population, second_population
 
     def breed(
             self, population, archive, enumLimits, tournSize, cxpb,
