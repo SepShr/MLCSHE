@@ -224,14 +224,14 @@ class ICCEA:
             # )
             # arcScen = self.update_archive_diverse_elitist(popScen, 3, min_dist)
             arcScen = self.update_archive_diverse_best_random(
-                popScen, 5, min_dist)
+                popScen, 2, min_dist)
 
             # arcMLCO = self.update_archive(
             #     popMLCO, popScen, completeSolSet, min_dist
             # )
             # arcMLCO = self.update_archive_diverse_elitist(popMLCO, 3, min_dist)
             arcMLCO = self.update_archive_diverse_best_random(
-                popMLCO, 5, min_dist)
+                popMLCO, 2, min_dist)
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.
@@ -1015,7 +1015,7 @@ class ICCEA:
                     ' do not match!')
             flat_list.append(archive_individual_flat)
 
-        distance_values = measure_heom_distance(
+        distance_values = measure_heom_distance(  # FIXME: shouldn't we use our new cdist-based functions?
             flat_list, nominal_values_indices)
         distance_values.pop(0)
 
