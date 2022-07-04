@@ -21,11 +21,14 @@ from src.utils.utility import (collaborate,
 
 
 class ICCEA:
-    def __init__(self, creator, toolbox, simulator, pairwise_distance_cs, first_population_enumLimits=None, second_population_enumLimits=None):
+    def __init__(self, creator, toolbox, simulator, pairwise_distance_cs, pairwise_distance_p1, pairwise_distance_p2, first_population_enumLimits=None, second_population_enumLimits=None):
         self.toolbox = toolbox
         self.creator = creator
         self.p1_enumLimits = first_population_enumLimits
         self.p2_enumLimits = second_population_enumLimits
+
+        self.pairwise_distance_p1 = pairwise_distance_p1
+        self.pairwise_distance_p2 = pairwise_distance_p2
 
         self.simulator = simulator
         self.pairwise_distance = pairwise_distance_cs
@@ -57,6 +60,10 @@ class ICCEA:
         self._logger.info('mlco_population_size={}'.format(len(popMLCO)))
         arcScen = self.toolbox.clone(popScen)
         arcMLCO = self.toolbox.clone(popMLCO)
+
+        # Initialize the pairwise distance matrix for the initial populations.
+        self.pairwise_distance_p1.update_dist_matrix(popScen)
+        self.pairwise_distance_p2.update_dist_matrix(popMLCO)
 
         # complete_solution_archive = []
         self.cs_archive = []
@@ -216,7 +223,10 @@ class ICCEA:
                 'best_complete_solution_gen={} | fitness={}'.format(best_solution_gen, best_solution_gen.fitness.values[0]))
 
             if (num_gen >= max_gen) or (csa_len >= max_num_evals):
+                self._logger.info(
+                    'Maximum number of evaluations (max_num_evals={}) reached! Ending the search ...'.format(max_num_evals))
                 break
+
             self._logger.info("Updating archives...")
             # Evolve archives and populations for the next generation
             # arcScen = self.update_archive(
@@ -224,14 +234,14 @@ class ICCEA:
             # )
             # arcScen = self.update_archive_diverse_elitist(popScen, 3, min_dist)
             arcScen = self.update_archive_diverse_best_random(
-                popScen, 2, min_dist)
+                popScen, 2, min_dist, self.pairwise_distance_p1)
 
             # arcMLCO = self.update_archive(
             #     popMLCO, popScen, completeSolSet, min_dist
             # )
             # arcMLCO = self.update_archive_diverse_elitist(popMLCO, 3, min_dist)
             arcMLCO = self.update_archive_diverse_best_random(
-                popMLCO, 2, min_dist)
+                popMLCO, 2, min_dist, self.pairwise_distance_p2)
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.
@@ -311,7 +321,7 @@ class ICCEA:
             for cs, result in zip(self.solution_archive, executor.map(fitness_function, self.solution_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius))):
                 cs.fitness.values = (result,)
 
-        # FIXME: return a cs_list with fv per generation.
+        # Return a cs_list with fv per generation.
         return [c for c in self.solution_archive if self.individual_in_list(c, cs_list)]
 
     def get_safety_req_value(self, c):
@@ -359,17 +369,17 @@ class ICCEA:
         # Evaluate individual fitness values.
         # for individual in first_population:
         #     individual.fitness.values = evaluate_individual(
-        #         individual, complete_solutions_set, 0)
+        #         individual, self.solution_archive, 0)
         for individual in first_population:
             individual.fitness.values = evaluate_individual(
-                individual, self.solution_archive, 0)
+                individual, cs_list_per_gen, 0)
 
         # for individual in second_population:
         #     individual.fitness.values = evaluate_individual(
-        #         individual, complete_solutions_set, 1)
+        #         individual, self.solution_archive, 1)
         for individual in second_population:
             individual.fitness.values = evaluate_individual(
-                individual, self.solution_archive, 1)
+                individual, cs_list_per_gen, 1)
 
         # return complete_solutions_set, first_population, second_population
         return cs_list_per_gen, first_population, second_population
@@ -864,7 +874,7 @@ class ICCEA:
         return archive_p
 
     def update_archive_diverse_elitist(self, population,
-                                       max_archive_size, min_distance):
+                                       max_archive_size, min_distance, pairwise_distance):
         """
         Updates and archive by selecting only a number of best
         individuals that are distinct enought.
@@ -884,7 +894,7 @@ class ICCEA:
             candidate = pop_sorted.pop(-1)
             if len(archive_p) > 0:
                 if not self.is_similar_individual(
-                        candidate, archive_p, min_distance):
+                        candidate, archive_p, min_distance, pairwise_distance):
                     archive_p.append(candidate)
                 # if self.is_different(
                 #         candidate, archive_p, min_distance):
@@ -936,7 +946,7 @@ class ICCEA:
 
         return archive_p
 
-    def update_archive_diverse_random(self, population, archive_size, min_distance):
+    def update_archive_diverse_random(self, population, archive_size, min_distance, pairwise_distance):
         """
         Updates and archive by selecting diverse random individuals.
         """
@@ -949,14 +959,14 @@ class ICCEA:
                 random.randint(0, len(population_copy)-1))
             if len(archive_p) > 0:
                 if not self.is_similar_individual(
-                        candidate, archive_p, min_distance):
+                        candidate, archive_p, min_distance, pairwise_distance):
                     archive_p.append(candidate)
             else:
                 archive_p.append(candidate)
 
         return archive_p
 
-    def update_archive_diverse_best_random(self, population, max_archive_size, min_distance):
+    def update_archive_diverse_best_random(self, population, max_archive_size, min_distance, pairwise_distance):
         """
         Updates and archive by selecting diverse best and random individuals.
         """
@@ -972,7 +982,7 @@ class ICCEA:
                 candidate = population_copy.pop(
                     random.randint(0, len(population_copy)-1))
                 if not self.is_similar_individual(
-                        candidate, archive_p, min_distance):
+                        candidate, archive_p, min_distance, pairwise_distance):
                     archive_p.append(candidate)
             else:
                 candidate = population_copy_sorted.pop(-1)
@@ -980,57 +990,23 @@ class ICCEA:
 
         return archive_p
 
-    def is_similar_individual(self, candidate, archive, min_distance):
+    def is_similar_individual(self, candidate, archive, min_distance, pairwise_distance):
         """The algorithm evaluates if an individual is
         similar to the memebrs of an `archive`.
 
         Similarity uses the criteria `min_distance` to decide.
         """
-
-        flat_list = []
-
-        # Create the complete solution of cand and collab
-
-        # # Determine the nan equivalent value
-        # nan_eqv = np.Nan
-
-        # Prepare main_complete_solution for similarity assessment
-        candidate_flat, nominal_values_indices = \
-            self.prepare_for_distance_evaluation(candidate)
-
-        # Add main_complete_solution_flat to the list of flat complete solutions
-        flat_list.append(candidate_flat)
-
-        # Create the list of complete solutions that are to be used for distance
-        # evaluations.
-        for i in range(len(archive)):
-            arc_nom_indices = []
-            archive_individual_flat, arc_nom_indices = \
-                self.prepare_for_distance_evaluation(archive[i])
-            if arc_nom_indices != nominal_values_indices:
-                self._logger.error(
-                    'The nominal values between ' +
-                    str(archive[i]) +
-                    ' and ' + str(candidate) +
-                    ' do not match!')
-            flat_list.append(archive_individual_flat)
-
-        distance_values = measure_heom_distance(  # FIXME: shouldn't we use our new cdist-based functions?
-            flat_list, nominal_values_indices)
-        distance_values.pop(0)
+        distance_values = []
+        for ind in archive:
+            distance_values.append(
+                pairwise_distance.get_distance(candidate, ind))
 
         # Assess similarity between the main_complete_solution and the rest.
-        similarity_list = []
         for i in range(len(distance_values)):
             if distance_values[i] <= min_distance:
-                similarity_list.append(1)
-            else:
-                similarity_list.append(0)
+                return True
 
-        if sum(similarity_list) == len(distance_values):
-            return True
-        else:
-            return False
+        return False
 
     def is_different(self, candidate, archive, dist_threshold):
         assert candidate is not None, "candidate cannot be None."

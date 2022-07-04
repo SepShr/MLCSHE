@@ -1,8 +1,8 @@
 output_dir_name = 'CCEA_MTQ'
 
 # Search hyperparameters
-scenario_population_size = 5  # Size of the scenario population
-mlco_population_size = 5  # Size of the MLC output population
+scenario_population_size = 15  # Size of the scenario population
+mlco_population_size = 15  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
 region_radius = 0.05  # The radius of the region for fitness evaluations
 number_of_generations = 40
@@ -22,3 +22,6 @@ bitflip_mutation_probability = 1
 enumLimits = [[0.0, 1.0]]
 categorical_indices = []
 numeric_ranges = [1, 1]
+
+numeric_ranges_scen = [1]
+numeric_ranges_mlco = [1]

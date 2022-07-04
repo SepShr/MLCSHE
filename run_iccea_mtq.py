@@ -2,6 +2,7 @@
 iCCEA Runner.
 """
 from datetime import datetime
+from nis import cat
 import pathlib
 import benchmark.mtq.search_config as cfg
 from benchmark.mtq import problem
@@ -18,18 +19,32 @@ def main():
     simulator = Simulator()
 
     # Instantiate pairwise distance instance.
-    pairwise_distance = PairwiseDistance(
+    pairwise_distance_cs = PairwiseDistance(
         cs_list=[],
         numeric_ranges=cfg.numeric_ranges,
         categorical_indices=cfg.categorical_indices
+    )
+
+    pairwise_distance_scen = PairwiseDistance(
+        cs_list=[],
+        numeric_ranges=cfg.numeric_ranges_scen,
+        categorical_indices=[]
+    )
+
+    pairwise_distance_mlco = PairwiseDistance(
+        cs_list=[],
+        numeric_ranges=cfg.numeric_ranges_mlco,
+        categorical_indices=[]
     )
 
     solver = ICCEA(
         creator=problem.creator,
         toolbox=problem.toolbox,
         simulator=simulator,
-        pairwise_distance_cs=pairwise_distance,
+        pairwise_distance_cs=pairwise_distance_cs,
         # more parameters can be added to better define the problem
+        pairwise_distance_p1=pairwise_distance_scen,
+        pairwise_distance_p2=pairwise_distance_mlco,
         first_population_enumLimits=cfg.enumLimits,
         second_population_enumLimits=cfg.enumLimits
     )

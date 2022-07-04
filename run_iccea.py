@@ -25,12 +25,26 @@ def main():
         categorical_indices=cfg.categorical_indices
     )
 
+    pairwise_distance_scen = PairwiseDistance(
+        cs_list=[],
+        numeric_ranges=cfg.scenario_numeric_ranges,
+        categorical_indices=cfg.scenario_catgorical_indices
+    )
+
+    pairwise_distance_mlco = PairwiseDistance(
+        cs_list=[],
+        numeric_ranges=cfg.mlco_numeric_ranges,
+        categorical_indices=cfg.mlco_categorical_indices
+    )
+
     solver = ICCEA(
         creator=problem.creator,
         toolbox=problem.toolbox,
         simulator=simulator,
         pairwise_distance_cs=pairwise_distance,
         # more parameters can be added to better define the problem
+        pairwise_distance_p1=pairwise_distance_scen,
+        pairwise_distance_p2=pairwise_distance_mlco,
         first_population_enumLimits=cfg.scenario_enumLimits
     )
 
