@@ -169,7 +169,7 @@ def start_container(container_name: str = cfg.container_name):
     """Starts a docker container with the name `container_name`.
     """
     cmd = ['docker', 'start', container_name]
-    docker_start_proc = sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    docker_start_proc = sub.run(cmd, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     # Log the container's successful start or failure.
     return docker_start_proc.returncode
 
@@ -178,7 +178,7 @@ def stop_container(container_name: str = cfg.container_name):
     """Starts a docker container with the name `container_name`.
     """
     cmd = ['docker', 'stop', container_name]
-    docker_start_proc = sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    docker_start_proc = sub.run(cmd, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     return docker_start_proc.returncode
 
 
@@ -206,7 +206,7 @@ def copy_to_host(container_name: str, file_name: str, source_path: str, destinat
     container_name_with_path = container_name + \
         ":" + source_path + file_name + "_ex.log"
     copy_cmd = ['docker', 'cp', container_name_with_path, destination_path]
-    sub.run(copy_cmd, stderr=sub.PIPE)
+    sub.run(copy_cmd, stderr=sub.DEVNULL)
 
 
 def find_container_id(container_name: str):
@@ -292,7 +292,8 @@ def run_command_in_shell(command):
     """
     logger.debug(f'Running {command} in shell.')
 
-    proc = sub.Popen(command, stdout=sub.PIPE, stderr=sub.PIPE, shell=True)
+    proc = sub.Popen(command, stdout=sub.DEVNULL,
+                     stderr=sub.DEVNULL, shell=True)
 
     # # Verify successful execution of the command.
     # if proc.returncode != 0:
@@ -326,7 +327,8 @@ def run_pylot(run_pylot_path: str = CWD + cfg.pylot_runner_path):
     pylot_run_command = [run_pylot_path, cfg.container_name]
 
     # pylot_proc = run_command_in_shell(pylot_run_command)
-    pylot_proc = sub.Popen(pylot_run_command, stdout=sub.PIPE, stderr=sub.PIPE)
+    pylot_proc = sub.Popen(
+        pylot_run_command, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     return pylot_proc
 
 
@@ -335,7 +337,8 @@ def remove_finished_file(container_name: str = cfg.container_name, finished_file
     """
     cmd = ['docker', 'exec', container_name, 'rm', '-rf',
            finished_file_path]
-    rm_finished_file_proc = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    rm_finished_file_proc = sub.Popen(
+        cmd, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     if os.path.exists("finished.txt"):
         os.remove("finished.txt")
 
@@ -367,7 +370,7 @@ def scenario_finished():
     """
     cmd = [cfg.script_directory +
            'copy_pylot_finished_file.sh', cfg.container_name]
-    sub.run(cmd, stdout=sub.PIPE, stderr=sub.DEVNULL)
+    sub.run(cmd, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     if os.path.exists(cfg.base_directory + "finished.txt"):
         return True
     return False
