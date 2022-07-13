@@ -63,25 +63,14 @@ class ContainerSimManager():
         """
         self._data_directory = data_directory
         self._max_workers = max_workers
-        self._process_pool_executor = concurrent.futures.ProcessPoolExecutor(
-            max_workers=self._max_workers)
         self._container_prefix = 'PylotSim'
-        self._docker_client = docker.from_env()
-        with Halo(text='Pulling latest docker_sim image', spinner='dots'):
-            self._docker_image = self._docker_client.images.pull(
-                repository=docker_container_url,
-                tag=docker_repo_tag
-            )
+        self._docker_image_name = docker_container_url + ':' + docker_repo_tag
         self._output_directory = output_directory
-        self._io_lock = threading.Lock()
         self._monitoring_frequency = 300
         self._minimum_runtime = 300
         self._maximum_inactivity_time = 30 * 60
         self.job_list = []
         self._logger = logging.getLogger(__name__)
-
-        # Authenticate at the container registry if using ghcr.
-        # self._authenticate_at_container_registry()
 
     def add_sim_job(self, job: SimJob) -> None:
         """
@@ -89,27 +78,6 @@ class ContainerSimManager():
         :param job: simulation job to be added
         """
         self.job_list.append(job)
-
-    def start_computation(self):
-        """
-        Starts computation of all jobs inside the queue.
-        Jobs must be added before calling this function
-        """
-        print('in start_computation()...')
-        self.start_monitoring_thread()
-        with self._process_pool_executor as executor:
-            futures = {executor.submit(self._process_sim_job, sim_job): sim_job
-                       for sim_job in self.job_list}
-            print('jobs submitted')
-            for future in futures:
-                e = future.exception()
-                self._logger.warning(e)
-                print(e)
-            for future in concurrent.futures.as_completed(futures):
-                print(f'Run {futures[future]} did finish')
-                self._logger.info(f'Run {futures[future]} did finish')
-            # for result in executor.map(self._process_sim_job, self.job_list):
-            #     print(result)
 
     def _process_sim_job(self, sim_job: SimJob):
         """
@@ -122,28 +90,6 @@ class ContainerSimManager():
         """
         input_data_folder, output_folder, simulation_log_file_name = self._init_simulation(
             sim_job=sim_job)
-
-        # print(f'{input_data_folder}, {output_folder}, {simulation_log_file_name}')
-
-        # FIXME: Exception handling!
-        # if input_data_folder or output_folder is None:
-        #     print('is NONE!')
-        #     self._logger.error(
-        #         f'Error during initialization for simulation {sim_job}')
-        #     return False
-
-        # try:
-        #     (
-        #         working_dir,
-        #         *file_objects
-        #     ) = sim_paths
-        # except:
-        #     try:
-        #         working_dir = sim_paths
-        #     except:
-        #         self._logger.error(
-        #             f'Error during initialization for simulation {str(sim_job)}')
-        #         return False
 
         container = self._run_docker_container(
             container_name=sim_job.sim_name, working_dir=input_data_folder, command=sim_job.command)
@@ -191,9 +137,7 @@ class ContainerSimManager():
             print('simulation_fitness_values={}'.format(
                 simulation_fitness_values))
 
-            # TODO: Cleanup (removes container)
             container.remove()
-            # self.cleanup_sim_objects(sim_job=sim_job, file_objects=file_objects)
 
             return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
         else:
@@ -201,8 +145,6 @@ class ContainerSimManager():
                 'Did not find the simulation results, i.e., {}'.format(results_file_name))
             self._logger.error("Returning 1000 for all simulation results.")
             return 1000, 1000, 1000, 1000, 1000, 1000
-
-    # FIXME: Needs to be modified.
 
     def _init_simulation(self, sim_job):
         """
@@ -218,7 +160,7 @@ class ContainerSimManager():
         print('in _init_simulation...')
         output_folder = self._output_directory.joinpath(sim_job.sim_name)
         try:
-            with self._io_lock:
+            with threading.Lock():
                 output_folder.mkdir(exist_ok=False, parents=True)
                 input_data_folder,  simulation_log_file_name = self.update_sim_config(
                     sim_job.scenario, sim_job.mlco, sim_job.sim_name, self._data_directory)
@@ -234,12 +176,15 @@ class ContainerSimManager():
         :param working_dir: working directory on your host's file system
         :param command: container command (eg. name of script, cli arguments ...) Must match to your docker entry point.
         """
+        docker_client = docker.from_env()
+        docker_image = docker_client.images.get(self._docker_image_name)
         print('in _run_docker_container...')
         try:
             system_platform = platform.system()
             if system_platform == "Windows":
-                container = self._docker_client.containers.run(
-                    image=self._docker_image,
+                # container = self._docker_client.containers.run(
+                container = docker_client.containers.run(
+                    image=docker_image,
                     command=command,
                     detach=True,
                     mounts=[Mount(
@@ -261,8 +206,8 @@ class ContainerSimManager():
                 )
             else:
                 # user_id = os.getuid()
-                container = self._docker_client.containers.run(
-                    image=self._docker_image,
+                container = docker_client.containers.run(
+                    image=docker_image,
                     command=command,
                     detach=True,
                     mounts=[Mount(
@@ -292,93 +237,6 @@ class ContainerSimManager():
         except DockerException as e:
             self._logger.warning(f'Error in run {container_name}: {e}.')
             return False
-        # FIXME: Handle removing container.
-        # finally:
-        #     try:
-        #         self.write_container_logs_and_remove_it(
-        #             container_name=container_name,
-        #             working_dir=working_dir
-        #         )
-        #     except NotFound:
-        #         self._logger.warning(
-        #             f'Can not save logs for {container_name}, because container does not exist')
-
-    def start_monitoring_thread(self):
-        """
-        Start a monitoring thread, which observes running docker containers.
-        """
-        monitoring_thread = threading.Thread(target=self._monitor_containers,
-                                             args=(self._container_prefix,),
-                                             daemon=True,
-                                             name='monitoring')
-        monitoring_thread.start()
-
-    def write_container_logs_and_remove_it(self, container_name, working_dir):
-        """
-        Write container logs and remove the container from your docker server
-        :param container_name: The container's name, which shall be removed
-        :param working_dir: path, where logfiles shall be written to
-        """
-        container = self._docker_client.containers.get(container_name)
-        with open(working_dir.joinpath('log.txt'), 'w') as f:
-            f.write(container.logs().decode('utf-8'))
-        container.remove()
-
-    def _authenticate_at_container_registry(self):
-        """
-        Authenticate at container registry. NOTE: GitHub container registry is used in this example.
-        If you want to user other container registries, like DockerHub or GitLab, feel free to adapt this method.
-        Function either uses Environment variables for authentication or asks for login credentials in the command line.
-        Note: GitHub container registry does not accept your personal password. You need to generate a personal access token (PAT)
-        """
-        username = os.environ.get('GITHUB_USERNAME')
-        password = os.environ.get('GITHUB_PAT')
-        if username is None:
-            username = input('Enter username for container registry: ')
-        if password is None:
-            password = getpass('Enter password for container registry: ')
-        login_result = self._docker_client.login(
-            registry='ghcr.io',
-            username=username,
-            password=password,
-            reauth=True
-        )
-        if login_result['Status'] != 'Login Succeeded':
-            raise RuntimeError(
-                "Could not authenticate at GitHub container registry")
-        else:
-            self._logger.info(
-                "Successfully authenticated at GitHub container registry.")
-
-    def _monitor_containers(self, container_prefix):
-        """
-        Monitors all running docker containers. Inactive containers get killed after self._maximum_inactivity_time
-        :param container_prefix: The containers prefix used for all containers in this simulation
-        """
-        while True:
-            containers = self._docker_client.containers.list()
-            for container in containers:
-                try:
-                    if container_prefix in container.name:
-                        container_start = dateutil.parser.isoparse(
-                            container.attrs['State']['StartedAt'])
-                        now = datetime.datetime.now(datetime.timezone.utc)
-                        uptime = (now - container_start).total_seconds()
-
-                        logs = container.logs(
-                            since=int(time.time() - self._maximum_inactivity_time))
-
-                        if uptime > self._minimum_runtime and not logs:
-                            self._logger.warning(f'Container {container.name} ran for more than '
-                                                 f'{self._minimum_runtime} seconds and showed no log activity for '
-                                                 f'{self._maximum_inactivity_time} seconds.'
-                                                 f'It will be stopped.')
-                            container.stop()
-                except APIError as e:
-                    self._logger.warning(
-                        f'Error during thread monitoring: {str(e)}')
-
-            time.sleep(self._monitoring_frequency)
 
     def _get_values(self, results_name: str, results_directory: Path):
         """
@@ -467,34 +325,6 @@ class ContainerSimManager():
                     DfC_min = -1  # To record safety violation.
 
         return DfC_min, DfV_min, DfP_min, DfM_min, DT_max, traffic_lights_max
-
-    # @staticmethod
-
-    def cleanup_sim_objects(self, sim_job: SimJob, file_objects):
-        """
-        Clean up function for finished simulations. Removes all files given in file objects.
-        :param sim_job: SimJob to be processed
-        :param file_objects: files/directories to be removed after simulation
-        """
-        file_object: Path
-        for file_object in file_objects:
-            if file_object.is_file():
-                try:
-                    file_object.unlink()
-                except Exception as e:
-                    self._logger.warning(e)
-                    self._logger.warning(
-                        f'Error during cleanup for simulation {sim_job.sim_name}')
-            elif file_object.is_dir():
-                try:
-                    shutil.rmtree(file_object)
-                except Exception as e:
-                    self._logger.warning(e)
-                    self._logger.warning(
-                        f'Error during cleanup for simulation {sim_job.sim_name}')
-            else:
-                self._logger.warning(
-                    f"{file_object} is not a file or directory.")
 
     def update_sim_config(self, scenario_list, mlco_list, simulation_id: str, input_directory_base: Path):
         """Updates the configuration file that is used by Pylot to run
@@ -621,15 +451,25 @@ class ContainerSimManager():
         # FIXME: Can use shutil.move() to move each extracted file to its parent directory and remove the extracted directory using shutil.rmtree()
 
 
+def start_computation(sim_manager):
+    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
+        futures = {executor.submit(sim_manager._process_sim_job, sim_job): sim_job
+                   for sim_job in sim_manager.job_list}
+        print('jobs submitted')
+        for future in futures:
+            e = future.exception()
+            print(e)
+        for future in concurrent.futures.as_completed(futures):
+            print(f'Run {futures[future]} did finish')
+
+
+def prepare_for_computation(cs_list, sim_manager, sim_job_cmd):
+
+    for i in range(len(cs_list)):
+        sim_manager.add_sim_job(SimJob(f'pylot_{i}', cs_list[i], sim_job_cmd))
+
+
 def main():
-    # 1. Create config and mlco.pkl and record it in separate a folder in tmp
-    # 2. Add a sim_job
-    # 3. Run a container while mounting the files previously created
-    # 4. Create a container_id.txt file that contains the id of the created container. copy the file to the container.
-    # 5. Fix ssh connection (chmod 400)
-    # 6. Run simulation using the mounted files
-    # 7. Output the results in the output folder. the output files should have the container id in their name.
-    # 8. Kill the container if the simulation is finished (finished.txt or time limit)
 
     i = 1
     scenario_1 = [0, 2, 1, 2, 0, 1, 1]
@@ -658,66 +498,26 @@ def main():
         'sepshr/pylot', 1, input_directory, output_directory)
 
     cmd = ["/home/erdos/workspace/pylot/scripts/run_simulator.sh"]
+
     # cmd = [
     #     "/home/erdos/workspace/pylot/scripts/run_simulator.sh",
     #     "sleep 10",
     #     "python3 /home/erdos/workspace/pylot/pylot.py --flagfile=/mnt/data/mlcshe_config.conf",
     #     "sleep 10"
     # ]
-    for i in range(len(cs_list)):
-        sim_manager.add_sim_job(SimJob(f'ccea_{i}', cs_list[i], cmd))
 
-    while len(sim_manager.job_list) > 0:
-        sim_manager._process_sim_job(sim_manager.job_list.pop())
+    prepare_for_computation(
+        cs_list=cs_list, sim_manager=sim_manager, sim_job_cmd=cmd)
 
+    # Series computation.
+    # while len(sim_manager.job_list) > 0:
+    #     sim_manager._process_sim_job(sim_manager.job_list.pop())
+
+    # Single job computation.
     # sim_manager._process_sim_job(sim_manager.job_list.pop())
 
-    # sim_manager.start_computation()
-
-    # Step 1.
-    # sim_output_id, config_file, mlco_file
-    # input, file_name = update_sim_config(
-    #     scenario, mlco, f'pylot_{i}')
-
-    # print(f'{input}, {file_name}')
-
-    # Step 2.
-
-    # sim_job_1 = SimJob(f'ccea_{i}', [scenario, mlco], cmd)
-
-    # sim_manager.add_sim_job(sim_job_1)
-
-    # sim_manager._process_sim_job(sim_manager.job_list.pop())
-
-    # docker_client = docker.from_env()
-    # container_1 = docker_client.containers.run(
-    #     image='sepshr/pylot:2.0',
-    #     command=["/home/erdos/workspace/pylot/scripts/run_simulator.sh"
-    #              ],
-    #     detach=True,
-    #     mounts=[Mount(
-    #         target='/mnt/data/',
-    #         source='/home/sepehr/AV/MLCSHE/MLCSHE/temp/test/ccea_1',
-    #         type='bind'
-    #     )],
-    #     name='test_pylot',
-    #     ports={'22': 20022},
-    #     runtime='nvidia'
-    # tty=True
-    # )
-    # time.sleep(10)
-
-    # # Unsuccessful attempt at running pylot using docker container exec command.
-    # container_1.exec_run(
-    #     "python3 /home/erdos/workspace/pylot/pylot.py --flagfile=/mnt/data/mlcshe_config.conf",
-    #     detach=True,
-    #     environment=[
-    #         'PYTHONPATH="$PYTHONPATH:/home/erdos/workspace/pylot/dependencies/:/home/erdos/workspace/pylot/dependencies/lanenet:/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg:/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/:/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/agents/:/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/:/home/erdos/workspace/scenario_runner"']
-    # )
-    # run_pylot(container_name=container_1.name)
-    # time.sleep(30)
-    # container_1.stop()
-    # container_1.remove()
+    # Parallel computation.
+    start_computation(sim_manager=sim_manager)
 
 
 if __name__ == "__main__":
