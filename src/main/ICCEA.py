@@ -1,15 +1,16 @@
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
-from itertools import cycle, repeat, zip_longest
+from itertools import repeat
 import pathlib
 import pickle
 import random
 import logging
+from xxlimited import new
 
 import numpy as np
 from deap import tools
 from fitness_function import fitness_function
-from src.utils.PairwiseDistance import PairwiseDistance
+from simulation_manager_cluster import prepare_for_computation, start_computation
 from src.utils.utility import (collaborate,
                                create_complete_solution, evaluate_individual,
                                find_individual_collaborator,
@@ -17,7 +18,7 @@ from src.utils.utility import (collaborate,
                                identify_nominal_indices,
                                index_in_complete_solution,
                                max_rank_change_fitness, measure_heom_distance,
-                               rank_change, setup_file, setup_logbook_file, violate_safety_requirement)
+                               rank_change, setup_file, setup_logbook_file)
 
 
 class ICCEA:
@@ -31,6 +32,7 @@ class ICCEA:
         self.pairwise_distance_p2 = pairwise_distance_p2
 
         self.simulator = simulator
+        self.num_sim = 1
         self.pairwise_distance = pairwise_distance_cs
 
         # Setup logger and logbook.
@@ -205,8 +207,7 @@ class ICCEA:
             csa_len = len(self.cs_archive)
             self._logger.info(
                 'complete_solution_archive_len={}'.format(csa_len))
-            num_sim = self.simulator.simulation_counter
-            self._logger.info('num_simulations={}'.format(num_sim))
+            self._logger.info('num_simulations={}'.format(self.num_sim))
 
             best_solution_overall = sorted(
                 self.solution_archive, key=lambda x: x.fitness.values[0])[-1]
@@ -222,9 +223,14 @@ class ICCEA:
             self._logger.info(
                 'best_complete_solution_gen={} | fitness={}'.format(best_solution_gen, best_solution_gen.fitness.values[0]))
 
-            if (num_gen >= max_gen) or (csa_len >= max_num_evals):
+            if (csa_len >= max_num_evals):
                 self._logger.info(
                     'Maximum number of evaluations (max_num_evals={}) reached! Ending the search ...'.format(max_num_evals))
+                break
+
+            if (num_gen >= max_gen):
+                self._logger.info(
+                    'Maximum number of generations (max_gen={}) reached! Ending the search ...'.format(max_gen))
                 break
 
             self._logger.info("Updating archives...")
@@ -287,10 +293,24 @@ class ICCEA:
             c for c in cs_list if not self.individual_in_list(c, self.cs_archive)]
         # print(f'new_cs_list is: {new_cs_list}')
 
-        for c in new_cs_list:
-            c.safety_req_value = self.get_safety_req_value(c)
-            # Add cs that have been simulated to cs_archive.
-            self.cs_archive.append(c)
+        # Handle benchmarking problems.
+        if self.p2_enumLimits:
+            for c in new_cs_list:
+                c.safety_req_value = self.get_safety_req_value(c)
+                # Add cs that have been simulated to cs_archive.
+                self.cs_archive.append(c)
+        else:
+            # self.num_sim = prepare_for_computation(
+            #     new_cs_list, self.simulator, self.num_sim)
+            # start_computation(self.simulator)
+            self.num_sim, results = self.toolbox.compute_safety_cs_list(
+                self.simulator, new_cs_list, self.num_sim)
+            for c, result in zip(new_cs_list, results):
+                DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = result
+                # print(f'c={c}, c.safety_req_value={DfC_min}')
+                c.safety_req_value = DfC_min
+                self._logger.info('safety_req_value={}'.format(DfC_min))
+                self.cs_archive.append(c)
 
         # print(self.cs_archive)
 
@@ -300,7 +320,7 @@ class ICCEA:
         self.solution_archive.clear()
 
         self.solution_archive = [deepcopy(c) for c in self.cs_archive]
-
+        # print(self.solution_archive)
         # for c in cs_list:
         # for c in self.solution_archive:
         #     c.fitness.values = (fitness_function(

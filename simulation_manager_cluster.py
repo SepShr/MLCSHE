@@ -3,17 +3,13 @@ from io import BytesIO
 import logging
 from pathlib import Path
 import pickle
-import shutil
 import tarfile
 import time
 from typing import Container
 import docker
-from getpass import getpass
 import os
-from halo import Halo
 import threading
 from datetime import datetime
-import dateutil
 from docker.errors import DockerException, NotFound, APIError
 from docker.types import Mount, LogConfig
 import platform
@@ -23,6 +19,9 @@ from simulation_utils import translate_scenario_list
 from tqdm import trange
 
 import simulation_config as cfg
+
+# Setup logger.
+logger = logging.getLogger(__name__)
 
 
 class SimJob():
@@ -49,11 +48,10 @@ class SimJob():
 
 class ContainerSimManager():
     def __init__(self,
-                 docker_container_url: str,
-                 max_workers: int,
                  data_directory: Path,
                  output_directory: Path,
-                 docker_repo_tag='2.0'
+                 docker_container_url: str = cfg.container_img_name,
+                 docker_repo_tag: str = cfg.docker_repo_tag
                  ) -> None:
         """
         :param docker_container_url: Simulation container URL at container registry
@@ -62,7 +60,6 @@ class ContainerSimManager():
         :param docker_repo_tag: container tag, Default: latest
         """
         self._data_directory = data_directory
-        self._max_workers = max_workers
         self._container_prefix = 'PylotSim'
         self._docker_image_name = docker_container_url + ':' + docker_repo_tag
         self._output_directory = output_directory
@@ -134,8 +131,8 @@ class ContainerSimManager():
             self._logger.info('simulation_fitness_values={}'.format(
                 simulation_fitness_values))
 
-            print('simulation_fitness_values={}'.format(
-                simulation_fitness_values))
+            # print('simulation_fitness_values={}'.format(
+            #     simulation_fitness_values))
 
             container.remove()
 
@@ -157,7 +154,7 @@ class ContainerSimManager():
         """
 
         # prepare your data for your scenario here
-        print('in _init_simulation...')
+        # print('in _init_simulation...')
         output_folder = self._output_directory.joinpath(sim_job.sim_name)
         try:
             with threading.Lock():
@@ -178,7 +175,7 @@ class ContainerSimManager():
         """
         docker_client = docker.from_env()
         docker_image = docker_client.images.get(self._docker_image_name)
-        print('in _run_docker_container...')
+        # print('in _run_docker_container...')
         try:
             system_platform = platform.system()
             if system_platform == "Windows":
@@ -432,7 +429,7 @@ class ContainerSimManager():
                               finished_file_src_dir, output_folder)
 
             if os.path.exists(Path(finished_file_src_dir).joinpath(finished_file_name).joinpath(finished_file_name)):
-                print('finished file found!')
+                # print('finished file found!')
                 return True
             else:
                 return False
@@ -451,22 +448,28 @@ class ContainerSimManager():
         # FIXME: Can use shutil.move() to move each extracted file to its parent directory and remove the extracted directory using shutil.rmtree()
 
 
-def start_computation(sim_manager):
-    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
+def start_computation(sim_manager, max_workers: int = cfg.max_workers):
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(sim_manager._process_sim_job, sim_job): sim_job
                    for sim_job in sim_manager.job_list}
-        print('jobs submitted')
-        for future in futures:
-            e = future.exception()
-            print(e)
+        logger.info('jobs submitted')
+        # for future in futures:
+        #     e = future.exception()
+        #     logger.warn(e)
         for future in concurrent.futures.as_completed(futures):
-            print(f'Run {futures[future]} did finish')
+            logger.info(f'Run {futures[future]} did finish')
+        results = [list(f.result()) for f in futures]
+        # print(results)
+        sim_manager.job_list.clear()
+        return results
 
 
-def prepare_for_computation(cs_list, sim_manager, sim_job_cmd):
-
-    for i in range(len(cs_list)):
-        sim_manager.add_sim_job(SimJob(f'pylot_{i}', cs_list[i], sim_job_cmd))
+def prepare_for_computation(cs_list, sim_manager, job_index, sim_job_cmd=cfg.sim_job_command):
+    for i, cs in zip(range(job_index, job_index + len(cs_list) + 1), cs_list):
+        sim_manager.add_sim_job(SimJob(f'pylot_{i}', cs, sim_job_cmd))
+    logger.info('simulation jobs created.')
+    # print(f'jobs are: {sim_manager.job_list}')
+    return job_index + len(cs_list)
 
 
 def main():
@@ -495,7 +498,7 @@ def main():
     # FIXME: input and output directories should include the search folder as well.
 
     sim_manager = ContainerSimManager(
-        'sepshr/pylot', 1, input_directory, output_directory)
+        input_directory, output_directory)
 
     cmd = ["/home/erdos/workspace/pylot/scripts/run_simulator.sh"]
 
@@ -507,7 +510,7 @@ def main():
     # ]
 
     prepare_for_computation(
-        cs_list=cs_list, sim_manager=sim_manager, sim_job_cmd=cmd)
+        cs_list=cs_list, sim_manager=sim_manager, sim_job_cmd=cmd, job_index=1)
 
     # Series computation.
     # while len(sim_manager.job_list) > 0:

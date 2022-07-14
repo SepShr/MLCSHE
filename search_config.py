@@ -1,11 +1,19 @@
-output_dir_name = 'CCEA_Pylot'
+from datetime import datetime
+from pathlib import Path
+
+# Setup directories
+# Get current timestamp to use as a unique ID.
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+output_dir_name = str(timestamp) + '_CCEA_Pylot'
+input_directory = Path.cwd().joinpath('temp').joinpath(output_dir_name)
+output_directory = Path.cwd().joinpath('results').joinpath(output_dir_name)
 
 # Search hyperparameters
-scenario_population_size = 5  # Size of the scenario population
-mlco_population_size = 5  # Size of the MLC output population
+scenario_population_size = 2  # Size of the scenario population
+mlco_population_size = 2  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
 region_radius = 0.5  # The radius of the region for fitness evaluations
-number_of_generations = 15
+number_of_generations = 2
 random_seed = 10
 max_num_evals = 500
 
@@ -32,17 +40,27 @@ duration = 900
 min_trajectory_duration = 50
 null_trajectory = [-1, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
+scenario_numeric_ranges = [1, 1, 1, 1, 1, 1, 1]
+scenario_catgorical_indices = [0, 1, 2, 3, 4, 5, 6]
+
 trajectory_numeric_ranges = [1, total_mlco_messages, total_mlco_messages,
                              frame_width, frame_height, frame_width, frame_height,
                              frame_width, frame_height, frame_width, frame_height]
 categorical_indices = [0, 1, 2, 3, 4, 5, 6, 7]
+
+mlco_numeric_ranges = trajectory_numeric_ranges
+mlco_categorical_indices = [7]
+
 numeric_ranges = [1, 1, 1, 1, 1, 1, 1,
                   1, total_mlco_messages, total_mlco_messages,
                   frame_width, frame_height, frame_width, frame_height,
                   frame_width, frame_height, frame_width, frame_height]
 for i in range(num_trajectories - 1):
     numeric_ranges += trajectory_numeric_ranges
+    mlco_numeric_ranges += trajectory_numeric_ranges
+
     categorical_indices.append(categorical_indices[-1] + 11)
+    mlco_categorical_indices.append(mlco_categorical_indices[-1] + 11)
 
 x_min_lb = 0.0
 x_min_ub = frame_width - min_boundingbox_size

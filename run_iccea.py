@@ -7,6 +7,7 @@ import pathlib
 import problem
 import search_config as cfg
 from Simulator import Simulator
+from simulation_manager_cluster import ContainerSimManager
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
@@ -17,6 +18,8 @@ from src.utils.utility import setup_logger
 def main():
     # Instantiate simulator instance.
     simulator = Simulator()
+    sim_manager = ContainerSimManager(
+        cfg.input_directory, cfg.output_directory)
 
     # Instantiate pairwise distance instance.
     pairwise_distance = PairwiseDistance(
@@ -40,7 +43,8 @@ def main():
     solver = ICCEA(
         creator=problem.creator,
         toolbox=problem.toolbox,
-        simulator=simulator,
+        # simulator=simulator,
+        simulator=sim_manager,
         pairwise_distance_cs=pairwise_distance,
         # more parameters can be added to better define the problem
         pairwise_distance_p1=pairwise_distance_scen,
@@ -60,9 +64,10 @@ def main():
     ]
 
     # Get current timestamp to use as a unique ID.
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = pathlib.Path('results').joinpath(
-        timestamp + '_' + cfg.output_dir_name)
+    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # output_dir = pathlib.Path('results').joinpath(
+    #     timestamp + '_' + cfg.output_dir_name)
+    output_dir = pathlib.Path('results').joinpath(cfg.output_dir_name)
     output_dir.mkdir(parents=True, exist_ok=True)  # Create the output folder.
 
     # Setup logger.

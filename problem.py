@@ -10,6 +10,7 @@ from deap import base, creator, tools
 import search_config as cfg
 from problem_utils import (initialize_mlco, mutate_mlco, mutate_scenario,
                            compute_safety_req_value)
+from simulation_manager_cluster import prepare_for_computation, start_computation
 # FIXME: This should be imported from problem_utils.py
 from src.utils.utility import initialize_hetero_vector
 
@@ -52,7 +53,16 @@ toolbox.register(
     toolbox.mlco, n=mlco_pop_size
 )
 
+
+def compute_safety_value_cs_list(simulator, cs_list, sim_index):
+    updated_sim_index = prepare_for_computation(
+        cs_list, simulator, sim_index)
+    results = start_computation(simulator)
+    return updated_sim_index, results
+
+
 toolbox.register("compute_safety_req_value", compute_safety_req_value)
+toolbox.register("compute_safety_cs_list", compute_safety_value_cs_list)
 
 toolbox.register(
     "select", tools.selTournament,

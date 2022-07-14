@@ -47,6 +47,7 @@ import logging
 from random import randint, random, uniform
 
 import search_config as cfg
+# from simulation_manager_cluster import prepare_for_computation, start_computation
 
 # from simulation_runner import run_simulation
 from src.utils.utility import initialize_hetero_vector, mutate_flat_hetero_individual
@@ -295,18 +296,6 @@ def repair_obstacle_bbox(
         # logger.debug("bbox height was less than the min_bbox size.")
 
     return obstacle
-
-
-# TEST
-# mlco = [[[260.0, 480.0, 300.0, 400.0, 0], [0.0, 0.0, 0.0, 0.0, -1]], [[0.0, 0.0, 0.0, 0.0, -1], [300.0, 490.0, 350.0, 410.0, 0]]]
-# obstacle_enumLimits = [-1, 1]
-# mutbpb = 0.5
-# mutgmu = 0
-# mutgsig = 0.125
-# mutgpb = 0.5
-# mutipb = 0.5
-
-# Define the problem's joint fitness function.
 
 
 def compute_safety_req_value(simulator, scenario, mlco):
