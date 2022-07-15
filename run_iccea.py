@@ -60,7 +60,8 @@ def main():
         cfg.guassian_mutation_std,
         cfg.guassian_mutation_probability,
         cfg.integer_mutation_probability,
-        cfg.bitflip_mutation_probability
+        cfg.bitflip_mutation_probability,
+        cfg.population_archive_size
     ]
 
     # Get current timestamp to use as a unique ID.

@@ -13,9 +13,9 @@ scenario_population_size = 2  # Size of the scenario population
 mlco_population_size = 2  # Size of the MLC output population
 min_distance = 0.5  # Minimum distance between members of an archive
 region_radius = 0.5  # The radius of the region for fitness evaluations
-number_of_generations = 2
+number_of_generations = 3
 random_seed = 10
-max_num_evals = 500
+max_num_evals = 1500
 
 # Evolution hyperparameters
 tournament_selection = 2
@@ -25,6 +25,7 @@ guassian_mutation_std = 0.125
 guassian_mutation_probability = 0.5
 integer_mutation_probability = 0.5
 bitflip_mutation_probability = 1
+population_archive_size = 2
 
 # Problem-specific parameters
 scenario_enumLimits = [[0, 2], [0, 6], [0, 1], [0, 3], [0, 3], [0, 0], [0, 2]]

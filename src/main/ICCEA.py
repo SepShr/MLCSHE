@@ -106,7 +106,8 @@ class ICCEA:
             mut_guass_sig, \
             mut_guass_pb, \
             mut_int_pb, \
-            mut_bit_pb = hyperparameters
+            mut_bit_pb, \
+            pop_arc_size = hyperparameters
 
         self._logger.info(
             'minimum_distance_threshold={}'.format(min_dist))
@@ -127,6 +128,7 @@ class ICCEA:
             self._logger.debug('mlco_population={}'.format(popMLCO))
             self._logger.debug('scenario_archive={}'.format(arcScen))
             self._logger.debug('mlco_archive={}'.format(arcMLCO))
+            self._logger.debug('pop_arc_size={}'.format(pop_arc_size))
 
             # self.cs_archive = complete_solution_archive
 
@@ -240,14 +242,14 @@ class ICCEA:
             # )
             # arcScen = self.update_archive_diverse_elitist(popScen, 3, min_dist)
             arcScen = self.update_archive_diverse_best_random(
-                popScen, 2, min_dist, self.pairwise_distance_p1)
+                popScen, pop_arc_size, min_dist, self.pairwise_distance_p1)
 
             # arcMLCO = self.update_archive(
             #     popMLCO, popScen, completeSolSet, min_dist
             # )
             # arcMLCO = self.update_archive_diverse_elitist(popMLCO, 3, min_dist)
             arcMLCO = self.update_archive_diverse_best_random(
-                popMLCO, 2, min_dist, self.pairwise_distance_p2)
+                popMLCO, pop_arc_size, min_dist, self.pairwise_distance_p2)
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.
