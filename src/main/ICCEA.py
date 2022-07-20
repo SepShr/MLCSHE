@@ -5,7 +5,6 @@ import pathlib
 import pickle
 import random
 import logging
-from xxlimited import new
 
 import numpy as np
 from deap import tools

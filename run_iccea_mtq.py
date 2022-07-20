@@ -2,7 +2,6 @@
 iCCEA Runner.
 """
 from datetime import datetime
-from nis import cat
 import pathlib
 import benchmark.mtq.search_config as cfg
 from benchmark.mtq import problem
