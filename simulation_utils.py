@@ -75,7 +75,7 @@ def translate_scenario_list(scenario_list):
             weather = "HardRainSunset"
         if (scenario_list[1] == 6):  # clear
             weather = "SoftRainSunset"
-    if (scenario_list[0] == 2):  # sunset
+    if (scenario_list[0] == 2):  # night
 
         if (scenario_list[1] == 0):  # clear
             weather = "ClearSunset"

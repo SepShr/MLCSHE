@@ -13,6 +13,9 @@ from datetime import datetime
 from docker.errors import DockerException, NotFound, APIError
 from docker.types import Mount, LogConfig
 import platform
+# import tracemalloc
+import gc
+from collections import deque
 
 from problem_utils import mlco_to_obs_seq
 from simulation_utils import translate_scenario_list
@@ -119,7 +122,7 @@ class ContainerSimManager():
             DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = self._get_values(
                 simulation_log_file_name, output_folder)
 
-            simulation_fitness_values = {
+            safety_req_values = {
                 'distance_from_center': DfC_min,
                 'distance_from_vehicle': DfV_max,
                 'distance_from_pedestrian': DfP_max,
@@ -128,13 +131,13 @@ class ContainerSimManager():
                 'violated_traffic_lights': traffic_lights_max
             }
 
-            self._logger.info('simulation_fitness_values={}'.format(
-                simulation_fitness_values))
-
-            # print('simulation_fitness_values={}'.format(
-            #     simulation_fitness_values))
-
+            self._logger.info('safety_req_values={}'.format(
+                safety_req_values))
+            # self._logger.debug(
+            #     f'before removing {container.name},current_memory={tracemalloc.get_tracemalloc_memory()}')
             container.remove()
+            # self._logger.debug(
+            #     f'after removing {container.name},current_memory={tracemalloc.get_tracemalloc_memory()}')
 
             return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
         else:
@@ -429,7 +432,7 @@ class ContainerSimManager():
                               finished_file_src_dir, output_folder)
 
             if os.path.exists(Path(finished_file_src_dir).joinpath(finished_file_name).joinpath(finished_file_name)):
-                # print('finished file found!')
+                self._logger.info('finished file found!')
                 return True
             else:
                 return False
@@ -438,36 +441,95 @@ class ContainerSimManager():
             # print(e)
             return False
 
-    @staticmethod
-    def copy_to_host(container: Container, file_name: str, source_path: str, destination_path: str):
-        strm, _ = container.get_archive(source_path+file_name)
+    # @staticmethod
+    def copy_to_host(self, container: Container, file_name: str, source_path: str, destination_path: str):
+        assert file_name is not None, "file_name cannot be None."
+
+        # self._logger.debug(
+        #     f'before copy_to_host({file_name}), current_memory={tracemalloc.get_tracemalloc_memory()}')
+        self._logger.debug('Trying to copy {} from {} to {}'.format(
+            file_name, source_path, destination_path))
+        strm, stat = container.get_archive(source_path+file_name)
+        self._logger.debug(stat)
         dst_file_path = Path(destination_path).joinpath(file_name)
-        for d in strm:
-            pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
-            pw_tar.extractall(dst_file_path)
+        try:
+            for d in strm:
+                pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
+                pw_tar.extractall(dst_file_path)
+        except Exception as e:
+            self._logger.warn(e)
+
+        # self._logger.debug(
+        #     f'after copy_to_host({file_name}), current_memory={tracemalloc.get_tracemalloc_memory()}')
+
         # FIXME: Can use shutil.move() to move each extracted file to its parent directory and remove the extracted directory using shutil.rmtree()
 
 
+MAX_JOBS_IN_QUEUE = 10
+
+
 def start_computation(sim_manager, max_workers: int = cfg.max_workers):
+    # # OPTION 1 (ALREADY WORKING, ALMOST!)
+    # with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+    #     futures = {executor.submit(sim_manager._process_sim_job, sim_job): sim_job
+    #                for sim_job in sim_manager.job_list}
+    #     logger.info('jobs submitted')
+
+    #     for future in concurrent.futures.as_completed(futures):
+    #         logger.info(f'Run {futures[future]} did finish')
+    #     results = [list(f.result()) for f in futures]
+
+    #     del futures
+    # sim_manager.job_list.clear()
+    # gc.collect()
+
+    # OPTION 2 (BATCH JOBS)
+    results = []
+    jobs_left = len(sim_manager.job_list)
+    jobs_iter = iter(sim_manager.job_list)
+    job_queue = deque(sim_manager.job_list)
+
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(sim_manager._process_sim_job, sim_job): sim_job
-                   for sim_job in sim_manager.job_list}
-        logger.info('jobs submitted')
-        # for future in futures:
-        #     e = future.exception()
-        #     logger.warn(e)
-        for future in concurrent.futures.as_completed(futures):
-            logger.info(f'Run {futures[future]} did finish')
-        results = [list(f.result()) for f in futures]
-        # print(results)
-        sim_manager.job_list.clear()
-        return results
+        while jobs_left > 0:
+            batch_results = []
+            futures = {}
+            for this_job in jobs_iter:
+                submitted_job = executor.submit(
+                    sim_manager._process_sim_job, this_job)
+                logger.info(f'{this_job} submitted')
+
+                futures[submitted_job] = this_job
+
+                if len(futures) >= MAX_JOBS_IN_QUEUE:
+                    break
+
+            for future in concurrent.futures.as_completed(futures):
+                if future.result():
+                    logger.info(f'Run {futures[future]} did finish')
+                    jobs_left -= 1  # one down - many to go...
+                else:
+                    logger.warn(
+                        f'Run {futures[future]} did not yield any results!')
+
+            batch_results = [list(f.result()) for f in futures]
+            logger.info(f'batch_results={batch_results}')
+            results += batch_results
+            logger.info(f'results={results}')
+
+            del batch_results
+            del futures
+            gc.collect()
+
+    sim_manager.job_list.clear()
+    gc.collect()
+    return results
 
 
 def prepare_for_computation(cs_list, sim_manager, job_index, sim_job_cmd=cfg.sim_job_command):
     for i, cs in zip(range(job_index, job_index + len(cs_list) + 1), cs_list):
         sim_manager.add_sim_job(SimJob(f'pylot_{i}', cs, sim_job_cmd))
-    logger.info('simulation jobs created.')
+    # logger.info('{} simulation jobs created.'.format(
+    #     len(sim_manager.job_list)))
     # print(f'jobs are: {sim_manager.job_list}')
     return job_index + len(cs_list)
 
