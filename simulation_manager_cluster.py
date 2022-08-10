@@ -106,6 +106,7 @@ class ContainerSimManager():
         for counter in trange(cfg.simulation_duration):
             time.sleep(1)
             if self.scenario_finished_docker(container=container, output_folder=output_folder):
+                print('found the finished file, breaking the for loop.')
                 break
 
         container.stop()
@@ -133,11 +134,7 @@ class ContainerSimManager():
 
             self._logger.info('safety_req_values={}'.format(
                 safety_req_values))
-            # self._logger.debug(
-            #     f'before removing {container.name},current_memory={tracemalloc.get_tracemalloc_memory()}')
             container.remove()
-            # self._logger.debug(
-            #     f'after removing {container.name},current_memory={tracemalloc.get_tracemalloc_memory()}')
 
             return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
         else:
@@ -421,7 +418,9 @@ class ContainerSimManager():
             self.copy_to_host(container, file_name+'_ex.log',
                               source_path, destination_path)
         except Exception as e:
-            # print(e)
+            # self._logger.warn(e)
+            ex_file_name = file_name + '_ex.log'
+            self._logger.debug(f'{ex_file_name} not found in {container.name}')
             pass
 
     def scenario_finished_docker(self, container: Container, output_folder: Path):
@@ -430,9 +429,11 @@ class ContainerSimManager():
             finished_file_name = 'finished.txt'
             self.copy_to_host(container, finished_file_name,
                               finished_file_src_dir, output_folder)
-
-            if os.path.exists(Path(finished_file_src_dir).joinpath(finished_file_name).joinpath(finished_file_name)):
-                self._logger.info('finished file found!')
+            expected_finished_file_path = Path(finished_file_src_dir).joinpath(
+                finished_file_name).joinpath(finished_file_name)
+            if os.path.exists(expected_finished_file_path):
+                self._logger.info(
+                    f'finished file found at {expected_finished_file_path}')
                 return True
             else:
                 return False
@@ -445,22 +446,56 @@ class ContainerSimManager():
     def copy_to_host(self, container: Container, file_name: str, source_path: str, destination_path: str):
         assert file_name is not None, "file_name cannot be None."
 
-        # self._logger.debug(
-        #     f'before copy_to_host({file_name}), current_memory={tracemalloc.get_tracemalloc_memory()}')
         self._logger.debug('Trying to copy {} from {} to {}'.format(
             file_name, source_path, destination_path))
         strm, stat = container.get_archive(source_path+file_name)
         self._logger.debug(stat)
         dst_file_path = Path(destination_path).joinpath(file_name)
-        try:
-            for d in strm:
-                pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
-                pw_tar.extractall(dst_file_path)
-        except Exception as e:
-            self._logger.warn(e)
 
-        # self._logger.debug(
-        #     f'after copy_to_host({file_name}), current_memory={tracemalloc.get_tracemalloc_memory()}')
+        # # OPTION 1
+        # try:
+        #     for d in strm:
+        #         pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
+        #         pw_tar.extractall(dst_file_path)
+        # except Exception as e:
+        #     self._logger.warn(e)
+
+        # # OPTION 2
+        # try:
+        #     for d in strm:
+        #         self._logger.debug('in for loop...')
+        #         with tarfile.TarFile(fileobj=BytesIO(d)) as pw_tar:
+        #             pw_tar.extractall(dst_file_path)
+        # except Exception as e:
+        #     self._logger.warn(e)
+        #     pass
+
+        # # OPTION3
+        # dst_tar_file = str(dst_file_path)+'.tar'
+        # try:
+        #     with open(dst_tar_file, 'wb') as f:
+        #         for chunk in strm:
+        #             f.write(chunk)
+        # except Exception as e:
+        #     self._logger.warn(
+        #         f'Could not create {dst_tar_file}. Exception raised: {e}')
+
+        # tar_file = tarfile.TarFile(Path(dst_tar_file))
+        # try:
+        #     with tarfile.open(fileobj=tar_file) as tar:
+        #         tar.extractall(dst_file_path)
+        # except Exception as e:
+        #     self._logger.warn(
+        #         f'Could not extract {dst_tar_file}. Exception raised: {e}')
+
+        # OPTION4
+        try:
+            with open(dst_file_path, 'wb') as f:
+                for chunk in strm:
+                    f.write(chunk)
+        except Exception as e:
+            self._logger.warn(
+                f'Could not create {dst_file_path}. Exception raised: {e}')
 
         # FIXME: Can use shutil.move() to move each extracted file to its parent directory and remove the extracted directory using shutil.rmtree()
 
