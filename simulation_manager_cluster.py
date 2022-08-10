@@ -429,7 +429,7 @@ class ContainerSimManager():
             finished_file_name = 'finished.txt'
             self.copy_to_host(container, finished_file_name,
                               finished_file_src_dir, output_folder)
-            expected_finished_file_path = Path(finished_file_src_dir).joinpath(
+            expected_finished_file_path = Path(output_folder).joinpath(
                 finished_file_name).joinpath(finished_file_name)
             if os.path.exists(expected_finished_file_path):
                 self._logger.info(
@@ -452,13 +452,14 @@ class ContainerSimManager():
         self._logger.debug(stat)
         dst_file_path = Path(destination_path).joinpath(file_name)
 
-        # # OPTION 1
-        # try:
-        #     for d in strm:
-        #         pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
-        #         pw_tar.extractall(dst_file_path)
-        # except Exception as e:
-        #     self._logger.warn(e)
+        # OPTION 1
+        try:
+            for d in strm:
+                pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
+                pw_tar.extractall(dst_file_path)
+        except Exception as e:
+            self._logger.error(e)
+            pass
 
         # # OPTION 2
         # try:
@@ -488,14 +489,14 @@ class ContainerSimManager():
         #     self._logger.warn(
         #         f'Could not extract {dst_tar_file}. Exception raised: {e}')
 
-        # OPTION4
-        try:
-            with open(dst_file_path, 'wb') as f:
-                for chunk in strm:
-                    f.write(chunk)
-        except Exception as e:
-            self._logger.warn(
-                f'Could not create {dst_file_path}. Exception raised: {e}')
+        # # OPTION4
+        # try:
+        #     with open(dst_file_path, 'wb') as f:
+        #         for chunk in strm:
+        #             f.write(chunk)
+        # except Exception as e:
+        #     self._logger.warn(
+        #         f'Could not create {dst_file_path}. Exception raised: {e}')
 
         # FIXME: Can use shutil.move() to move each extracted file to its parent directory and remove the extracted directory using shutil.rmtree()
 
