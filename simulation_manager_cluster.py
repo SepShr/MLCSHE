@@ -115,8 +115,10 @@ class ContainerSimManager():
 
         self.get_results(container, simulation_log_file_name,
                          cfg.simulation_results_source_directory, output_folder)
+        # results_file_name = output_folder.joinpath(
+        #     simulation_log_file_name).joinpath(simulation_log_file_name)
         results_file_name = output_folder.joinpath(
-            simulation_log_file_name).joinpath(simulation_log_file_name)
+            simulation_log_file_name)
         if os.path.exists(results_file_name):
             self._logger.debug(
                 'Found the results of simulation in {}'.format(results_file_name))
@@ -241,11 +243,15 @@ class ContainerSimManager():
         """
         # file_name = 'results/' + filename
 
+        # sim_results = results_directory.joinpath(
+        #     results_name).joinpath(results_name)
         sim_results = results_directory.joinpath(
-            results_name).joinpath(results_name)
+            results_name)
         file_name_ex = results_name+'_ex.log'
+        # sim_results_ex = results_directory.joinpath(
+        #     file_name_ex).joinpath(file_name_ex)
         sim_results_ex = results_directory.joinpath(
-            file_name_ex).joinpath(file_name_ex)
+            file_name_ex)
 
         assert os.path.exists(
             sim_results), 'The file {} does not exist!'.format(sim_results)
@@ -429,8 +435,10 @@ class ContainerSimManager():
             finished_file_name = 'finished.txt'
             self.copy_to_host(container, finished_file_name,
                               finished_file_src_dir, output_folder)
+            # expected_finished_file_path = Path(output_folder).joinpath(
+            #     finished_file_name).joinpath(finished_file_name)
             expected_finished_file_path = Path(output_folder).joinpath(
-                finished_file_name).joinpath(finished_file_name)
+                finished_file_name)
             if os.path.exists(expected_finished_file_path):
                 self._logger.info(
                     f'finished file found at {expected_finished_file_path}')
@@ -452,14 +460,14 @@ class ContainerSimManager():
         self._logger.debug(stat)
         dst_file_path = Path(destination_path).joinpath(file_name)
 
-        # OPTION 1
-        try:
-            for d in strm:
-                pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
-                pw_tar.extractall(dst_file_path)
-        except Exception as e:
-            self._logger.error(e)
-            pass
+        # # OPTION 1
+        # try:
+        #     for d in strm:
+        #         pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
+        #         pw_tar.extractall(dst_file_path)
+        # except Exception as e:
+        #     self._logger.error(e)
+        #     pass
 
         # # OPTION 2
         # try:
@@ -489,14 +497,13 @@ class ContainerSimManager():
         #     self._logger.warn(
         #         f'Could not extract {dst_tar_file}. Exception raised: {e}')
 
-        # # OPTION4
-        # try:
-        #     with open(dst_file_path, 'wb') as f:
-        #         for chunk in strm:
-        #             f.write(chunk)
-        # except Exception as e:
-        #     self._logger.warn(
-        #         f'Could not create {dst_file_path}. Exception raised: {e}')
+        # OPTION4
+        try:
+            filelike = BytesIO(b"".join(b for b in strm))
+            with tarfile.open(fileobj=filelike) as tar:
+                tar.extractall(destination_path)
+        except Exception as e:
+            self._logger.error(e)
 
         # FIXME: Can use shutil.move() to move each extracted file to its parent directory and remove the extracted directory using shutil.rmtree()
 
