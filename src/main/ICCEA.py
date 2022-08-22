@@ -10,7 +10,6 @@ from time import time
 import numpy as np
 from deap import tools
 from fitness_function import fitness_function
-from simulation_manager_cluster import prepare_for_computation, start_computation
 from src.utils.utility import (collaborate,
                                create_complete_solution, evaluate_individual,
                                find_individual_collaborator,
@@ -271,7 +270,7 @@ class ICCEA:
                 arcMLCO = self.update_archive_diverse_best_random(
                     popMLCO, pop_arc_size, min_dist, self.pairwise_distance_p2)
             elif self.update_archive_strategy == 'random':
-                arcScen = self.update_archive_diverse_random(
+                arcMLCO = self.update_archive_diverse_random(
                     popMLCO, pop_arc_size, min_dist, self.pairwise_distance_p2)
             else:
                 raise ValueError(
