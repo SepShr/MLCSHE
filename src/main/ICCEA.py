@@ -5,6 +5,7 @@ import pathlib
 import pickle
 import random
 import logging
+from time import time
 
 import numpy as np
 from deap import tools
@@ -21,7 +22,7 @@ from src.utils.utility import (collaborate,
 
 
 class ICCEA:
-    def __init__(self, creator, toolbox, simulator, pairwise_distance_cs, pairwise_distance_p1, pairwise_distance_p2, first_population_enumLimits=None, second_population_enumLimits=None):
+    def __init__(self, creator, toolbox, simulator, pairwise_distance_cs, pairwise_distance_p1, pairwise_distance_p2, first_population_enumLimits=None, second_population_enumLimits=None, update_archive_strategy='bestRandom'):
         self.toolbox = toolbox
         self.creator = creator
         self.p1_enumLimits = first_population_enumLimits
@@ -33,6 +34,8 @@ class ICCEA:
         self.simulator = simulator
         self.num_sim = 1
         self.pairwise_distance = pairwise_distance_cs
+
+        self.update_archive_strategy = update_archive_strategy
 
         # Setup logger and logbook.
         self._logger = logging.getLogger(__name__)
@@ -119,6 +122,8 @@ class ICCEA:
             'gaussian_mutation_probability={}'.format(mut_guass_pb))
         self._logger.info('integer_mutation_probability={}'.format(mut_int_pb))
         self._logger.info('bitflip_mutation_probability={}'.format(mut_bit_pb))
+
+        start_time = time()
 
         # Cooperative Coevolutionary Search
         for num_gen in range(1, max_gen+1):
@@ -227,11 +232,15 @@ class ICCEA:
             if (csa_len >= max_num_evals):
                 self._logger.info(
                     'Maximum number of evaluations (max_num_evals={}) reached! Ending the search ...'.format(max_num_evals))
+                self._logger.info(
+                    f'execution_duration={time() - start_time} seconds')
                 break
 
             if (num_gen >= max_gen):
                 self._logger.info(
                     'Maximum number of generations (max_gen={}) reached! Ending the search ...'.format(max_gen))
+                self._logger.info(
+                    f'execution_duration={time() - start_time} seconds')
                 break
 
             self._logger.info("Updating archives...")
@@ -239,16 +248,34 @@ class ICCEA:
             # arcScen = self.update_archive(
             #     popScen, popMLCO, completeSolSet, min_dist
             # )
-            # arcScen = self.update_archive_diverse_elitist(popScen, 3, min_dist)
-            arcScen = self.update_archive_diverse_best_random(
-                popScen, pop_arc_size, min_dist, self.pairwise_distance_p1)
+            if self.update_archive_strategy == 'best':
+                arcScen = self.update_archive_diverse_elitist(
+                    popScen, pop_arc_size, min_dist, self.pairwise_distance_p1)
+            elif self.update_archive_strategy == 'bestRandom':
+                arcScen = self.update_archive_diverse_best_random(
+                    popScen, pop_arc_size, min_dist, self.pairwise_distance_p1)
+            elif self.update_archive_strategy == 'random':
+                arcScen = self.update_archive_diverse_random(
+                    popScen, pop_arc_size, min_dist, self.pairwise_distance_p1)
+            else:
+                raise ValueError(
+                    f'update_archive strategy can only be: best, best random, or random. It cannot be {self.update_archive_strategy}')
 
             # arcMLCO = self.update_archive(
             #     popMLCO, popScen, completeSolSet, min_dist
             # )
-            # arcMLCO = self.update_archive_diverse_elitist(popMLCO, 3, min_dist)
-            arcMLCO = self.update_archive_diverse_best_random(
-                popMLCO, pop_arc_size, min_dist, self.pairwise_distance_p2)
+            if self.update_archive_strategy == 'best':
+                arcMLCO = self.update_archive_diverse_elitist(
+                    popMLCO, pop_arc_size, min_dist, self.pairwise_distance_p2)
+            elif self.update_archive_strategy == 'bestRandom':
+                arcMLCO = self.update_archive_diverse_best_random(
+                    popMLCO, pop_arc_size, min_dist, self.pairwise_distance_p2)
+            elif self.update_archive_strategy == 'random':
+                arcScen = self.update_archive_diverse_random(
+                    popMLCO, pop_arc_size, min_dist, self.pairwise_distance_p2)
+            else:
+                raise ValueError(
+                    f'update_archive strategy can only be: best, bestRandom, or random. It cannot be {self.update_archive_strategy}')
 
             # Select, mate (crossover) and mutate individuals that are not in archives.
             # Breed the next generation of populations.

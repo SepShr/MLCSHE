@@ -2,13 +2,17 @@
 iCCEA Runner.
 """
 from datetime import datetime
+from distutils.command.config import config
 import pathlib
-import benchmark.mtq.search_config as cfg
 from benchmark.mtq import problem
 from Simulator import Simulator
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
+import sys
+import importlib
+
+# import benchmark.mtq.search_config as cfg
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
 
@@ -36,6 +40,11 @@ def main():
         categorical_indices=[]
     )
 
+    try:
+        update_archive_strategy = cfg.update_archive_strategy
+    except:
+        update_archive_strategy = 'best random'
+
     solver = ICCEA(
         creator=problem.creator,
         toolbox=problem.toolbox,
@@ -46,7 +55,7 @@ def main():
         pairwise_distance_p2=pairwise_distance_mlco,
         first_population_enumLimits=cfg.enumLimits,
         second_population_enumLimits=cfg.enumLimits,
-        update_archive_strategy=cfg.update_archive_strategy
+        update_archive_strategy=update_archive_strategy
     )
 
     hyperparameters = [
@@ -87,4 +96,6 @@ def main():
 
 
 if __name__ == "__main__":
+    # Import the config file given its path.
+    cfg = importlib.import_module(sys.argv[1])
     main()
