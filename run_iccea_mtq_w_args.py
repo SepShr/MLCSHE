@@ -2,10 +2,8 @@
 iCCEA Runner.
 """
 from datetime import datetime
-from distutils.command.config import config
 import pathlib
 from benchmark.mtq import problem
-from Simulator import Simulator
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
@@ -19,7 +17,7 @@ import importlib
 
 def main():
     # Instantiate simulator instance.
-    simulator = Simulator()
+    simulator = None
 
     # Instantiate pairwise distance instance.
     pairwise_distance_cs = PairwiseDistance(
@@ -45,9 +43,28 @@ def main():
     except:
         update_archive_strategy = 'best random'
 
+    config_values = {
+        'min_distance': cfg.min_distance,
+        'tournament_selection': cfg.tournament_selection,
+        'crossover_probability': cfg.crossover_probability,
+        'guassian_mutation_mean': cfg.guassian_mutation_mean,
+        'guassian_mutation_std': cfg.guassian_mutation_std,
+        'guassian_mutation_probability': cfg.guassian_mutation_probability,
+        'integer_mutation_probability': cfg.integer_mutation_probability,
+        'bitflip_mutation_probability': cfg.bitflip_mutation_probability,
+        'population_archive_size': cfg.population_archive_size,
+        'scenario_population_size': cfg.scenario_population_size,
+        'mlco_population_size': cfg.mlco_population_size,
+        'enumLimits': cfg.enumLimits
+    }
+
+    # Pass the config values to problem.py to setup the search funcitons.
+    creator, toolbox = problem.setup_problem(config_values)
+
+
     solver = ICCEA(
-        creator=problem.creator,
-        toolbox=problem.toolbox,
+        creator=creator,
+        toolbox=toolbox,
         simulator=simulator,
         pairwise_distance_cs=pairwise_distance_cs,
         # more parameters can be added to better define the problem
@@ -69,6 +86,7 @@ def main():
         cfg.bitflip_mutation_probability,
         cfg.population_archive_size
     ]
+
 
     # Get current timestamp to use as a unique ID.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

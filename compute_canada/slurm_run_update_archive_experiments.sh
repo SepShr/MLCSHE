@@ -11,7 +11,7 @@
 
 echo "Starting task $SLURM_ARRAY_TASK_ID"
 
-$config_id = $(expr $SLURM_ARRAY_TASK_ID % 27 + 1)
+$config_id=$(expr $SLURM_ARRAY_TASK_ID % 27 + 1)
 
 # to read from the list of configs
 config_ver=$(sed -n "${config_id}p" configs.list)
