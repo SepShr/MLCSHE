@@ -214,15 +214,21 @@ class ICCEA:
                 'complete_solution_archive_len={}'.format(csa_len))
             self._logger.info('num_simulations={}'.format(self.num_sim))
 
+            # best_solution_overall = sorted(
+            #     self.solution_archive, key=lambda x: x.fitness.values[0])[-1]
+            # For testing the new fitness function
             best_solution_overall = sorted(
-                self.solution_archive, key=lambda x: x.fitness.values[0])[-1]
+                self.solution_archive, key=lambda x: x.fitness.values[0])[0]
             # self._logger.info('at generation={}, complete_solution_archive_size={}'.format(
             #     num_gen, len(complete_solution_archive)))
             self._logger.info(
                 'best_complete_solution_overall={} | fitness={}'.format(best_solution_overall, best_solution_overall.fitness.values[0]))
 
+            # best_solution_gen = sorted(
+            #     cs_archive_gen, key=lambda x: x.fitness.values[0])[-1]
+            # For testing the new fitness function
             best_solution_gen = sorted(
-                cs_archive_gen, key=lambda x: x.fitness.values[0])[-1]
+                cs_archive_gen, key=lambda x: x.fitness.values[0])[0]
             # self._logger.debug('complete_solutions={}'.format(
             #     completeSolSet))
             self._logger.info(
@@ -1032,7 +1038,9 @@ class ICCEA:
                         candidate, archive_p, min_distance, pairwise_distance):
                     archive_p.append(candidate)
             else:
-                candidate = population_copy_sorted.pop(-1)
+                # candidate = population_copy_sorted.pop(-1)
+                # For testing the new fitness function
+                candidate = population_copy_sorted.pop(0)
                 archive_p.append(candidate)
 
         return archive_p

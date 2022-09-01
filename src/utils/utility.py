@@ -312,7 +312,9 @@ def evaluate_individual(individual, complete_solution_set, index):
             values_joint_fitness_involved.append(cs.fitness.values[0])
 
     # Aggregate the joint fitness values. For now, maximum values is used.
-    individual_fitness_value = max(values_joint_fitness_involved)
+    # individual_fitness_value = max(values_joint_fitness_involved)
+    # For testing the new fitness function!
+    individual_fitness_value = min(values_joint_fitness_involved)
 
     return (individual_fitness_value,)
 

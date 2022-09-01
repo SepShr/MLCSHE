@@ -49,8 +49,12 @@ def compute_safety_req_value(simulator, x, y):
 
 
 # Create fitness and individual datatypes.
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))   # Maximization
-creator.create("Individual", list, fitness=creator.FitnessMax,
+# creator.create("FitnessMax", base.Fitness, weights=(1.0,))   # Maximization
+# creator.create("Individual", list, fitness=creator.FitnessMax,
+#                safety_req_value=float)  # Maximization
+# Minimization, for testing the new fitness function
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMin,
                safety_req_value=float)  # Maximization
 creator.create("Scenario", creator.Individual)
 creator.create("OutputMLC", creator.Individual)

@@ -77,16 +77,28 @@ def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float, 
     :param w_p: the weight of the term that focuses on the value of
                   the probability in the fitness function.
     """
+    # cs_region = find_cs_region(cs, max_dist, cs_list, dist_matrix)
+    # p_safe = estimate_safe_cs_probability(cs_region)
+    # assert 0 <= p_safe <= 1
+    # confidence_interval = wilson(p_safe, len(cs_region))
+    # conf_int_dist = confidence_interval_dist(confidence_interval)
+    # assert 0 <= conf_int_dist <= 0.5
+    # conf_int_len = confidence_interval[1] - confidence_interval[0]
+    # assert 0 <= conf_int_len <= 1
+    # fitness_value = (1 - 2 * conf_int_dist) * \
+    #                 ((w_ci * (1 - conf_int_len)) +
+    #                  (w_p * (1 - abs(p_safe - 0.5)))) / (w_ci + w_p)
+    # assert 0 <= fitness_value <= 1
+    # return fitness_value
+
+    # Testing the updated fitness function.
     cs_region = find_cs_region(cs, max_dist, cs_list, dist_matrix)
     p_safe = estimate_safe_cs_probability(cs_region)
-    assert 0 <= p_safe <= 1
+    assert 0 <= p_safe <= 1, 'p_safe can only be between 0 and 1'
     confidence_interval = wilson(p_safe, len(cs_region))
-    conf_int_dist = confidence_interval_dist(confidence_interval)
-    assert 0 <= conf_int_dist <= 0.5
     conf_int_len = confidence_interval[1] - confidence_interval[0]
-    assert 0 <= conf_int_len <= 1
-    fitness_value = (1 - 2 * conf_int_dist) * \
-                    ((w_ci * (1 - conf_int_len)) +
-                     (w_p * (1 - abs(p_safe - 0.5)))) / (w_ci + w_p)
-    assert 0 <= fitness_value <= 1
+    assert 0 <= conf_int_len <= 1, 'conf_int_len can only be between 0 and 1'
+    fitness_value = max(
+        abs(confidence_interval[1] - 0.5), abs(confidence_interval[0] - 0.5))
+    assert 0 <= fitness_value <= 0.51, f'fitness_value can only be between 0 and 0.5, current value={fitness_value}'
     return fitness_value
