@@ -147,16 +147,16 @@ class ICCEA:
             # Record the complete solutions archive.
             with open(cs_archive_file, 'wt') as csaf:
                 for cs in self.solution_archive:
-                    csaf.write('cs={}, jfit_value={}\n'.format(
-                        cs, cs.fitness.values[0]))
+                    csaf.write('cs={}, jfit_value={}, safety_req_value={}\n'.format(
+                        cs, cs.fitness.values[0], cs.safety_req_value))
 
             # Record the list of complete solutions per generation.
             with open(cs_list_gen_file, 'at') as csgf:
                 csgf.write(
                     '--------------- GENERATION_NUMBER {} ---------------\n'.format(num_gen))
                 for cs in cs_archive_gen:
-                    csgf.write('cs={}, jfit_value={}\n'.format(
-                        cs, cs.fitness.values[0]))
+                    csgf.write('cs={}, jfit_value={}, safety_req_value={}\n'.format(
+                        cs, cs.fitness.values[0], cs.safety_req_value))
 
             # Record scenarios in popScen per generation.
             with open(pop_scen_file, 'at') as psf:
