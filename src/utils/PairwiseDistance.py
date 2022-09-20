@@ -211,4 +211,4 @@ class PairwiseDistance:
         return self.__str__()
 
     def __str__(self) -> str:
-        return 'Pairwise Distance Matrix = {}'.format(squareform(self.dist_matrix))
+        return 'Pairwise Distance Matrix = {}'.format(self.dist_matrix_sq)
