@@ -200,10 +200,15 @@ class PairwiseDistance:
 
     @staticmethod
     def normalize_array(input_array: np.array, num_ranges: np.array) -> np.array:
-        return input_array / num_ranges
+        """Normalize an array of numeric values.
+        """
+        if len(num_ranges) == 0:
+            return input_array
+        else:
+            return input_array / num_ranges
 
     def __repr__(self) -> str:
         return self.__str__()
 
     def __str__(self) -> str:
-        return 'Pairwise Distance Matrix = {}'.format(squareform(self.dist_matrix))
+        return 'Pairwise Distance Matrix = {}'.format(self.dist_matrix_sq)
