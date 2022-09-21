@@ -44,7 +44,7 @@ class TestFitnessFunction(unittest.TestCase):
         computed_fv = fitness_function(cs=cs_3, max_dist=0.9, cs_list=test_distance.cs_list,
                                        dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
 
-        expected_fv = 0.6500357088201715
+        expected_fv = 0.3499642911798285
 
         self.assertEqual(computed_fv, expected_fv)
 
@@ -79,7 +79,7 @@ class TestFitnessFunction(unittest.TestCase):
                                 dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
 
         # metamorphic testing
-        self.assertTrue(fv_1 <= fv_5 <= fv_9)
+        self.assertTrue(fv_1 >= fv_5 >= fv_9)
 
     def test_fitness_function_num_samples_metamorphic(self):
         # randomly generate many complete solutions based on the range and cat_ix
@@ -122,4 +122,4 @@ class TestFitnessFunction(unittest.TestCase):
                                    dist_matrix=test_distance_3.dist_matrix_sq, w_ci=1, w_p=1)
 
         # metamorphic testing
-        self.assertTrue(fv_100 <= fv_500 <= fv_1000)
+        self.assertTrue(fv_100 >= fv_500 >= fv_1000)
