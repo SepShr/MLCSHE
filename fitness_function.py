@@ -6,6 +6,8 @@ from math import copysign, sqrt
 
 import numpy as np
 
+TARGET_PROBABILITY = 0.75
+
 
 def wilson(p, n, z=1.96) -> tuple:
     """Calculates the Wilson confidence interval based on the sample
@@ -47,20 +49,7 @@ def find_cs_region(center_cs, max_dist, cs_list, dist_matrix_sq: np.array) -> li
     return [cs for cs in cs_list if dist_matrix_sq[center_cs_index, cs_list.index(cs)] <= max_dist]
 
 
-def confidence_interval_dist(confidence_interval, target_probability=0.5) -> float:
-    """Measures the distance between the edges of a confidence 
-    interval and the 'target_probability', if the 'target_probability`
-    is not included in the interval.
-    """
-    if confidence_interval[0] > target_probability:
-        return confidence_interval[0] - target_probability
-    elif confidence_interval[1] < target_probability:
-        return target_probability - confidence_interval[1]
-    else:
-        return 0
-
-
-def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float, w_ci: float = 1.0, w_p: float = 1.0) -> float:
+def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float, target_probability: TARGET_PROBABILITY) -> float:
     """Returns a fitness values which measures the distance of
     `cs` from the boundary region. The fitness values also
     relies on the number of complete solutions in the neighbourhood
@@ -77,19 +66,6 @@ def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float, 
     :param w_p: the weight of the term that focuses on the value of
                   the probability in the fitness function.
     """
-    # cs_region = find_cs_region(cs, max_dist, cs_list, dist_matrix)
-    # p_safe = estimate_safe_cs_probability(cs_region)
-    # assert 0 <= p_safe <= 1
-    # confidence_interval = wilson(p_safe, len(cs_region))
-    # conf_int_dist = confidence_interval_dist(confidence_interval)
-    # assert 0 <= conf_int_dist <= 0.5
-    # conf_int_len = confidence_interval[1] - confidence_interval[0]
-    # assert 0 <= conf_int_len <= 1
-    # fitness_value = (1 - 2 * conf_int_dist) * \
-    #                 ((w_ci * (1 - conf_int_len)) +
-    #                  (w_p * (1 - abs(p_safe - 0.5)))) / (w_ci + w_p)
-    # assert 0 <= fitness_value <= 1
-    # return fitness_value
 
     # Testing the updated fitness function.
     cs_region = find_cs_region(cs, max_dist, cs_list, dist_matrix)
@@ -99,6 +75,6 @@ def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float, 
     conf_int_len = confidence_interval[1] - confidence_interval[0]
     assert 0 <= conf_int_len <= 1, 'conf_int_len can only be between 0 and 1'
     fitness_value = max(
-        abs(confidence_interval[1] - 0.5), abs(confidence_interval[0] - 0.5))
-    assert 0 <= fitness_value <= 0.51, f'fitness_value can only be between 0 and 0.5, current value={fitness_value}'
+        abs(confidence_interval[1] - TARGET_PROBABILITY), abs(confidence_interval[0] - TARGET_PROBABILITY))
+    # assert 0 <= fitness_value <= 0.51, f'fitness_value can only be between 0 and 0.5, current value={fitness_value}'
     return fitness_value
