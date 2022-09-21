@@ -22,8 +22,8 @@ min_distance = cfg.min_distance  # Minimum distance between members of an archiv
 scen_enumLimits = cfg.scenario_enumLimits
 
 # Create fitness and individual datatypes.
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMax,
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMin,
                safety_req_value=float)
 # creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 # creator.create("Individual", list, fitness=creator.FitnessMin,

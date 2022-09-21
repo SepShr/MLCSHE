@@ -106,7 +106,6 @@ class ContainerSimManager():
         for counter in trange(cfg.simulation_duration):
             time.sleep(1)
             if self.scenario_finished_docker(container=container, output_folder=output_folder):
-                print('found the finished file, breaking the for loop.')
                 break
 
         container.stop()
@@ -122,14 +121,14 @@ class ContainerSimManager():
         if os.path.exists(results_file_name):
             self._logger.debug(
                 'Found the results of simulation in {}'.format(results_file_name))
-            DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = self._get_values(
+            DfC_min, DfV_min, DfP_min, DfM_min, DT_max, traffic_lights_max = self._get_values(
                 simulation_log_file_name, output_folder)
 
             safety_req_values = {
                 'distance_from_center': DfC_min,
-                'distance_from_vehicle': DfV_max,
-                'distance_from_pedestrian': DfP_max,
-                'distance_from_obstacles': DfM_max,
+                'distance_from_vehicle': DfV_min,
+                'distance_from_pedestrian': DfP_min,
+                'distance_from_obstacles': DfM_min,
                 'distance_traveled': DT_max,
                 'violated_traffic_lights': traffic_lights_max
             }
@@ -138,7 +137,7 @@ class ContainerSimManager():
                 safety_req_values))
             container.remove()
 
-            return DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max
+            return DfC_min, DfV_min, DfP_min, DfM_min, DT_max, traffic_lights_max
         else:
             self._logger.error(
                 'Did not find the simulation results, i.e., {}'.format(results_file_name))
@@ -165,7 +164,7 @@ class ContainerSimManager():
                     sim_job.scenario, sim_job.mlco, sim_job.sim_name, self._data_directory)
             return input_data_folder, output_folder, simulation_log_file_name
         except Exception as e:
-            self._logger.warning(e)
+            self._logger.warning(e, exc_info=1)
             return None
 
     def _run_docker_container(self, container_name, working_dir, command):
@@ -257,7 +256,9 @@ class ContainerSimManager():
             sim_results), 'The file {} does not exist!'.format(sim_results)
 
         DfC_min = 1
-        DfV_min = 1
+        # MODIFIED
+        # DfV_min = 1
+        DfV_min = 2
         DfP_min = 1
         DfM_min = 1
         DT_max = -1
@@ -281,7 +282,8 @@ class ContainerSimManager():
                         DfC_min = 0
                     if "vehicle" in line_ex:
                         self._logger.info("vehicle collision")
-                        DfV_min = 0
+                        # DfV_min = 0
+                        DfV_min = -1
 
         with open(sim_results, "r") as file_handler:
             for line in file_handler:
@@ -304,8 +306,9 @@ class ContainerSimManager():
                     distance_Max = DT
 
                 DfC = 1 - (DfC / 1.15)  # normalising
-                if DfV > 1:
-                    DfV = 1
+                # MODIFIED
+                # if DfV > 1:
+                #     DfV = 1
                 if DfP > 1:
                     DfP = 1
                 if DfM > 1:
@@ -326,6 +329,10 @@ class ContainerSimManager():
 
                 if DfC_min == 0:
                     DfC_min = -1  # To record safety violation.
+                # MODIFIED
+                # if DfV_min < 2:  # The safety constraint is 2 m.
+                if DfV_min < 1.5:  # The safety constraint is 2 m.
+                    DfV_min = -1
 
         return DfC_min, DfV_min, DfP_min, DfM_min, DT_max, traffic_lights_max
 
@@ -460,44 +467,6 @@ class ContainerSimManager():
         self._logger.debug(stat)
         dst_file_path = Path(destination_path).joinpath(file_name)
 
-        # # OPTION 1
-        # try:
-        #     for d in strm:
-        #         pw_tar = tarfile.TarFile(fileobj=BytesIO(d))
-        #         pw_tar.extractall(dst_file_path)
-        # except Exception as e:
-        #     self._logger.error(e)
-        #     pass
-
-        # # OPTION 2
-        # try:
-        #     for d in strm:
-        #         self._logger.debug('in for loop...')
-        #         with tarfile.TarFile(fileobj=BytesIO(d)) as pw_tar:
-        #             pw_tar.extractall(dst_file_path)
-        # except Exception as e:
-        #     self._logger.warn(e)
-        #     pass
-
-        # # OPTION3
-        # dst_tar_file = str(dst_file_path)+'.tar'
-        # try:
-        #     with open(dst_tar_file, 'wb') as f:
-        #         for chunk in strm:
-        #             f.write(chunk)
-        # except Exception as e:
-        #     self._logger.warn(
-        #         f'Could not create {dst_tar_file}. Exception raised: {e}')
-
-        # tar_file = tarfile.TarFile(Path(dst_tar_file))
-        # try:
-        #     with tarfile.open(fileobj=tar_file) as tar:
-        #         tar.extractall(dst_file_path)
-        # except Exception as e:
-        #     self._logger.warn(
-        #         f'Could not extract {dst_tar_file}. Exception raised: {e}')
-
-        # OPTION4
         try:
             filelike = BytesIO(b"".join(b for b in strm))
             with tarfile.open(fileobj=filelike) as tar:
@@ -505,32 +474,20 @@ class ContainerSimManager():
         except Exception as e:
             self._logger.error(e)
 
-        # FIXME: Can use shutil.move() to move each extracted file to its parent directory and remove the extracted directory using shutil.rmtree()
 
+def start_computation(sim_manager, max_workers: int = cfg.max_workers, max_jobs_in_queue: int = cfg.max_jobs_in_queue):
+    """Given a `sim_manager` instance, it submits the number of
+    `max_job_in_queue` jobs to the ProcessPoolExecutor, which runs
+    the number of `max_workers` jobs simultaneously.
 
-MAX_JOBS_IN_QUEUE = 10
+    Returns a list of results in the same order as
+    `sim_manager.job_list`.
+    """
+    assert len(sim_manager.job_list) != 0, "sim_manager.job_list cannot be empty!"
 
-
-def start_computation(sim_manager, max_workers: int = cfg.max_workers):
-    # # OPTION 1 (ALREADY WORKING, ALMOST!)
-    # with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-    #     futures = {executor.submit(sim_manager._process_sim_job, sim_job): sim_job
-    #                for sim_job in sim_manager.job_list}
-    #     logger.info('jobs submitted')
-
-    #     for future in concurrent.futures.as_completed(futures):
-    #         logger.info(f'Run {futures[future]} did finish')
-    #     results = [list(f.result()) for f in futures]
-
-    #     del futures
-    # sim_manager.job_list.clear()
-    # gc.collect()
-
-    # OPTION 2 (BATCH JOBS)
     results = []
     jobs_left = len(sim_manager.job_list)
     jobs_iter = iter(sim_manager.job_list)
-    job_queue = deque(sim_manager.job_list)
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         while jobs_left > 0:
@@ -543,7 +500,7 @@ def start_computation(sim_manager, max_workers: int = cfg.max_workers):
 
                 futures[submitted_job] = this_job
 
-                if len(futures) >= MAX_JOBS_IN_QUEUE:
+                if len(futures) >= max_jobs_in_queue:
                     break
 
             for future in concurrent.futures.as_completed(futures):
@@ -568,12 +525,19 @@ def start_computation(sim_manager, max_workers: int = cfg.max_workers):
     return results
 
 
-def prepare_for_computation(cs_list, sim_manager, job_index, sim_job_cmd=cfg.sim_job_command):
-    for i, cs in zip(range(job_index, job_index + len(cs_list) + 1), cs_list):
+def prepare_for_computation(cs_list, sim_manager, job_index: int, sim_job_cmd=cfg.sim_job_command):
+    """Given a `cs_list` and `sim_job_cmd`, submits sim jobs to
+    `sim_manager` which is numbered starting from `job_index`.
+
+    Returns the updated `job_index`.
+    """
+    for i, cs in enumerate(cs_list, start=job_index):
         sim_manager.add_sim_job(SimJob(f'pylot_{i}', cs, sim_job_cmd))
-    # logger.info('{} simulation jobs created.'.format(
-    #     len(sim_manager.job_list)))
-    # print(f'jobs are: {sim_manager.job_list}')
+    logger.info('{} simulation jobs created.'.format(
+        len(sim_manager.job_list)))
+    logger.debug(f'jobs are: {[str(job) for job in sim_manager.job_list]}')
+    for job in sim_manager.job_list:
+        logger.debug(f'job={job}, job.cs={job.complete_solution}')
     return job_index + len(cs_list)
 
 

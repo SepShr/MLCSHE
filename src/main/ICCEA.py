@@ -339,10 +339,13 @@ class ICCEA:
             self.num_sim, results = self.toolbox.compute_safety_cs_list(
                 self.simulator, new_cs_list, self.num_sim)
             for c, result in zip(new_cs_list, results):
-                DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = result
+                # FIXME: Results assignment should be done in the problem.
+                DfC_min, DfV_min, DfP_min, DfM_min, DT_min, traffic_lights_max = result
                 # print(f'c={c}, c.safety_req_value={DfC_min}')
-                c.safety_req_value = DfC_min
-                self._logger.info('safety_req_value={}'.format(DfC_min))
+                # c.safety_req_value = DfC_min
+                # self._logger.info('safety_req_value={}'.format(DfC_min))
+                c.safety_req_value = DfV_min
+                self._logger.info('safety_req_value={}'.format(DfV_min))
                 self.cs_archive.append(c)
 
         # print(self.cs_archive)

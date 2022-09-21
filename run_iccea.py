@@ -6,7 +6,7 @@ from datetime import datetime
 import pathlib
 import problem
 import search_config as cfg
-from Simulator import Simulator
+# from Simulator import Simulator
 from simulation_manager_cluster import ContainerSimManager
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
@@ -17,7 +17,7 @@ from src.utils.utility import setup_logger
 
 def main():
     # Instantiate simulator instance.
-    simulator = Simulator()
+    # simulator = Simulator()
     sim_manager = ContainerSimManager(
         cfg.input_directory, cfg.output_directory)
 
@@ -49,7 +49,8 @@ def main():
         # more parameters can be added to better define the problem
         pairwise_distance_p1=pairwise_distance_scen,
         pairwise_distance_p2=pairwise_distance_mlco,
-        first_population_enumLimits=cfg.scenario_enumLimits
+        first_population_enumLimits=cfg.scenario_enumLimits,
+        update_archive_strategy=cfg.update_archive_strategy
     )
 
     hyperparameters = [

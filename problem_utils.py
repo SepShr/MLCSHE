@@ -306,12 +306,14 @@ def compute_safety_req_value(simulator, scenario, mlco):
     mlco_deepcopy = deepcopy(mlco)
     mlco_deepcopy = list(mlco_deepcopy)
 
-    DfC_min, DfV_max, DfP_max, DfM_max, DT_max, traffic_lights_max = simulator.run_simulation(
+    DfC_min, DfV_min, DfP_min, DfM_min, DT_max, traffic_lights_max = simulator.run_simulation(
         scenario_deepcopy, mlco_deepcopy)
 
-    logger.info('safety_req_value={}'.format(DfC_min))
+    # logger.info('safety_req_value={}'.format(DfC_min))
+    logger.info('safety_req_value={}'.format(DfV_min))
 
-    return DfC_min
+    # return DfC_min
+    return DfV_min
 
 
 def trajectory_to_obstacle(trajectory, duration):
