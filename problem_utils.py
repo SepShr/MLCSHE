@@ -340,7 +340,7 @@ def trajectory_to_obstacle(trajectory, duration):
         pass  # Discard if the label in null, i.e., -1.
     else:
         t0 = trajectory[1]  # Start time of the trajectory.
-        t1 = trajectory[2]  # End time of the trajectory.
+        t1 = trajectory[2] - 1  # End time of the trajectory.
 
         num_msg = t1 - t0  # Number of steps between t0 and t1.
 

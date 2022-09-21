@@ -11,18 +11,18 @@ output_directory = Path.cwd().joinpath('results').joinpath(output_dir_name)
 # Search hyperparameters
 scenario_population_size = 10  # Size of the scenario population
 mlco_population_size = 10  # Size of the MLC output population
-min_distance = 0.3  # Minimum distance between members of an archive
-region_radius = 0.1  # The radius of the region for fitness evaluations
-number_of_generations = 20
-random_seed = 15
-max_num_evals = 1500
+min_distance = 0.4  # Minimum distance between members of an archive
+region_radius = 0.3  # The radius of the region for fitness evaluations
+number_of_generations = 40
+random_seed = 10
+max_num_evals = 2500
 update_archive_strategy = 'bestRandom'
 
 # Evolution hyperparameters
-tournament_selection = 2
+tournament_selection = 3
 crossover_probability = 0.5
 guassian_mutation_mean = 0
-guassian_mutation_std = 0.125
+guassian_mutation_std = 0.1 * 400
 mutation_rate = 1
 guassian_mutation_probability = mutation_rate
 integer_mutation_probability = mutation_rate
