@@ -1,193 +1,210 @@
 import logging
-import os
 import pathlib
-import pickle
 import time
+from argparse import ArgumentParser
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
+from itertools import repeat
+from multiprocessing import cpu_count
+from pathlib import Path
 
 import numpy as np
 from deap import base, creator, tools
 
 import search_config as cfg
-from problem_utils import initialize_mlco, problem_joint_fitness
-from Simulator import Simulator
+from fitness_function import fitness_function
+from problem_utils import initialize_mlco
+from simulation_manager_cluster import (ContainerSimManager,
+                                        prepare_for_computation,
+                                        start_computation)
+from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import (create_complete_solution,
-                               initialize_hetero_vector, setup_logbook_file,
-                               setup_logger)
-
-TIME_BUDGET = 86_400  # Search time budget in seconds (currently == 24 hr).
-
-scen_pop_size = cfg.scenario_population_size  # Size of the scenario population
-mlco_pop_size = cfg.mlco_population_size  # Size of the MLC output population
-min_distance = cfg.min_distance  # Minimum distance between members of an archive
-
-# The list of lower and upper limits for enumerationed types in sceanrio.
-scen_enumLimits = cfg.scenario_enumLimits
+                               initialize_hetero_vector, log_and_pickle, setup_logbook_file, setup_logger)
 
 
-def evaluate_joint_fitness(simulator, toolbox, c):
-    """Evaluates the joint fitness of a complete solution.
+class RandomSearch:
+    def __init__(self, scen_enumLimits, radius,
+                 sim_input_dir, sim_output_dir):
+        self.scen_enumLimits = scen_enumLimits
+        self.radius = radius
+        self.sim_input_dir = sim_input_dir
+        self.output_directory = sim_output_dir
 
-    It takes the complete solution as input and returns its joint
-    fitness as output.
-    """
-    # For benchmarking problems.
-    # x = c[0][0]
-    # y = c[1][0]
+        self.simulator = ContainerSimManager(
+            self.sim_input_dir, self.output_directory)
 
-    x = c[0]
-    y = c[1]
+        # Initialize lists.
+        self.scenario_list = []
+        self.mlco_list = []
+        self.cs_archive = []
 
-    joint_fitness_value = toolbox.problem_jfit(simulator, x, y)
+        self.sim_index = 1  # Initialize simulation index.
 
-    return (joint_fitness_value,)
+        self._logger = logging.getLogger(__name__)
+        self._logbook_file = setup_logbook_file(
+            output_dir=self.output_directory)
 
+        self.pairwise_distance = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=cfg.numeric_ranges,
+            categorical_indices=cfg.categorical_indices
+        )
+        self.creator = creator
 
-def setup_file(file_name: str):
-    """
-    Sets up a formatted file name in the results folder with `file_name`.
-    """
-    # Create the results folder if it does not exist.
-    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+    def define_problem(self, cs_archive_size):
+        # Define problem and individuals.
+        self.creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        self.creator.create("Individual", list,
+                            fitness=self.creator.FitnessMin, safety_req_value=float)
+        self.creator.create("Scenario", self.creator.Individual)
+        self.creator.create("OutputMLC", self.creator.Individual)
 
-    # Get current timestamp to use as a unique ID.
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Adding multiple statistics.
+        self.stats = tools.Statistics(lambda ind: ind.fitness.values)
+        self.stats.register("avg", np.mean, axis=0)
+        self.stats.register("std", np.std, axis=0)
+        self.stats.register("min", np.min, axis=0)
+        self.stats.register("max", np.max, axis=0)
 
-    file_id = str(timestamp) + file_name + '.log'
-    file = os.path.join('results', file_id)
+        # Instantiating logbook that records search-specific statistics.
+        self.logbook = tools.Logbook()
 
-    return file
+        # Format logbook.
+        self.logbook.header = "gen", "min", "avg", "max", "std"
 
+        counter = 1  # Initialize counter.
 
-def main():
-    # Setup logger.
-    logger = logging.getLogger(__name__)
+        # Search the scenario and mlco parameter space randomly until the time is up.
 
-    logger.info("Random search started.")
-    logger.info('time_budget = {}'.format(TIME_BUDGET))
+        # Randomly create complete solutions.
+        while counter <= cs_archive_size:
 
-    # Define problem and individuals.
-    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-    creator.create("Individual", list, fitness=creator.FitnessMin)
-    creator.create("Scenario", creator.Individual)
-    creator.create("OutputMLC", creator.Individual)
+            # Create a random scenario.
+            scenario = initialize_hetero_vector(
+                self.scen_enumLimits, creator.Scenario)
+            self.scenario_list.append(scenario)
 
-    # Instantiate toolbox.
-    toolbox = base.Toolbox()
+            # Create a random mlco.
+            mlco = initialize_mlco(creator.OutputMLC)
+            self.mlco_list.append(mlco)
 
-    # Define functions and register them in toolbox.
-    toolbox.register(
-        "scenario", initialize_hetero_vector,
-        class_=creator.Scenario, limits=scen_enumLimits
-    )
+            # Create a complete solution.
+            complete_solution = creator.Individual(
+                create_complete_solution(scenario, mlco, creator.Scenario))
 
-    toolbox.register(
-        "mlco", initialize_mlco,
-        creator.OutputMLC
-    )
+            self.cs_archive.append(complete_solution)
 
-    toolbox.register("problem_jfit", problem_joint_fitness)
+            counter += 1
 
-    # Adding multiple statistics.
-    stats = tools.Statistics(lambda ind: ind.fitness.values)
-    stats.register("avg", np.mean, axis=0)
-    stats.register("std", np.std, axis=0)
-    stats.register("min", np.min, axis=0)
-    stats.register("max", np.max, axis=0)
+        self._logger.info(f'{cs_archive_size} complete solutions created.')
+        self._logger.info('cs_archive={}'.format(self.cs_archive))
 
-    # Instantiating logbook that records search-specific statistics.
-    logbook = tools.Logbook()
+    def run(self, sim_budget):
+        self._logger.info('Starting random search.')
+        self._logger.info('sim_budget={}'.format(sim_budget))
+        start_time = time.time()
 
-    # Format logbook.
-    logbook.header = "gen", "min", "avg", "max", "std"
+        self.define_problem(sim_budget)
+        self.evaluate_joint_fitness()
 
-    # Initialize simulator.
-    simulator = Simulator()
-
-    # Initialize lists.
-    scenarios = []
-    mlcos = []
-    complete_solutions = []
-
-    counter = 1  # Initialize counter.
-
-    # Initialize start and end time.
-    start_time = time.time()
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-
-    # Search the scenario and mlco parameter space randomly until the time is up.
-    while elapsed_time < TIME_BUDGET:
-
-        # Create a random scenario.
-        scenario = initialize_hetero_vector(scen_enumLimits, creator.Scenario)
-        # logger.debug('scenario={}'.format(scenario))
-        scenarios.append(scenario)
-
-        # Create a random mlco.
-        mlco = initialize_mlco(creator.OutputMLC)
-        # logger.debug("mlco={}".format(mlco))
-        mlcos.append(mlco)
-
-        # Create complete solution.
-        complete_solution = creator.Individual(
-            create_complete_solution(scenario, mlco, creator.Scenario))
-
-        # Evaluate complete solution.
-        complete_solution.fitness.values = evaluate_joint_fitness(
-            simulator, toolbox, complete_solution)
-        logger.info("joint fitness evaluation complete")
-        logger.info('complete_solution.fitness.values={}'.format(
-            complete_solution.fitness.values))
-
-        complete_solutions.append(complete_solution)
-
-        # Report the best complete solution.
-        best_solution = sorted(
-            complete_solutions, key=lambda x: x.fitness.values[0])[0]
-        logger.info(
-            'best_complete_solution={} | fitness={}'.format(best_solution, best_solution.fitness.values[0]))
-
-        # Compiling statistics on the populations and completeSolSet.
-        record_complete_solutions = stats.compile(complete_solutions)
-
-        logbook.record(gen=counter, **record_complete_solutions)
-        print(logbook.stream)
+        self.record_results()
+        self._logger.info("Results recorded.")
 
         end_time = time.time()
-
-        counter += 1
-
-        logger.info('complete_solutions_size={}'.format(
-            len(complete_solutions)))
-
         elapsed_time = end_time - start_time
-        logger.info('elapsed_time={}'.format(elapsed_time))
-        logger.info('remaining_time={}'.format(TIME_BUDGET - elapsed_time))
+        self._logger.info('total_search_time={}'.format(elapsed_time))
+        self._logger.info("End of random search.")
 
-    # Record the list of found sceanrios.
-    scenarios_file = setup_file('_scenarios')
-    with open(scenarios_file, 'wb') as s_file:
-        pickle.dump(scenarios, s_file)
+    def record_results(self):
+        # Record best solution.
+        best_solution = sorted(
+            self.cs_archive, key=lambda x: x.fitness.values[0])[0]
+        self._logger.info(
+            'best_complete_solution={} | fitness={}'.format(best_solution, best_solution.fitness.values[0]))
 
-    # Record the list of found complete_solutions.
-    mlcos_file = setup_file('_mlcos')
-    with open(mlcos_file, 'wb') as m_file:
-        pickle.dump(mlcos, m_file)
+        log_and_pickle(object=self.scenario_list, file_name='_RS_scen',
+                       output_dir=self.output_directory)
 
-    # Record the list of found complete_solutions.
-    complete_solutions_file = setup_file('_complete_solutions')
-    with open(complete_solutions_file, 'wb') as cs_file:
-        pickle.dump(complete_solutions, cs_file)
+        log_and_pickle(object=self.mlco_list, file_name='_RS_mlco',
+                       output_dir=self.output_directory)
 
-    # Record the complete logbook.
-    logbook_file = setup_logbook_file()
-    with open(logbook_file, 'wb') as lb_file:
-        pickle.dump(logbook, lb_file)
+        log_and_pickle(object=self.cs_archive, file_name='_RS_cs',
+                       output_dir=self.output_directory)
 
-    logger.info("End of random search.")
+        # Compiling statistics on the populations and completeSolSet.
+        record_complete_solutions = self.stats.compile(self.cs_archive)
+
+        self.logbook.record(gen=1, **record_complete_solutions)
+        print(self.logbook.stream)
+        log_and_pickle(object=self.logbook, file_name='_RS_logbook',
+                       output_dir=self.output_directory)
+
+    def evaluate_joint_fitness(self):
+        """Evaluates the joint fitness of a complete solution.
+
+        It takes the complete solution as input and returns its joint
+        fitness as output.
+        """
+        sim_index, results = self.compute_safety_value_cs_list(
+            self.simulator, self.cs_archive, self.sim_index)
+
+        # Setup a simulation counter to measure progress.
+        sim_counter = 0
+        total_sim = len(self.cs_archive)
+
+        for c, result in zip(self.cs_archive, results):
+            DfC_min, DfV_min, DfP_min, DfM_min, DT_min, traffic_lights_max = result
+            c.safety_req_value = DfV_min
+            self._logger.info('safety_req_value={}'.format(DfV_min))
+            sim_counter += 1
+            self._logger.info(
+                f'{sim_counter} simulations completed out of {total_sim}.')
+
+        self._logger.info("All simulations completed.")
+
+        # Calculate the pairwise distance between all simulated complete solutions.
+        self.pairwise_distance.update_dist_matrix(self.cs_archive)
+        self._logger.info('Pairwise distance matrix calculated.')
+
+        # Calculate fitness values for all complete solutions in parallel.
+        with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+            for cs, result in zip(self.cs_archive, executor.map(fitness_function, self.cs_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius))):
+                cs.fitness.values = (result,)
+        self._logger.info('Fitness values calculated.')
+
+    def compute_safety_value_cs_list(self, simulator, cs_list, sim_index):
+        updated_sim_index = prepare_for_computation(
+            cs_list, simulator, sim_index)
+        results = start_computation(simulator)
+        return updated_sim_index, results
+
+
+def main(sim_budget):
+    # Setup directories
+    # Get current timestamp to use as a unique ID.
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir_name = str(timestamp) + '_RS_Pylot'
+    input_directory = Path.cwd().joinpath('temp').joinpath(output_dir_name)
+    output_directory = Path.cwd().joinpath('results').joinpath(output_dir_name)
+
+    output_dir = pathlib.Path('results').joinpath(output_dir_name)
+    output_dir.mkdir(parents=True, exist_ok=True)  # Create the output folder.
+
+    # Setup logger.
+    setup_logger(file_name='RS', output_directory=output_dir, file_log_level='DEBUG',
+                 stream_log_level='INFO')
+
+    # Instantiate the random search object.
+    random_search = RandomSearch(scen_enumLimits=cfg.scenario_enumLimits, radius=cfg.region_radius,
+                                 sim_input_dir=input_directory, sim_output_dir=output_directory)
+
+    # Run the random search.
+    random_search.run(sim_budget)
 
 
 if __name__ == "__main__":
-    setup_logger(file_name='RS')
-    main()
+    argparser = ArgumentParser()
+    argparser.add_argument('sim_budget', type=int,
+                           default=cfg.max_num_evals, help="simulation budget")
+    args = argparser.parse_args()
+    main(args.sim_budget)

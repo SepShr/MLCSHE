@@ -2,6 +2,7 @@
 Set of utility functions which are independent from the `problem` structure.
 """
 
+import pickle
 from deap import tools, creator
 from datetime import datetime
 import logging
@@ -654,7 +655,7 @@ def setup_file(file_name: str, output_directory: Path = 'results', file_extensio
     # Get current timestamp to use as a unique ID.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    file_id = str(timestamp) + file_name + '.log'
+    file_id = str(timestamp) + file_name + file_extension
 
     # file = output_directoty.joinpath(file_id)
     file = os.path.join(output_directory, file_id)
@@ -676,3 +677,44 @@ def flatten_list(nested_list):
     #         isinstance(nested_list, creator.OutputMLC)) else [nested_list]
     return sum(map(flatten_list, nested_list), []) \
         if isinstance(nested_list, list) else [nested_list]
+
+
+def log_and_pickle(object, file_name: str, output_dir: Path = 'results'):
+    """dump `object` into a pickle file and a log file in the `output_dir`.
+    The name of the files should be `file_name` with a timestamp as a unique
+    identifier. 
+    If the `object` is a list, each of its items will be written into a line
+    in the log file along with their attributes. The items in the list must
+    not be a dictionary (to avoid problem with writing the logbook to a file).
+    """
+    # Get current timestamp to use as a unique ID.
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Create the results folder if it does not exist.
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Create a pickle file.
+    pickle_file = setup_file(
+        file_name=file_name, output_directory=output_dir, file_extension='.pkl')
+    # Dump the object into the pickle file.
+    with open(pickle_file, 'wb') as f:
+        pickle.dump(object, f)
+
+    # Create a log file.
+    log_file = setup_file(file_name=file_name,
+                          output_directory=output_dir, file_extension='.log')
+
+    # Log the object in string format.
+
+    if isinstance(object, list):
+        if not isinstance(object[0], dict):
+            # Log the object in string format.
+            with open(log_file, 'w') as f:
+                for item in object:
+                    f.write(str(item))
+                    f.write('|')
+                    f.write(str(item.__dict__))
+                    f.write('\n')
+        else:
+            with open(log_file, 'wt') as f:
+                print(object, file=f)
