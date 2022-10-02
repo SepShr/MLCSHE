@@ -74,6 +74,8 @@ class ICCEA:
 
         # Setup files to log populations and archives.
         cs_archive_file = setup_file('_cs_archive', self._output_directory)
+        cs_archive_pickle_file = setup_file(
+            '_cs_archive_pickle', self._output_directory)
         cs_list_gen_file = setup_file('_cs_list_gen', self._output_directory)
         pop_scen_file = setup_file('_pop_scen', self._output_directory)
         pop_mlco_file = setup_file('_pop_mlco', self._output_directory)
@@ -149,6 +151,10 @@ class ICCEA:
                 for cs in self.solution_archive:
                     csaf.write('cs={}, jfit_value={}, safety_req_value={}\n'.format(
                         cs, cs.fitness.values[0], cs.safety_req_value))
+
+            # Pickle the complete solutions archive.
+            with open(cs_archive_pickle_file, 'wb') as csapf:
+                pickle.dump(self.solution_archive, csapf)
 
             # Record the list of complete solutions per generation.
             with open(cs_list_gen_file, 'at') as csgf:
