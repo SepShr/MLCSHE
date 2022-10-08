@@ -648,14 +648,17 @@ def setup_logger(file_name: str, output_directory: Path = 'results', file_log_le
     logger.addHandler(stream_handler)
 
 
-def setup_file(file_name: str, output_directory: Path = 'results', file_extension: str = '.log'):
+def setup_file(file_name: str, output_directory: Path = 'results', file_extension: str = '.log', add_timestamp: bool = True):
     # Create the results folder if it does not exist.
     Path(output_directory).mkdir(parents=True, exist_ok=True)
 
-    # Get current timestamp to use as a unique ID.
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if add_timestamp:
+        # Get current timestamp to use as a unique ID.
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    file_id = str(timestamp) + file_name + file_extension
+        file_id = str(timestamp) + file_name + file_extension
+    else:
+        file_id = file_name + file_extension
 
     # file = output_directoty.joinpath(file_id)
     file = os.path.join(output_directory, file_id)
@@ -687,22 +690,19 @@ def log_and_pickle(object, file_name: str, output_dir: Path = 'results'):
     in the log file along with their attributes. The items in the list must
     not be a dictionary (to avoid problem with writing the logbook to a file).
     """
-    # Get current timestamp to use as a unique ID.
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
     # Create the results folder if it does not exist.
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # Create a pickle file.
     pickle_file = setup_file(
-        file_name=file_name, output_directory=output_dir, file_extension='.pkl')
+        file_name=file_name, output_directory=output_dir, file_extension='.pkl', add_timestamp=False)
     # Dump the object into the pickle file.
     with open(pickle_file, 'wb') as f:
         pickle.dump(object, f)
 
     # Create a log file.
     log_file = setup_file(file_name=file_name,
-                          output_directory=output_dir, file_extension='.log')
+                          output_directory=output_dir, file_extension='.log', add_timestamp=False)
 
     # Log the object in string format.
 
