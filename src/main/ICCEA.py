@@ -21,7 +21,11 @@ from src.utils.utility import (collaborate,
 
 
 class ICCEA:
-    def __init__(self, creator, toolbox, simulator, pairwise_distance_cs, pairwise_distance_p1, pairwise_distance_p2, first_population_enumLimits=None, second_population_enumLimits=None, update_archive_strategy='bestRandom'):
+    def __init__(
+        self, creator, toolbox, simulator, pairwise_distance_cs, pairwise_distance_p1,
+        pairwise_distance_p2, first_population_enumLimits=None, second_population_enumLimits=None,
+        update_archive_strategy='bestRandom', fitness_function_target_probability=0.5
+    ):
         self.toolbox = toolbox
         self.creator = creator
         self.p1_enumLimits = first_population_enumLimits
@@ -35,6 +39,8 @@ class ICCEA:
         self.pairwise_distance = pairwise_distance_cs
 
         self.update_archive_strategy = update_archive_strategy
+
+        self.ff_target_prob = fitness_function_target_probability
 
         # Setup logger and logbook.
         self._logger = logging.getLogger(__name__)
@@ -51,6 +57,9 @@ class ICCEA:
         self._logger.info(
             'max_number_of_generations={}'.format(max_gen))
         self._logger.info('max_number_of_evaluations={}'.format(max_num_evals))
+        self._logger.info('region_radius={}'.format(radius))
+        self._logger.info(
+            'fitness_function_target_probability={}'.format(self.ff_target_prob))
 
         # Set the random module seed.
         random.seed(seed)
@@ -339,9 +348,6 @@ class ICCEA:
                 # Add cs that have been simulated to cs_archive.
                 self.cs_archive.append(c)
         else:
-            # self.num_sim = prepare_for_computation(
-            #     new_cs_list, self.simulator, self.num_sim)
-            # start_computation(self.simulator)
             self.num_sim, results = self.toolbox.compute_safety_cs_list(
                 self.simulator, new_cs_list, self.num_sim)
             for c, result in zip(new_cs_list, results):
@@ -362,25 +368,12 @@ class ICCEA:
         self.solution_archive.clear()
 
         self.solution_archive = [deepcopy(c) for c in self.cs_archive]
-        # print(self.solution_archive)
-        # for c in cs_list:
-        # for c in self.solution_archive:
-        #     c.fitness.values = (fitness_function(
-        #         cs=c,
-        #         cs_list=self.pairwise_distance.cs_list,
-        #         dist_matrix=self.pairwise_distance.dist_matrix_sq,
-        #         max_dist=self.radius
-        #     ),)
 
         # Calculate fitness values for all complete solutions in parallel.
         # FIXME: Do we need to reevaluate solution_archive every generation?
         with ProcessPoolExecutor() as executor:
-            # results = [executor.submit(fitness_function, c, self.pairwise_distance.cs_list,
-            #                            self.pairwise_distance.dist_matrix_sq, self.radius) for c in self.solution_archive]
-            # for cs, result in zip(self.solution_archive, results):
-            #     cs.fitness.values = (result.result(),)
 
-            for cs, result in zip(self.solution_archive, executor.map(fitness_function, self.solution_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius))):
+            for cs, result in zip(self.solution_archive, executor.map(fitness_function, self.solution_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius), repeat(self.ff_target_prob))):
                 cs.fitness.values = (result,)
 
         # Return a cs_list with fv per generation.

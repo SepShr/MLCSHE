@@ -50,7 +50,8 @@ def main():
         pairwise_distance_p1=pairwise_distance_scen,
         pairwise_distance_p2=pairwise_distance_mlco,
         first_population_enumLimits=cfg.scenario_enumLimits,
-        update_archive_strategy=cfg.update_archive_strategy
+        update_archive_strategy=cfg.update_archive_strategy,
+        fitness_function_target_probability=cfg.fitness_function_target_probability
     )
 
     hyperparameters = [

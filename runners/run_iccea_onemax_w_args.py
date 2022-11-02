@@ -1,21 +1,26 @@
 """
 iCCEA Runner.
 """
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # nopep8
+sys.path.append(os.path.dirname(__file__))  # nopep8
+
 from datetime import datetime
 import pathlib
-import benchmark.onemax.search_config as cfg
 from benchmark.onemax import problem
-from Simulator import Simulator
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
+import sys
+import importlib
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
 
 
 def main():
     # Instantiate simulator instance.
-    simulator = Simulator()
+    simulator = None
 
     # Instantiate pairwise distance instance.
     pairwise_distance_cs = PairwiseDistance(
@@ -27,18 +32,41 @@ def main():
     pairwise_distance_scen = PairwiseDistance(
         cs_list=[],
         numeric_ranges=cfg.numeric_ranges_scen,
-        categorical_indices=cfg.categorical_indices_scen
+        categorical_indices=[]
     )
 
     pairwise_distance_mlco = PairwiseDistance(
         cs_list=[],
         numeric_ranges=cfg.numeric_ranges_mlco,
-        categorical_indices=cfg.categorical_indices_mlco
+        categorical_indices=[]
     )
 
+    try:
+        update_archive_strategy = cfg.update_archive_strategy
+    except:
+        update_archive_strategy = 'best random'
+
+    config_values = {
+        'min_distance': cfg.min_distance,
+        'tournament_selection': cfg.tournament_selection,
+        'crossover_probability': cfg.crossover_probability,
+        'guassian_mutation_mean': cfg.guassian_mutation_mean,
+        'guassian_mutation_std': cfg.guassian_mutation_std,
+        'guassian_mutation_probability': cfg.guassian_mutation_probability,
+        'integer_mutation_probability': cfg.integer_mutation_probability,
+        'bitflip_mutation_probability': cfg.bitflip_mutation_probability,
+        'population_archive_size': cfg.population_archive_size,
+        'scenario_population_size': cfg.scenario_population_size,
+        'mlco_population_size': cfg.mlco_population_size,
+        'enumLimits': cfg.enumLimits
+    }
+
+    # Pass the config values to problem.py to setup the search funcitons.
+    creator, toolbox = problem.setup_problem(config_values)
+
     solver = ICCEA(
-        creator=problem.creator,
-        toolbox=problem.toolbox,
+        creator=creator,
+        toolbox=toolbox,
         simulator=simulator,
         pairwise_distance_cs=pairwise_distance_cs,
         # more parameters can be added to better define the problem
@@ -46,7 +74,7 @@ def main():
         pairwise_distance_p2=pairwise_distance_mlco,
         first_population_enumLimits=cfg.enumLimits,
         second_population_enumLimits=cfg.enumLimits,
-        update_archive_strategy=cfg.update_archive_strategy
+        update_archive_strategy=update_archive_strategy
     )
 
     hyperparameters = [
@@ -87,4 +115,8 @@ def main():
 
 
 if __name__ == "__main__":
+    # Import the config file given its path.
+    module = sys.argv[1].rstrip('\r')
+    cfg = importlib.import_module(module)
+    print(f'{module} imported as cfg.')
     main()

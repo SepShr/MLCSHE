@@ -1,6 +1,11 @@
 """
 iCCEA Runner.
 """
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # nopep8
+sys.path.append(os.path.dirname(__file__))  # nopep8
+
 from datetime import datetime
 import pathlib
 import benchmark.mtq.search_config as cfg
@@ -9,6 +14,7 @@ from Simulator import Simulator
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
+
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
 
@@ -46,7 +52,8 @@ def main():
         pairwise_distance_p2=pairwise_distance_mlco,
         first_population_enumLimits=cfg.enumLimits,
         second_population_enumLimits=cfg.enumLimits,
-        update_archive_strategy=cfg.update_archive_strategy
+        update_archive_strategy=cfg.update_archive_strategy,
+        fitness_function_target_probability=cfg.fitness_function_target_probability
     )
 
     hyperparameters = [

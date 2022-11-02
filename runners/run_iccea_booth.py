@@ -1,12 +1,17 @@
 """
 iCCEA Runner.
 """
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # nopep8
+sys.path.append(os.path.dirname(__file__))  # nopep8
+
 from src.main.ICCEA import ICCEA
 from src.utils.utility import setup_logger
-from benchmark.griegwangk import problem
+from benchmark.booth import problem
 from Simulator import Simulator
 
-import benchmark.griegwangk.search_config as cfg
+import benchmark.booth.search_config as cfg
 
 
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
@@ -36,7 +41,7 @@ def main():
     ]
 
     # Setup logger.
-    setup_logger(file_name='CCEA_GRWGNK', file_log_level='DEBUG',
+    setup_logger(file_name='CCEA_BOOTH', file_log_level='DEBUG',
                  stream_log_level='INFO')
 
     # User does not need to modify anything but `problem.py`

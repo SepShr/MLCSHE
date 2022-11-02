@@ -1,6 +1,11 @@
 """
 iCCEA Runner.
 """
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # nopep8
+sys.path.append(os.path.dirname(__file__))  # nopep8
+
 from src.main.ICCEA import ICCEA
 from src.utils.utility import setup_logger
 from benchmark.oneridge import problem

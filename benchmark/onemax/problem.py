@@ -25,7 +25,8 @@ def compute_safety_req_value(simulator, x, y):
     """
     # The OneMax problem with a boundary constraint.
 
-    return sum(x) + sum(y) - len(x)
+    # return sum(x) + sum(y) - len(x)
+    return sum(x) + sum(y) - 5
 
 
 # Create fitness and individual datatypes.
@@ -70,5 +71,3 @@ toolbox.register("crossover", tools.cxUniform)
 
 toolbox.register("mutate_mlco", mutate_flat_hetero_individual)
 toolbox.register("mutate_scenario", mutate_flat_hetero_individual)
-
-# %%

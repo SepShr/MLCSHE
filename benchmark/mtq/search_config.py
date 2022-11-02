@@ -8,6 +8,7 @@ number_of_generations = 40
 random_seed = None
 max_num_evals = 51200
 update_archive_strategy = 'bestRandom'
+fitness_function_target_probability = 0.9
 
 # Evolution hyperparameters
 tournament_selection = 2

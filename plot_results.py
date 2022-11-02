@@ -1,13 +1,16 @@
+from tokenize import group
 from traceback import print_tb
 import matplotlib.pyplot as plt
 import pickle
-from itertools import product
+from itertools import combinations, product
 import glob
 import numpy as np
 from random import randint
 # import scipy.stats as stats
 import pingouin as pg
 import pandas as pd
+
+from statsmodels.graphics.factorplots import interaction_plot
 
 # plt.xkcd()
 plt.style.use('bmh')
@@ -17,6 +20,7 @@ MODES = ['mins', 'avgs', 'maxs']
 # pops = ['cs', 'p1', 'p2']
 POPS = ['cs', 'p']  # Since p1 and p2 are similar.
 POP_SIZE = ['PS10', 'PS20', 'PS30']
+SIZE_OF_SMALLEST_SUBGROUP = 30
 
 
 def read_logbook(logbook_file):
@@ -25,7 +29,9 @@ def read_logbook(logbook_file):
     Returns a dictionary of lists of fitness values. 
     """
     # name = '_'.join(logbook_file.split('\\')[-2].split('_')[3:])
+
     name = '_'.join(logbook_file.split('\\')[-2].split('_')[1:])
+    # name = '_'.join(logbook_file.split('\\')[-2].split('_')[:])
 
     with open(logbook_file, 'rb') as f:
         logbook = pickle.load(f)
@@ -134,6 +140,44 @@ def plot_fit_max(logbooks_dict: dict):
     ax2.legend(lines_2, labels_2, loc="best")
 
     plt.savefig(f'fit_vs_gen_max_fits.png')
+
+    plt.close('all')
+
+
+def plot_fit_min(logbooks_dict: dict):
+    """Plots and saves the figure containing fitness_mins for cs
+    and pop.
+    """
+    # Setup plot.
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
+    ax1.set_xlabel("Generation")
+    ax2.set_xlabel("Generation")
+    ax1.set_ylabel("Fitness")
+    ax2.set_ylabel("Fitness")
+    ax1.set_title(f'Min $CS$ Fitness v. Generation')
+    ax2.set_title(f'Min $P$ Fitness v. Generation')
+
+    lines_1 = []
+    lines_2 = []
+
+    for run_name, fits_dict in logbooks_dict.items():
+        gen = fits_dict['gen']
+        for fit_type in fits_dict:
+            if fit_type == 'cs_fit_mins':
+                fit_list = fits_dict[fit_type]
+                line = ax1.plot(gen, fit_list, "o-", label=run_name)
+                lines_1 += line
+            elif fit_type == 'p_fit_mins':
+                fit_list = fits_dict[fit_type]
+                line = ax2.plot(gen, fit_list, "x-", label=run_name)
+                lines_2 += line
+
+    labels_1 = [l.get_label() for l in lines_1]
+    labels_2 = [l.get_label() for l in lines_2]
+    ax1.legend(lines_1, labels_1, loc="best")
+    ax2.legend(lines_2, labels_2, loc="best")
+
+    plt.savefig(f'fit_vs_gen_min_fits.png')
 
     plt.close('all')
 
@@ -275,33 +319,6 @@ def get_max_fit_per_ua_strat(fitness_dict, strategies=['best', 'bestRandom', 'ra
     return new_dict
 
 
-def plot_max_fit_boxplots(processed_logbooks: dict):
-    """Plots boxplots of the maximum fitness vs different control parameter
-    values and saves the figures.
-    """
-    # max_fit_per_ps_dict = get_max_fit_per_type(processed_logbooks, 'PS')
-    # max_fit_per_as_dict = get_max_fit_per_type(processed_logbooks, 'AS')
-    # print(max_fit_per_as_dict)
-    # max_fit_per_uas_dict = get_max_fit_per_ua_strat(processed_logbooks)
-    # print(max_fit_per_uas_dict)
-
-    # fig, axs = plt.subplots(nrows=3, ncols=2, figsize=(14, 10))
-
-    # # Set x and y axis labels.
-    # for i in range(2):
-    #     axs[0, i].set_xlabel("Population Size")
-    # for i in range(2):
-    #     axs[1, i].set_xlabel("Population Archive Size")
-    # for i in range(2):
-    #     axs[2, i].set_xlabel("Update Archive Strategy")
-
-    # for i, j in product(range(3), range(2)):
-    #     axs[i, j].set_ylabel("Max Fitness")
-
-    # plt.show()
-    pass
-
-
 def plot_max_fit_vs_popsize_boxplot(processed_logbooks: dict, modalities=None):
     """Plots the maximum fitness vs population size.
     """
@@ -422,6 +439,70 @@ def plot_max_fit_vs_uastrat_boxplot(processed_logbooks: dict):
     plt.close('all')
 
 
+def plot_min_fit_vs_col_boxplot(processed_logbooks: pd.DataFrame, col: str):
+    """Plots the maximum fitness vs population archive proportion.
+    """
+    data = []
+    modalities = sorted(processed_logbooks[col].unique())
+    # print(f'{col}_modalities={modalities}')
+    print(f'col={col}')
+    grouped = processed_logbooks.groupby(by=col)
+    for modality in modalities:
+        d = grouped.get_group(modality)['cs_fit_min'].to_list()
+        # print(d)
+        data.append(list(d))
+    # grouped = processed_logbooks.groupby(by=col).mean()['cs_fit_min']
+    # data = grouped.to_list()
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+
+    # Set x and y axis labels.
+    ax.set_xlabel(col)
+    ax.set_ylabel("Min Fitness")
+
+    # Set subplot titles.
+    ax.set_title(f'Min $CS$ Fitness v. {col}')
+
+    # Set X tick labels.
+    # ax.set_xticklabels(modalities)
+
+    # ax.boxplot(data)
+    ax.boxplot(data, labels=modalities)
+
+    plt.savefig(f'min_fit_vs_{col}_boxplot.png')
+
+    plt.close('all')
+
+
+def plot_min_fit_vs_col_main_effects(processed_logbooks: pd.DataFrame, col: str):
+    """Plots the maximum fitness vs population archive proportion.
+    """
+    data = []
+    modalities = sorted(processed_logbooks[col].unique())
+    grouped = processed_logbooks.groupby(by=col).mean()['cs_fit_min']
+    data = grouped.to_list()
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+
+    # Set x and y axis labels.
+    ax.set_xlabel(col)
+    ax.set_ylabel("Mean Min Fitness")
+    ax.set_xlim(modalities[0], modalities[-1])
+    ax.set_ylim(0, 0.52)
+
+    # Set subplot titles.
+    ax.set_title(f'Min $CS$ Fitness v. {col}')
+
+    # Set X tick labels.
+    # ax.set_xticklabels(modalities)
+
+    ax.plot(modalities, data)
+
+    plt.savefig(f'min_fit_vs_{col}_main_effect.png')
+
+    plt.close('all')
+
+
 timedout_runs = {
     '133518_CCEA_MTQ_bestRandom_PS30_AS22_NG40': {'cs_fit_maxs': np.array([0.93799971]), 'p_fit_maxs': np.array([0.93799971])},
     '133536_CCEA_MTQ_best_PS30_AS22_NG40': {'cs_fit_maxs': np.array([0.95091739]), 'p_fit_maxs': np.array([0.95091739])},
@@ -519,10 +600,7 @@ def merge_two_dicts(dict_1: dict, dict_2: dict):
     return {**dict_1, **dict_2}
 
 
-SIZE_OF_SMALLEST_SUBGROUP = 27
-
-
-def categorize_into_subgroups(ungrouped_logbooks: dict):
+def categorize_into_max_subgroups(ungrouped_logbooks: dict):
     """Groups the data into subgroups of the same configuration.
     """
     # Identify subgroups from the data.
@@ -551,6 +629,42 @@ def categorize_into_subgroups(ungrouped_logbooks: dict):
             r_index = randint(0, SIZE_OF_SMALLEST_SUBGROUP - 1)
             subgrouped_dict[key]['cs'].pop(r_index)
             subgrouped_dict[key]['p'].pop(r_index)
+
+    return subgrouped_dict
+
+
+def categorize_into_min_subgroups(ungrouped_logbooks: dict):
+    """Groups the data into subgroups of the same configuration.
+    """
+    # Identify subgroups from the data.
+    configs = set("_".join(k.split('_')[1:])
+                  for k in ungrouped_logbooks.keys())
+
+    # Initialize the subgorups dict.
+    # subgrouped_dict = {config: {'p': [], 'cs': []} for config in configs}
+    subgrouped_dict = {config: [] for config in configs}
+
+    # Categorize the values into subgroups.
+    for config in configs:
+        for key in ungrouped_logbooks.keys():
+            if key.__contains__(config):
+                # subgrouped_dict[config]['p'] += list(
+                #     ungrouped_logbooks[key]['p_fit_mins'])
+                # subgrouped_dict[config]['cs'] += list(
+                #     ungrouped_logbooks[key]['cs_fit_mins'])
+                subgrouped_dict[config] += list(
+                    ungrouped_logbooks[key]['cs_fit_mins'])
+
+    # No. of datapoints in each subgroup should be 27 (the lowest size)
+    # to be balanced.
+
+    # # Pop a number of datapoints from subgroups to make the size same
+    # # as the smallest.
+    # for key in subgrouped_dict.keys():
+    #     while len(subgrouped_dict[key]['cs']) > SIZE_OF_SMALLEST_SUBGROUP:
+    #         r_index = randint(0, SIZE_OF_SMALLEST_SUBGROUP - 1)
+    #         subgrouped_dict[key]['cs'].pop(r_index)
+    #         subgrouped_dict[key]['p'].pop(r_index)
 
     return subgrouped_dict
 
@@ -686,7 +800,7 @@ def run_anom(data_dict: dict, alpha=0.10, verbose=False):
     return anom_outliers_cs
 
 
-def create_design_table(logbooks_dict: dict):
+def create_design_table_ua_expr(logbooks_dict: dict):
     # Remove unnecessary columns.
     new_dict = {}
     for run, fit_dict in logbooks_dict.items():
@@ -751,17 +865,197 @@ def create_design_table(logbooks_dict: dict):
     return new_dict
 
 
-def main():
-    log_files = glob.glob(
-        'C:\\Users\\sepeh\\Projects\\MLCSHE\\results\\MLCSHE_UpdateArchive_results\\results\\*\\*.pkl')
-    logbooks_dict_gen, logbooks_dict = read_log_files(log_files)
-    logbooks_dict = merge_two_dicts(logbooks_dict, timedout_runs)
-    preprocessed_logbooks = categorize_into_subgroups(logbooks_dict)
+def create_design_table_hp_expr(logbooks_dict: dict):
+    # Remove unnecessary columns.
+    new_dict = {}
+    for run, fit_dict in logbooks_dict.items():
+        new_dict[run] = {}
+        for key, value in fit_dict.items():
+            if key == 'cs_fit_mins':
+                new_dict[run]['cs_fit_min'] = value
 
-    doe_table = create_design_table(logbooks_dict)
-    doe_dframe = pd.DataFrame.from_dict(doe_table, orient='index')
-    print(doe_dframe)
-    doe_dframe.to_excel("output.xlsx")
+    # Add Min_Dist column.
+    for key, value in new_dict.items():
+        if key.__contains__('MD3'):
+            value['Min_Dist'] = 0.3
+        elif key.__contains__('MD5'):
+            value['Min_Dist'] = 0.5
+        elif key.__contains__('MD7'):
+            value['Min_Dist'] = 0.7
+
+    # Add Mut_Rate coloumn.
+    for key, value in new_dict.items():
+        if key.__contains__('MR5'):
+            value['Mut_Rate'] = 0.5
+        elif key.__contains__('MR7'):
+            value['Mut_Rate'] = 0.7
+        elif key.__contains__('MR10'):
+            value['Mut_Rate'] = 1.0
+
+    # # Add Mut_Rate coloumn.
+    # for key, value in new_dict.items():
+    #     if key.__contains__('MR5'):
+    #         value['Mut_Rate'] = 0.5
+    #     elif key.__contains__('MR7'):
+    #         value['Mut_Rate'] = 0.7
+    #     elif key.__contains__('MR10'):
+    #         value['Mut_Rate'] = 1.0
+
+    # # Add Mut_std coloumn.
+    # for key, value in new_dict.items():
+    #     if key.__contains__('STD5_'):
+    #         value['Mut_std'] = 0.05
+    #     elif key.__contains__('STD10'):
+    #         value['Mut_std'] = 0.1
+    #     elif key.__contains__('STD50'):
+    #         value['Mut_std'] = 0.5
+
+    # Add Cx_Rate coloumn.
+    for key, value in new_dict.items():
+        if key.__contains__('CR3'):
+            value['Cx_Rate'] = 0.3
+        elif key.__contains__('CR5'):
+            value['Cx_Rate'] = 0.5
+        elif key.__contains__('CR7'):
+            value['Cx_Rate'] = 0.7
+
+    # Add Tour_Size coloumn.
+    for key, value in new_dict.items():
+        if key.__contains__('TS2'):
+            value['Tour_Size'] = 2
+        elif key.__contains__('TS3'):
+            value['Tour_Size'] = 3
+        elif key.__contains__('TS4'):
+            value['Tour_Size'] = 4
+
+    # Add Reg_Rad coloumn.
+    for key, value in new_dict.items():
+        if key.__contains__('RR3'):
+            value['Reg_Rad'] = 0.3
+        elif key.__contains__('RR5'):
+            value['Reg_Rad'] = 0.5
+        elif key.__contains__('RR7'):
+            value['Reg_Rad'] = 0.7
+
+    # Change the fit_max values from a np array to a value.
+    for key in new_dict.keys():
+        value = new_dict[key]['cs_fit_min']
+        new_dict[key]['cs_fit_min'] = value[0]
+
+    return new_dict
+
+
+def remove_excess_runs(preprocessed_logbooks: dict):
+    # Remove excess runs to make the number of replications per run equal.
+    print(
+        f'num of elements before removing excess runs = {len(preprocessed_logbooks)}')
+
+    configs = list(set("_".join(k.split('_')[2:])
+                       for k in preprocessed_logbooks.keys()))
+    print(f'len(configs)={len(configs)}')
+    subgrouped_dict = {config: [] for config in configs}
+    for config in configs:
+        for key in preprocessed_logbooks.keys():
+            if key.__contains__(config):
+                subgrouped_dict[config].append(key)
+    # print(subgrouped_dict)
+
+    num_elem = 0
+    for v in subgrouped_dict.values():
+        v = list(v)
+        num_elem += len(v)
+    print(f'num_elem={num_elem}')
+
+    # assert num_elem == len(
+    #     preprocessed_logbooks), 'you have botched the subgrouping job!'
+
+    for config in subgrouped_dict.keys():
+        if len(subgrouped_dict[config]) < SIZE_OF_SMALLEST_SUBGROUP:
+            print(
+                f'config {config} has {len(subgrouped_dict[config])} values, i.e., {subgrouped_dict[config]}')
+        while len(subgrouped_dict[config]) > SIZE_OF_SMALLEST_SUBGROUP:
+            r_index = randint(0, SIZE_OF_SMALLEST_SUBGROUP - 1)
+            run_to_be_popped = subgrouped_dict[config].pop(r_index)
+            preprocessed_logbooks.pop(run_to_be_popped, None)
+            # print(f'run {run_to_be_popped} was popped!')
+        # print(f'config {config} has {len(subgrouped_dict[config])} values')
+
+    print(
+        f'num of elements after removing excess runs = {len(preprocessed_logbooks)}')
+
+    return preprocessed_logbooks
+
+
+def plot_interaction_plots(x, trace, response, param_1, param_2):
+    """Draw interaction plots.
+    """
+    fig, ax = plt.subplots()
+    interaction_plot(
+        x=x,
+        trace=trace,
+        response=response,
+        colors=['forestgreen', 'tomato', 'royalblue'],
+        ax=ax
+    )
+
+    plt.savefig(f'ix_plt_{param_1}_{param_2}.png')
+
+    plt.close('all')
+
+
+def main():
+    # log_files = [
+    #     r'C:\Users\sepeh\Projects\MLCSHE\results\MLCSHE_HP_DOE\hp_results\20220901_075439_CCEA_MTQ_MD3_MR7_STD50_CR5_TS3_RR10\20220901_075439_logbook.log.pkl',
+    #     r'C:\Users\sepeh\Projects\MLCSHE\results\MLCSHE_HP_DOE\hp_results\20220901_075440_CCEA_MTQ_MD3_MR7_STD50_CR5_TS3_RR10\20220901_075440_logbook.log.pkl']
+    # Read and preprocess logs.
+    # log_files = glob.glob(
+    #     'C:\\Users\\sepeh\\Projects\\MLCSHE\\results\\mlche_hp_onemax_results\\*\\*.pkl')
+    # print(f'len(log_files)={len(log_files)}')
+    # logbooks_dict_gen, logbooks_dict = read_log_files(log_files)
+    # print(f'len(logbooks_dict)={len(logbooks_dict)}')
+    ## logbooks_dict = merge_two_dicts(logbooks_dict, timedout_runs)
+    # logbooks_dict = remove_excess_runs(logbooks_dict)
+    # subgrouped_logbooks = categorize_into_min_subgroups(logbooks_dict)
+    # print(f'len(subgrouped_logbooks)={len(subgrouped_logbooks)}')
+    # num_elem = 0
+    # for v in subgrouped_logbooks.values():
+    #     v = list(v)
+    #     num_elem += len(v)
+    # print(f'num_elem={num_elem}')
+    # print(subgrouped_logbooks)
+
+    # # Cast into a pandas dataframe and export as excel spreadsheet.
+    # doe_table = create_design_table_hp_expr(logbooks_dict)
+    # doe_dframe = pd.DataFrame.from_dict(doe_table, orient='index')
+    # doe_dframe.to_pickle('hp_doe_results.pkl')
+
+    doe_dframe = pd.read_pickle('hp_doe_results.pkl')
+    # doe_dframe = pd.read_pickle('hp_doe_results_xrm.pkl')
+    # print(doe_dframe)
+    cols = list(doe_dframe.keys())
+    cols.pop(0)
+    # print(cols)
+
+    # # # doe_dframe.to_excel("output.xlsx")
+
+    # Draw main effects and box plots.
+    for col in cols:
+        plot_min_fit_vs_col_main_effects(doe_dframe, col)
+        plot_min_fit_vs_col_boxplot(doe_dframe, col)
+
+    fitness = doe_dframe['cs_fit_min']
+
+    for param_1, param_2 in combinations(cols, 2):
+        plot_interaction_plots(
+            x=doe_dframe[param_1],
+            trace=doe_dframe[param_2],
+            response=fitness,
+            param_1=param_1,
+            param_2=param_2
+        )
+
+    # plot_min_fit_vs_col_boxplot(doe_dframe, 'Cx_Rate')
+
     # # ANOM
     # anom_signals = run_anom(preprocessed_logbooks)
     # print(f'Number of ANOM signals = {len(anom_signals)}')
@@ -790,7 +1084,7 @@ def main():
     # plot_max_fit_vs_arcsize_boxplot(logbooks_dict)
     # plot_max_fit_vs_uastrat_boxplot(logbooks_dict)
 
-    plt.show()
+    # plt.show()
 
 
 #     # get_max_fit_per_type(logbooks_dict, 'PS')
@@ -799,8 +1093,6 @@ def main():
 
 #     # plot_fit_max(logbooks_dict)
 #     # plot_fit_max_diff(logbooks_dict)
-
-
 if __name__ == "__main__":
     main()
 
@@ -828,55 +1120,3 @@ if __name__ == "__main__":
 #         r'C:\Users\sepeh\Projects\MLCSHE\results\20220822_090317_CCEA_MTQ_bestRandom_PS10_AS5_NG40\20220822_090317_logbook.log.pkl',
 #         r'C:\Users\sepeh\Projects\MLCSHE\results\20220819_180900_CCEA_MTQ_PS30_NG40_AS22_BDA\20220819_180900_logbook.log.pkl'
 #     ]
-
-# # logbook_file = 'C:/Users/sepeh/Projects/MLCSHE/results/20220811_163517_CCEA_MTQ_PS15_NG40_AS11/20220811_163517_logbook.log.pkl'
-# logbook_file = r'C:\Users\sepeh\Projects\MLCSHE\results\20220814_210246_CCEA_MTQ_PS30_NG40_AS22\20220814_210246_logbook.log.pkl'
-# # print('_'.join(logbook_file.split('/')[-2].split('_')[3:]))
-# print('_'.join(logbook_file.split('\\')[-2].split('_')[3:]))
-
-# with open(logbook_file, 'rb') as f:
-#     logbook = pickle.load(f)
-
-# gen = logbook.select("gen")
-# gen = gen[0::3]
-
-# # Retrieve fitness values for scen, mlco and cs.
-# fit_mins = logbook.chapters["fitness"].select("min")
-# fit_avgs = logbook.chapters["fitness"].select("avg")
-# fit_maxs = logbook.chapters["fitness"].select("max")
-
-# cs_fit_mins = fit_mins[0::3]
-# p1_fit_mins = fit_mins[1::3]
-# p2_fit_mins = fit_mins[2::3]
-
-# cs_fit_avgs = fit_avgs[0::3]
-# p1_fit_avgs = fit_avgs[1::3]
-# p2_fit_avgs = fit_avgs[2::3]
-
-# cs_fit_maxs = fit_maxs[0::3]
-# p1_fit_maxs = fit_maxs[1::3]
-# p2_fit_maxs = fit_maxs[2::3]
-
-
-# fig, ax1 = plt.subplots()
-# line1 = ax1.plot(gen, cs_fit_mins, "b-", label="CS Minimum Fitness")
-# ax1.set_xlabel("Generation")
-# ax1.set_ylabel("Fitness")
-# # for tl in ax1.get_yticklabels():
-# #     tl.set_color("b")
-
-# line2 = ax1.plot(gen, cs_fit_avgs, "r-", label="CS Average Fitness")
-
-# line3 = ax1.plot(gen, cs_fit_maxs, "g-", label="CS Maximum Fitness")
-
-# line4 = ax1.plot(gen, p1_fit_mins, "o-", label="Pop Minimum Fitness")
-
-# line5 = ax1.plot(gen, p1_fit_avgs, "o-", label="Pop Avg Fitness")
-
-# lns = line1 + line2 + line3 + line4 + line5
-# labs = [l.get_label() for l in lns]
-# ax1.legend(lns, labs, loc="best")
-
-# plt.savefig('cs_fitness.png')
-
-# plt.show()

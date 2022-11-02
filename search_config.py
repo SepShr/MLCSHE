@@ -13,10 +13,11 @@ scenario_population_size = 10  # Size of the scenario population
 mlco_population_size = 10  # Size of the MLC output population
 min_distance = 0.4  # Minimum distance between members of an archive
 region_radius = 0.3  # The radius of the region for fitness evaluations
-number_of_generations = 40
+number_of_generations = 30
 random_seed = 10
 max_num_evals = 2500
 update_archive_strategy = 'bestRandom'
+finess_function_target_probability = 0.9
 
 # Evolution hyperparameters
 tournament_selection = 3
