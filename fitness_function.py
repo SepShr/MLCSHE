@@ -6,7 +6,7 @@ from math import copysign, sqrt
 
 import numpy as np
 
-TARGET_PROBABILITY = 0.75
+TARGET_PROBABILITY = 0.90
 
 
 def wilson(p, n, z=1.96) -> tuple:

@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 from deap import base, creator, tools
 
-import search_config as cfg
+import search_config_RS as cfg
 from fitness_function import fitness_function
 from problem_utils import initialize_mlco
 from simulation_manager_cluster import (ContainerSimManager,
