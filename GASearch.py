@@ -70,7 +70,7 @@ class GASearch:
 
         self.ff_target_prob = cfg.finess_function_target_probability
 
-    def define_problem(self, pop_size, tourn_size=3, cxpb=0.5, mutpb=0.5, mutgmu=0.0, mutgsig=40):
+    def define_problem(self, pop_size, tourn_size=3, cxpb=0.85, mutpb=0.01, mutgmu=0.0, mutgsig=40):
         """Define the problem.
         """
         # Log the hyperparameters.
@@ -263,6 +263,9 @@ class GASearch:
             'best_complete_solution={} | fitness={}'.format(best_solution, best_solution.fitness.values[0]))
 
         log_and_pickle(object=self.pop, file_name='_GA_pop',
+                       output_dir=self.output_directory)
+
+        log_and_pickle(object=self.cs_archive, file_name='_GA_cs',
                        output_dir=self.output_directory)
 
         # Compiling statistics on the populations and completeSolSet.
