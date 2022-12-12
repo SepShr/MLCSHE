@@ -80,12 +80,16 @@ def remove_similar(cs_archive: list, min_distance: 0.0) -> list:
         cs_archive, cfg.numeric_ranges, cfg.categorical_indices)
 
     # Remove solutions with pairwise distance lower than `min_distance`
-    cs_archive_distinct = []
-    for i in range(len(cs_archive)):
-        for j in range(i + 1, len(cs_archive)):
-            if pdist.get_distance(cs_archive[i], cs_archive[j]) >= min_distance:
-                cs_archive_distinct.append(cs_archive[i])
-                break
+    if len(cs_archive) > 1:
+        cs_archive_distinct = [cs_archive[0]]
+        # for i in range(1, len(cs_archive)+1):
+        for candidate in cs_archive:
+            for member in cs_archive_distinct:
+                if pdist.get_distance(candidate, member) >= min_distance:
+                    cs_archive_distinct.append(candidate)
+                    break
+    else:
+        cs_archive_distinct = cs_archive
 
     return cs_archive_distinct
 
@@ -227,13 +231,13 @@ def answer_rq1(processed_results: dict, max_fitness: float = 1.0, min_distance: 
     """Answer RQ1: How effective MLCSHE is compared to baseline approaches?"""
     # Part 1.1: Calculate and draw boxplots for dbs.
     dbs_results = calculate_dbs(processed_results)
-    # print(dbs_results)
+    print(f'dbs_results={dbs_results}')
     draw_boxplot(dbs_results, max_fitness, min_distance, x_label='Search Method',
                  y_label='DBS', title='DBS', output_dir=output_dir)
 
     # Part 1.2: Perform statistical test of dbs results.
     # Perform Mann-Whitney U test and measure effect size of dbs results.
-    analyze_statistics(dbs_results, 'dbs')
+    analyze_statistics(dbs_results, 'DBS')
 
     #  Part 2.1: Calculate and draw boxplots for afv values.
     afv_results = calcluate_afv(processed_results)
@@ -242,7 +246,7 @@ def answer_rq1(processed_results: dict, max_fitness: float = 1.0, min_distance: 
 
     # Part 2.2: Perform statistical test of afv results.
     # Perform Mann-Whitney U test and measure effect size of afv results.
-    analyze_statistics(afv_results, 'afv')
+    analyze_statistics(afv_results, 'AFV')
 
 
 def divide_results_into_intervals(results: dict, intervals: int = 10) -> dict:
@@ -323,6 +327,7 @@ def answer_rq2(processed_results: dict, max_fitness: float = 1.0, min_distance: 
 
     # Part 1: Calculate and draw scatter plots for dbs.
     dbs_results = calculate_dbs(processed_results)
+    print(f'dbs_results: {dbs_results}')
 
     # for search_method, interval_values in dbs_results.items():
     #     # for interval, value in interval_values.items():
@@ -343,7 +348,7 @@ def answer_rq2(processed_results: dict, max_fitness: float = 1.0, min_distance: 
     # print(dbs_df)
 
     draw_progression_plot(dbs_df, max_fitness, min_distance,
-                          x_label='Search Method', y_label='dbs', title='dbs', intervals=intervals, output_dir=output_dir)
+                          x_label='Search Method', y_label='DBS', title='DBS', intervals=intervals, output_dir=output_dir)
 
 
 def main(max_fitness: float = 0.2, min_distance: float = 0.4, intervals: int = 10, output_dir: str = './results/diagrams/'):
@@ -404,7 +409,7 @@ def main(max_fitness: float = 0.2, min_distance: float = 0.4, intervals: int = 1
     processed_ga_results_rq1 = postprocess_results(
         ga_results_dict, max_fitness, min_distance)
     print('GA Results postprocessed.')
-    print(f'GA Results: {processed_ga_results_rq1}')
+    # print(f'GA Results: {processed_ga_results_rq1}')
 
     processed_results_rq1 = {}
     processed_results_rq1['MLCSHE'] = processed_mlcshe_results_rq1
@@ -429,7 +434,7 @@ def main(max_fitness: float = 0.2, min_distance: float = 0.4, intervals: int = 1
     processed_ga_results_rq2 = {interval: postprocess_results(
         results_per_interval, max_fitness, min_distance) for interval, results_per_interval in divided_ga_results.items()}
     print('GA Results postprocessed.')
-    print(f'GA Results: {processed_ga_results_rq2}')
+    # print(f'GA Results: {processed_ga_results_rq2}')
 
     processed_results_rq2 = {}
     processed_results_rq2['MLCSHE'] = processed_mlcshe_results_rq2
