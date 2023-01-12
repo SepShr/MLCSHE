@@ -13,7 +13,7 @@ import numpy as np
 from deap import base, creator, tools
 
 import search_config_RS as cfg
-from fitness_function import fitness_function
+from src.main.fitness_function import calculate_fitness
 from problem_utils import initialize_mlco
 from simulation_manager_cluster import (ContainerSimManager,
                                         prepare_for_computation,
@@ -195,7 +195,7 @@ class RandomSearch:
     def calculate_fitness(self):
         # Calculate fitness values for all complete solutions in parallel.
         with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
-            for cs, result in zip(self.completed_jobs, executor.map(fitness_function, self.cs_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius))):
+            for cs, result in zip(self.completed_jobs, executor.map(calculate_fitness, self.cs_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius))):
                 cs.fitness.values = (result,)
         self._logger.info('Fitness values calculated.')
 

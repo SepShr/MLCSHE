@@ -49,8 +49,8 @@ def find_cs_region(center_cs, max_dist, cs_list, dist_matrix_sq: np.array) -> li
     return [cs for cs in cs_list if dist_matrix_sq[center_cs_index, cs_list.index(cs)] <= max_dist]
 
 
-def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float, target_probability=TARGET_PROBABILITY) -> float:
-    """Returns a fitness values which measures the distance of
+def calculate_fitness(cs, cs_list: list, dist_matrix: np.array, max_dist: float, target_probability=TARGET_PROBABILITY) -> float:
+    """Returns a fitness value which measures the distance of
     `cs` from the boundary region. The fitness values also
     relies on the number of complete solutions in the neighbourhood
     of `cs`. The neighbourhood of `cs` is determined
@@ -81,4 +81,3 @@ def fitness_function(cs, cs_list: list, dist_matrix: np.array, max_dist: float, 
     assert 0 <= fitness_value <= fitness_value_range + \
         0.01, f'fitness_value can only be between 0 and {fitness_value_range}, current value={fitness_value}'
     return fitness_value / fitness_value_range
-    # return fitness_value

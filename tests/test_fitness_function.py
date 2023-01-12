@@ -1,7 +1,7 @@
 import unittest
 
 from deap import base, creator
-from fitness_function import fitness_function
+from src.main.fitness_function import calculate_fitness
 from src.utils.PairwiseDistance import PairwiseDistance
 
 
@@ -41,14 +41,14 @@ class TestFitnessFunction(unittest.TestCase):
             categorical_indices=self.cat_ix
         )
 
-        computed_fv = fitness_function(cs=cs_3, max_dist=0.9, cs_list=test_distance.cs_list,
-                                       dist_matrix=test_distance.dist_matrix_sq)
+        computed_fv = calculate_fitness(cs=cs_3, max_dist=0.9, cs_list=test_distance.cs_list,
+                                        dist_matrix=test_distance.dist_matrix_sq)
 
         expected_fv = 0.3499642911798285
 
         self.assertEqual(computed_fv, expected_fv)
 
-    def test_fitness_function_radius_metamorphic(self):
+    def test_calculate_fitness_radius_metamorphic(self):
         # randomly generate many complete solutions based on the range and cat_ix
         import random
         num_neighbors = 1000
@@ -71,17 +71,17 @@ class TestFitnessFunction(unittest.TestCase):
         )
 
         # compute fitness using max_dist in [0.1, 0.5, 0.9]
-        fv_1 = fitness_function(cs=test_distance.cs_list[0], max_dist=0.1, cs_list=test_distance.cs_list,
-                                dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
-        fv_5 = fitness_function(cs=test_distance.cs_list[0], max_dist=0.5, cs_list=test_distance.cs_list,
-                                dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
-        fv_9 = fitness_function(cs=test_distance.cs_list[0], max_dist=0.9, cs_list=test_distance.cs_list,
-                                dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
+        fv_1 = calculate_fitness(cs=test_distance.cs_list[0], max_dist=0.1, cs_list=test_distance.cs_list,
+                                 dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
+        fv_5 = calculate_fitness(cs=test_distance.cs_list[0], max_dist=0.5, cs_list=test_distance.cs_list,
+                                 dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
+        fv_9 = calculate_fitness(cs=test_distance.cs_list[0], max_dist=0.9, cs_list=test_distance.cs_list,
+                                 dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
 
         # metamorphic testing
         self.assertTrue(fv_1 >= fv_5 >= fv_9)
 
-    def test_fitness_function_num_samples_metamorphic(self):
+    def test_calculate_fitness_num_samples_metamorphic(self):
         # randomly generate many complete solutions based on the range and cat_ix
         import random
         num_neighbors = 1000
@@ -102,24 +102,24 @@ class TestFitnessFunction(unittest.TestCase):
             numeric_ranges=self.num_range,
             categorical_indices=self.cat_ix
         )
-        fv_100 = fitness_function(cs=test_distance_1.cs_list[0], max_dist=0.5, cs_list=test_distance_1.cs_list,
-                                  dist_matrix=test_distance_1.dist_matrix_sq)
+        fv_100 = calculate_fitness(cs=test_distance_1.cs_list[0], max_dist=0.5, cs_list=test_distance_1.cs_list,
+                                   dist_matrix=test_distance_1.dist_matrix_sq)
 
         test_distance_2 = PairwiseDistance(
             cs_list=cs_list[:500],
             numeric_ranges=self.num_range,
             categorical_indices=self.cat_ix
         )
-        fv_500 = fitness_function(cs=test_distance_2.cs_list[0], max_dist=0.5, cs_list=test_distance_2.cs_list,
-                                  dist_matrix=test_distance_2.dist_matrix_sq)
+        fv_500 = calculate_fitness(cs=test_distance_2.cs_list[0], max_dist=0.5, cs_list=test_distance_2.cs_list,
+                                   dist_matrix=test_distance_2.dist_matrix_sq)
 
         test_distance_3 = PairwiseDistance(
             cs_list=cs_list[:1000],
             numeric_ranges=self.num_range,
             categorical_indices=self.cat_ix
         )
-        fv_1000 = fitness_function(cs=test_distance_3.cs_list[0], max_dist=0.5, cs_list=test_distance_3.cs_list,
-                                   dist_matrix=test_distance_3.dist_matrix_sq)
+        fv_1000 = calculate_fitness(cs=test_distance_3.cs_list[0], max_dist=0.5, cs_list=test_distance_3.cs_list,
+                                    dist_matrix=test_distance_3.dist_matrix_sq)
 
         # metamorphic testing
         self.assertTrue(fv_100 >= fv_500 >= fv_1000)

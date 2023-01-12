@@ -20,7 +20,7 @@ from multiprocessing import cpu_count
 from pathlib import Path
 
 import search_config as cfg
-from fitness_function import fitness_function
+from src.main.fitness_function import calculate_fitness
 from problem_utils import initialize_mlco, mutate_mlco, mutate_scenario
 from simulation_manager_cluster import (ContainerSimManager,
                                         prepare_for_computation,
@@ -251,7 +251,7 @@ class GASearch:
     def calculate_fitness(self, pop=None):
         # Calculate fitness values for all complete solutions in parallel.
         with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
-            for cs, result in zip(pop, executor.map(fitness_function, pop, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius), repeat(self.ff_target_prob))):
+            for cs, result in zip(pop, executor.map(calculate_fitness, pop, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius), repeat(self.ff_target_prob))):
                 cs.fitness.values = (result,)
         self._logger.info('Fitness values calculated.')
 

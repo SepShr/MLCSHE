@@ -9,7 +9,7 @@ from time import time
 
 import numpy as np
 from deap import tools
-from fitness_function import fitness_function
+from src.main.fitness_function import calculate_fitness
 from src.utils.utility import (collaborate,
                                create_complete_solution, evaluate_individual,
                                find_individual_collaborator,
@@ -373,7 +373,7 @@ class MLCSHE:
         # FIXME: Do we need to reevaluate solution_archive every generation?
         with ProcessPoolExecutor() as executor:
 
-            for cs, result in zip(self.solution_archive, executor.map(fitness_function, self.solution_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius), repeat(self.ff_target_prob))):
+            for cs, result in zip(self.solution_archive, executor.map(calculate_fitness, self.solution_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius), repeat(self.ff_target_prob))):
                 cs.fitness.values = (result,)
 
         # Return a cs_list with fv per generation.

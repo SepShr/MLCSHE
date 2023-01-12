@@ -1,5 +1,5 @@
 from deap import base, creator
-from fitness_function import estimate_safe_cs_probability
+from src.main.fitness_function import estimate_safe_cs_probability
 import unittest
 
 

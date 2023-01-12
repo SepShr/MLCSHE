@@ -1,5 +1,5 @@
 """
-iCCEA Runner.
+MLCSHE Runner.
 """
 import os
 import sys
