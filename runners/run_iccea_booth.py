@@ -1,22 +1,22 @@
 """
-iCCEA Runner.
+MLCSHE Runner.
 """
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # nopep8
 sys.path.append(os.path.dirname(__file__))  # nopep8
 
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 from src.utils.utility import setup_logger
 from benchmark.booth import problem
 
 import benchmark.booth.search_config as cfg
 
 
-# NOTE: ICCEA is an algorithm, which is independent of a problem structure
+# NOTE: MLCSHE is an algorithm, which is independent of a problem structure
 
 def main():
-    solver = ICCEA(
+    solver = MLCSHE(
         creator=problem.creator,
         toolbox=problem.toolbox,
         simulator=None,
@@ -25,7 +25,7 @@ def main():
         second_population_enumLimits=cfg.enumLimits
     )
 
-    hyperparameters = [
+    hyperparameters=[
         cfg.min_distance,
         cfg.tournament_selection,
         cfg.crossover_probability,
@@ -41,7 +41,7 @@ def main():
                  stream_log_level='INFO')
 
     # User does not need to modify anything but `problem.py`
-    solution = solver.solve(
+    solution=solver.solve(
         max_gen=cfg.number_of_generations, hyperparameters=hyperparameters, max_num_evals=cfg.max_num_evals, seed=cfg.random_seed)
 
 

@@ -1,4 +1,4 @@
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 from deap import creator
 import unittest
 import problem
@@ -25,7 +25,7 @@ class TestIndividualInList(unittest.TestCase):
             numeric_ranges=cfg.mlco_numeric_ranges,
             categorical_indices=cfg.mlco_categorical_indices
         )
-        solver = ICCEA(
+        solver = MLCSHE(
             creator=problem.creator,
             toolbox=problem.toolbox,
             pairwise_distance_cs=pdist_cs,

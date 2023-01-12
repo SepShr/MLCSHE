@@ -20,7 +20,7 @@ from src.utils.utility import (collaborate,
                                rank_change, setup_file, setup_logbook_file)
 
 
-class ICCEA:
+class MLCSHE:
     def __init__(
         self, creator, toolbox, simulator, pairwise_distance_cs, pairwise_distance_p1,
         pairwise_distance_p2, first_population_enumLimits=None, second_population_enumLimits=None,

@@ -10,7 +10,7 @@ from datetime import datetime
 import pathlib
 import benchmark.mtq.search_config as cfg
 from benchmark.mtq import problem
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
 
@@ -38,7 +38,7 @@ def main():
         categorical_indices=[]
     )
 
-    solver = ICCEA(
+    solver = MLCSHE(
         creator=problem.creator,
         toolbox=problem.toolbox,
         simulator=None,
@@ -68,7 +68,8 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = pathlib.Path('results').joinpath(
         timestamp + '_' + cfg.output_dir_name)
-    output_dir.mkdir(parents=True, exist_ok=True)  # Create the output folder.
+    # Create the output folder.
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Setup logger.
     setup_logger(

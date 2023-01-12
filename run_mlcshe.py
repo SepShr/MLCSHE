@@ -6,7 +6,7 @@ import pathlib
 import problem
 import search_config as cfg
 from simulation_manager_cluster import ContainerSimManager
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
 
@@ -37,7 +37,7 @@ def main():
         categorical_indices=cfg.mlco_categorical_indices
     )
 
-    solver = ICCEA(
+    solver = MLCSHE(
         creator=problem.creator,
         toolbox=problem.toolbox,
         # simulator=simulator,

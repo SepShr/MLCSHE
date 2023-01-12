@@ -1,5 +1,5 @@
 from deap import creator
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 import unittest
 import problem
 import search_config as cfg
@@ -25,7 +25,7 @@ class TestBreedScenario(unittest.TestCase):
             numeric_ranges=cfg.mlco_numeric_ranges,
             categorical_indices=cfg.mlco_categorical_indices
         )
-        solver = ICCEA(
+        solver = MLCSHE(
             creator=problem.creator,
             toolbox=problem.toolbox,
             simulator=None,

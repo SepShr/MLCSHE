@@ -1,5 +1,5 @@
 from deap import creator
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 import random
 import unittest
 import problem
@@ -10,7 +10,7 @@ class TestUpdateArchive(unittest.TestCase):
     @unittest.skip('test data not applicable to jfit evaluation')
     def test_update_archive_testInput1(self):
         # make a solver instance
-        solver = ICCEA(
+        solver = MLCSHE(
             creator=problem.creator,
             toolbox=problem.toolbox,
             enumLimits=problem.enumLimits

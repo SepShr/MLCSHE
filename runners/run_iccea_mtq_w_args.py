@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(__file__))  # nopep8
 from datetime import datetime
 import pathlib
 from benchmark.mtq import problem
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
 import sys
@@ -66,7 +66,7 @@ def main():
     # Pass the config values to problem.py to setup the search funcitons.
     creator, toolbox = problem.setup_problem(config_values)
 
-    solver = ICCEA(
+    solver = MLCSHE(
         creator=creator,
         toolbox=toolbox,
         simulator=simulator,
@@ -95,7 +95,8 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = pathlib.Path('results').joinpath(
         timestamp + '_' + cfg.output_dir_name)
-    output_dir.mkdir(parents=True, exist_ok=True)  # Create the output folder.
+    # Create the output folder.
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Setup logger.
     setup_logger(

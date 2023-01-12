@@ -6,7 +6,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # nopep8
 sys.path.append(os.path.dirname(__file__))  # nopep8
 
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 from src.utils.utility import setup_logger
 from benchmark.oneridge import problem
 
@@ -16,7 +16,7 @@ import benchmark.oneridge.search_config as cfg
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
 
 def main():
-    solver = ICCEA(
+    solver = MLCSHE(
         creator=problem.creator,
         toolbox=problem.toolbox,
         simulator=None,
