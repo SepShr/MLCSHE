@@ -1,5 +1,5 @@
 """
-CCEA Runner.
+MLCSHE Runner.
 """
 
 import pathlib
