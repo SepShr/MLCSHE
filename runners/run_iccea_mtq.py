@@ -15,7 +15,7 @@ from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
 
 
-# NOTE: ICCEA is an algorithm, which is independent of a problem structure
+# NOTE: MLCSHE is an algorithm, which is independent of a problem structure
 
 
 def main():

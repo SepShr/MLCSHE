@@ -15,7 +15,7 @@ from src.utils.utility import setup_logger
 import sys
 import importlib
 
-# NOTE: ICCEA is an algorithm, which is independent of a problem structure
+# NOTE: MLCSHE is an algorithm, which is independent of a problem structure
 
 
 def main():

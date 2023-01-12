@@ -10,7 +10,6 @@ from deap import base, creator, tools
 import numpy as np
 import logging
 import time
-from copy import deepcopy
 import pathlib
 from argparse import ArgumentParser
 from concurrent.futures import ProcessPoolExecutor
@@ -65,7 +64,6 @@ class GASearch:
         self.creator = creator
 
         self.sim_counter = 0
-        # self.jobs_size = cfg.jobs_queue_size
         self.jobs_size = JOBS_QUEUE_SIZE
 
         self.ff_target_prob = cfg.finess_function_target_probability

@@ -13,7 +13,7 @@ from benchmark.oneridge import problem
 import benchmark.oneridge.search_config as cfg
 
 
-# NOTE: ICCEA is an algorithm, which is independent of a problem structure
+# NOTE: MLCSHE is an algorithm, which is independent of a problem structure
 
 def main():
     solver = MLCSHE(

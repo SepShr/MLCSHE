@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 from deap import base, creator, tools
 
-import search_config_RS as cfg
+import search_config as cfg
 from src.main.fitness_function import calculate_fitness
 from problem_utils import initialize_mlco
 from simulation_manager_cluster import (ContainerSimManager,
@@ -21,6 +21,8 @@ from simulation_manager_cluster import (ContainerSimManager,
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import (create_complete_solution,
                                initialize_hetero_vector, log_and_pickle, setup_logbook_file, setup_logger)
+
+JOBS_QUEUE_SIZE = 10
 
 
 class RandomSearch:
@@ -53,7 +55,9 @@ class RandomSearch:
         self.creator = creator
 
         self.sim_counter = 0
-        self.jobs_size = cfg.jobs_queue_size
+        self.jobs_size = JOBS_QUEUE_SIZE
+
+        self.ff_target_prob = cfg.finess_function_target_probability
 
     def define_problem(self, cs_archive_size):
         # Define problem and individuals.
@@ -195,7 +199,7 @@ class RandomSearch:
     def calculate_fitness(self):
         # Calculate fitness values for all complete solutions in parallel.
         with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
-            for cs, result in zip(self.completed_jobs, executor.map(calculate_fitness, self.cs_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius))):
+            for cs, result in zip(self.completed_jobs, executor.map(calculate_fitness, self.cs_archive, repeat(self.pairwise_distance.cs_list), repeat(self.pairwise_distance.dist_matrix_sq), repeat(self.radius), repeat(self.ff_target_prob))):
                 cs.fitness.values = (result,)
         self._logger.info('Fitness values calculated.')
 
