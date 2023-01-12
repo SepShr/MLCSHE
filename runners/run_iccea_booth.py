@@ -9,7 +9,6 @@ sys.path.append(os.path.dirname(__file__))  # nopep8
 from src.main.ICCEA import ICCEA
 from src.utils.utility import setup_logger
 from benchmark.booth import problem
-from Simulator import Simulator
 
 import benchmark.booth.search_config as cfg
 
@@ -17,13 +16,10 @@ import benchmark.booth.search_config as cfg
 # NOTE: ICCEA is an algorithm, which is independent of a problem structure
 
 def main():
-    # Instantiate simulator instance.
-    simulator = Simulator()
-
     solver = ICCEA(
         creator=problem.creator,
         toolbox=problem.toolbox,
-        simulator=simulator,
+        simulator=None,
         # more parameters can be added to better define the problem
         first_population_enumLimits=cfg.enumLimits,
         second_population_enumLimits=cfg.enumLimits

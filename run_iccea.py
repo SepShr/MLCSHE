@@ -1,23 +1,20 @@
 """
-iCCEA Runner.
+CCEA Runner.
 """
 
-from datetime import datetime
 import pathlib
 import problem
 import search_config as cfg
-# from Simulator import Simulator
 from simulation_manager_cluster import ContainerSimManager
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
 
-# NOTE: ICCEA is an algorithm, which is independent of a problem structure
+# NOTE: MLCSHE is an algorithm, which is independent of a problem structure
 
 
 def main():
     # Instantiate simulator instance.
-    # simulator = Simulator()
     sim_manager = ContainerSimManager(
         cfg.input_directory, cfg.output_directory)
 

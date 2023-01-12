@@ -42,7 +42,7 @@ class TestFitnessFunction(unittest.TestCase):
         )
 
         computed_fv = fitness_function(cs=cs_3, max_dist=0.9, cs_list=test_distance.cs_list,
-                                       dist_matrix=test_distance.dist_matrix_sq, w_ci=1, w_p=1)
+                                       dist_matrix=test_distance.dist_matrix_sq)
 
         expected_fv = 0.3499642911798285
 
@@ -103,7 +103,7 @@ class TestFitnessFunction(unittest.TestCase):
             categorical_indices=self.cat_ix
         )
         fv_100 = fitness_function(cs=test_distance_1.cs_list[0], max_dist=0.5, cs_list=test_distance_1.cs_list,
-                                  dist_matrix=test_distance_1.dist_matrix_sq, w_ci=1, w_p=1)
+                                  dist_matrix=test_distance_1.dist_matrix_sq)
 
         test_distance_2 = PairwiseDistance(
             cs_list=cs_list[:500],
@@ -111,7 +111,7 @@ class TestFitnessFunction(unittest.TestCase):
             categorical_indices=self.cat_ix
         )
         fv_500 = fitness_function(cs=test_distance_2.cs_list[0], max_dist=0.5, cs_list=test_distance_2.cs_list,
-                                  dist_matrix=test_distance_2.dist_matrix_sq, w_ci=1, w_p=1)
+                                  dist_matrix=test_distance_2.dist_matrix_sq)
 
         test_distance_3 = PairwiseDistance(
             cs_list=cs_list[:1000],
@@ -119,7 +119,7 @@ class TestFitnessFunction(unittest.TestCase):
             categorical_indices=self.cat_ix
         )
         fv_1000 = fitness_function(cs=test_distance_3.cs_list[0], max_dist=0.5, cs_list=test_distance_3.cs_list,
-                                   dist_matrix=test_distance_3.dist_matrix_sq, w_ci=1, w_p=1)
+                                   dist_matrix=test_distance_3.dist_matrix_sq)
 
         # metamorphic testing
         self.assertTrue(fv_100 >= fv_500 >= fv_1000)

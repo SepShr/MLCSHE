@@ -4,14 +4,12 @@ import unittest
 import random
 import problem
 import search_config as cfg
-from Simulator import Simulator
 from src.utils.PairwiseDistance import PairwiseDistance
 
 
 class TestUpdateArchiveDiverseRandom(unittest.TestCase):
     def test_update_archive_diverse_random_testInput1(self):
         # make a solver instance
-        simulator = Simulator()
         pdist_cs = PairwiseDistance(
             cs_list=[],
             numeric_ranges=[[0.0, 1.0]],
@@ -31,7 +29,7 @@ class TestUpdateArchiveDiverseRandom(unittest.TestCase):
         solver = ICCEA(
             creator=problem.creator,
             toolbox=problem.toolbox,
-            simulator=simulator,
+            simulator=None,
             pairwise_distance_cs=pdist_cs,
             pairwise_distance_p1=pairwise_distance_scen,
             pairwise_distance_p2=pairwise_distance_mlco,

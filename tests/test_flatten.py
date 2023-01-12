@@ -3,14 +3,12 @@ from src.main.ICCEA import ICCEA
 import unittest
 import problem
 import search_config as cfg
-from Simulator import Simulator
 from src.utils.PairwiseDistance import PairwiseDistance
 
 
 class TestFlatten(unittest.TestCase):
     def test_flatten_testInput1(self):
         # make a solver instance
-        simulator = Simulator()
         pdist_cs = PairwiseDistance(
             cs_list=[],
             numeric_ranges=[[0.0, 1.0]],
@@ -33,7 +31,7 @@ class TestFlatten(unittest.TestCase):
             pairwise_distance_cs=pdist_cs,
             pairwise_distance_p1=pairwise_distance_scen,
             pairwise_distance_p2=pairwise_distance_mlco,
-            simulator=simulator,
+            simulator=None,
             first_population_enumLimits=cfg.scenario_enumLimits
         )
 

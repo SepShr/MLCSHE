@@ -10,7 +10,6 @@ from datetime import datetime
 import pathlib
 import benchmark.mtq.search_config as cfg
 from benchmark.mtq import problem
-from Simulator import Simulator
 from src.main.ICCEA import ICCEA
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import setup_logger
@@ -20,9 +19,6 @@ from src.utils.utility import setup_logger
 
 
 def main():
-    # Instantiate simulator instance.
-    simulator = Simulator()
-
     # Instantiate pairwise distance instance.
     pairwise_distance_cs = PairwiseDistance(
         cs_list=[],
@@ -45,7 +41,7 @@ def main():
     solver = ICCEA(
         creator=problem.creator,
         toolbox=problem.toolbox,
-        simulator=simulator,
+        simulator=None,
         pairwise_distance_cs=pairwise_distance_cs,
         # more parameters can be added to better define the problem
         pairwise_distance_p1=pairwise_distance_scen,
