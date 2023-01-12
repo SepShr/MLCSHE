@@ -5,6 +5,9 @@ This document provides that installation guidelines on an ubuntu 20.04 LTS machi
 ## Prerequisites
 
 + Python 3.7 or newer.
++ Docker 19.03 **CHECK VERSION** or newer.
++ NVIDIA GPU with CUDA 11.0 **CHECK VERSION** or newer.
++ NVIDIA driver 450.51.06 **CHECK VERSION** or newer.
 
 ## AWS EC2 Instance
 
@@ -46,6 +49,8 @@ nvidia-docker exec -i -t pylot sudo chown erdos /home/erdos/.ssh/authorized_keys
 ```bash
 git clone -b Dev-Sepehr https://github.com/SepShr/MLCSHE.git
 ```
+
+**ADD STEPS TO SANITY CHECK CARLA AND PYLOT**
 
 4.Create a virtual environment and install the `requirements.txt` file.
 

@@ -1,28 +1,17 @@
 # MLCSHE: Machine Learning Component Systemic Hazard Envelope
 
-This repository contains the ML-Component Systemic Hazard Envelope project, or *MLCSHE* (pronounced /'mɪlʃ/).
+ML Component Systemic Hazard Envelope project, or *MLCSHE* (pronounced /'mɪlʃ/), is a cooperative coevolutionary search algorithm that automatically identifies the *hazard boundary* of a ML component in an ML-enabled Autonomous System (MLAS), given a system safety requirement.
 
-## Authors
+## Publications
 
-- Sepehr Sharifi (sshar190@uottawa.ca)
-- Donghwan Shin (donghwan.shin@uni.lu)
-- Lionel Briand (lbriand@uottawa.ca)
+__Identifying the Hazard Boundary of ML-enabled Autonomous Systems__ by Sepehr Sharifi, Donghwan Shin, and Lionel C. Briand, arXiv pre-prints, January 2023, DOI:XXXX
 
-## Prerequisites
+## Installation
 
-- Python 3.7 or higher is recommended.
+The details on setting up MLCSHE are provided in the [installation guide](INSTALL.md).
 
-To install the required Python packages, first create a virtual environment and install the `requirement.txt` file.
+## Usage
 
-```shell script
-# For MacOS or Ubuntu
-python3 -m venv myvenv
 
-# For Windows
-python -m venv myvenv
 
-source myvenv/bin/activate
-pip install -r requirements.txt
-```
-
-This work is done at [Nanda Lab](https://www.nanda-lab.ca/), EECS, University of Ottawa in collaboration with [SVV Lab](https://wwwfr.uni.lu/snt/research/software_verification_and_validation_lab/), University of Luxembourg.
+This work is done at [Nanda Lab](https://www.nanda-lab.ca/), EECS, University of Ottawa.
