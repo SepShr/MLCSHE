@@ -1,4 +1,6 @@
 """
+A variant of the problem.py required for running on Compute Canada servers.
+
 Set of variables that define the `problem` structure, especially `creator`
 and `toolbox`.
 
@@ -9,6 +11,7 @@ solve.
 from deap import base, creator, tools
 from src.utils.utility import (initialize_hetero_vector,
                                mutate_flat_hetero_individual)
+
 
 def compute_safety_req_value(simulator, x, y):
     """This is the problem-specific joint fitness evaluation.
@@ -39,16 +42,19 @@ def compute_safety_req_value(simulator, x, y):
     return max(f_1, f_2) - 100.0
     # return max(f_1, f_2)
 
+
 def setup_problem(hyperparameters):
-    scen_pop_size = hyperparameters['scenario_population_size']  # Size of the scenario population
-    mlco_pop_size = hyperparameters['mlco_population_size']  # Size of the MLC output population
+    # Size of the scenario population
+    scen_pop_size = hyperparameters['scenario_population_size']
+    # Size of the MLC output population
+    mlco_pop_size = hyperparameters['mlco_population_size']
 
     # The list of lower and upper limits.
     enumLimits = hyperparameters['enumLimits']
     # Create fitness and individual datatypes.
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))   # Maximization
     creator.create("Individual", list, fitness=creator.FitnessMax,
-                safety_req_value=float)  # Maximization
+                   safety_req_value=float)  # Maximization
     creator.create("Scenario", creator.Individual)
     creator.create("OutputMLC", creator.Individual)
 
