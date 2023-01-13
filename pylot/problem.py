@@ -25,9 +25,6 @@ scen_enumLimits = cfg.scenario_enumLimits
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMin,
                safety_req_value=float)
-# creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-# creator.create("Individual", list, fitness=creator.FitnessMin,
-#                safety_req_value=float)
 creator.create("Scenario", creator.Individual)
 creator.create("OutputMLC", creator.Individual)
 

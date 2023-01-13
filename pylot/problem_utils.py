@@ -41,16 +41,14 @@ cs = [scen, mlco]
 cs = [[scen_1, mlco_1], [scen_2, mlco_2], [scen_1, mlco_2], [scen_2, mlco_1]]
 '''
 import copy
-from copy import deepcopy
-from deap import tools
 import logging
+from copy import deepcopy
 from random import randint, random, uniform
 
-import pylot.search_config as cfg
-# from simulation_manager_cluster import prepare_for_computation, start_computation
+from deap import tools
 
-# from simulation_runner import run_simulation
-from src.utils.utility import initialize_hetero_vector, mutate_flat_hetero_individual
+import pylot.search_config as cfg
+from src.utils.utility import mutate_flat_hetero_individual
 
 total_mlco_messages = cfg.total_mlco_messages
 total_obstacles_per_message = cfg.total_obstacles_per_message
@@ -167,7 +165,6 @@ def mutate_traj(mlco_element, traj_enum_limit, mutgmu, mutgsig, mutgpb, mutipb):
     mutated_label = list(tools.mutUniformInt(
         mlco_element_label, traj_enum_limit[0][0], traj_enum_limit[0][1], mutipb)[0])
 
-    # if mutated_label == -1:
     if mutated_label[0] == -1:
         return cfg.null_trajectory
     else:
@@ -185,13 +182,9 @@ def mutate_traj(mlco_element, traj_enum_limit, mutgmu, mutgsig, mutgpb, mutipb):
 
 
 def mutate_time(time_list, mutipb, duration: int = cfg.duration, min_duration: int = cfg.min_trajectory_duration):
-    # mutated_time = list(tools.mutUniformInt(
-    #     time_list, low=, up=, indpb=mutgpb)[0])
-    # if mutated_time[0] >= mutated_time[1]:
-    #     if mutated_time[0] < 60.0:
-    #         mutated_time[1] += 50.0
-    #     else:
-    #         mutated_time[0] += -50.0
+    """Mutates the time of a trajectory.
+    NOTE: The implementation must change when the target mlc changes!
+    """
 
     # initialize mutated_time
     mutated_time = copy.deepcopy(time_list)
@@ -234,6 +227,7 @@ def mutate_scenario(
         scenario, scenario_enumLimits,
         mutbpb, mutgmu, mutgsig, mutgpb, mutipb):
     """Mutates a scenario individual.
+    NOTE: The implementation must change when the target mlc changes!
     """
     return mutate_flat_hetero_individual(scenario, scenario_enumLimits,
                                          mutbpb, mutgmu,
@@ -309,7 +303,6 @@ def compute_safety_req_value(simulator, scenario, mlco):
     DfC_min, DfV_min, DfP_min, DfM_min, DT_max, traffic_lights_max = simulator.run_simulation(
         scenario_deepcopy, mlco_deepcopy)
 
-    # logger.info('safety_req_value={}'.format(DfC_min))
     logger.info('safety_req_value={}'.format(DfV_min))
 
     # return DfC_min
@@ -366,10 +359,8 @@ def trajectory_to_obstacle(trajectory, duration):
 
 
 def mlco_to_obs_seq(mlco, duration=cfg.duration):
-    # list_of_obs_sequences = []
-    # for trajectory in mlco:
-    #     list_of_obs_sequences.append(
-    #         trajectory_to_obstacle(trajectory, duration))
+    """Converts a list of trajectories to a list (sequence) of obstacles.
+    """
 
     list_of_obs_sequences = [trajectory_to_obstacle(
         trajectory, duration) for trajectory in mlco]
