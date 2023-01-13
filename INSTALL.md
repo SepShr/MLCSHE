@@ -5,15 +5,14 @@ This document provides that installation guidelines on an ubuntu 20.04 LTS machi
 ## Prerequisites
 
 + Python 3.7 or newer.
-+ Docker 19.03 **CHECK VERSION** or newer.
-+ NVIDIA GPU with CUDA 11.0 **CHECK VERSION** or newer.
-+ NVIDIA driver 450.51.06 **CHECK VERSION** or newer.
++ Docker 20.10 or newer.
++ NVIDIA driver 525.60 or newer.
 
 ## AWS EC2 Instance
 
 If your ubuntu machine is running as an AWS EC2 instance, please follow these steps first to setup your machine.
 
-+ Choose a *g4dn* image, with a minimum size of *xlarge*.
++ Choose a *g4dn* image, with a minimum size of *xlarge* (for parallel execution of 2 simulations, a minimum size of *2xlarge* is required).
 + Choose a *NVidia GPU-optimized AMI*.
 
 ## Steps

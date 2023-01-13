@@ -1,6 +1,6 @@
 from src.utils.utility import measure_heom_distance
 import unittest
-import problem
+import pylot.problem as problem
 
 
 class TestMeasureHeomDistance(unittest.TestCase):

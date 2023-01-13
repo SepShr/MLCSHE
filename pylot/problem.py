@@ -7,9 +7,9 @@ solve.
 """
 from deap import base, creator, tools
 
-import search_config as cfg
-from problem_utils import (initialize_mlco, mutate_mlco, mutate_scenario,
-                           compute_safety_req_value)
+import pylot.search_config as cfg
+from pylot.problem_utils import (initialize_mlco, mutate_mlco, mutate_scenario,
+                                 compute_safety_req_value)
 from simulation_manager_cluster import prepare_for_computation, start_computation
 # FIXME: This should be imported from problem_utils.py
 from src.utils.utility import initialize_hetero_vector

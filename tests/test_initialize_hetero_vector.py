@@ -1,8 +1,8 @@
 from deap import creator
 from src.utils.utility import initialize_hetero_vector
 import unittest
-import problem
-import search_config as cfg
+import pylot.problem as problem
+import pylot.search_config as cfg
 
 
 class TestInitializeHeteroVector(unittest.TestCase):

@@ -6,7 +6,7 @@ import time
 import logging
 
 from datetime import datetime
-from problem_utils import mlco_to_obs_seq
+from pylot.problem_utils import mlco_to_obs_seq
 # from uuid import uuid4
 
 import simulation_config as cfg

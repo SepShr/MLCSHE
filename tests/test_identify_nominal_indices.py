@@ -1,6 +1,6 @@
 from src.utils.utility import identify_nominal_indices
 import unittest
-import problem
+import pylot.problem as problem
 
 
 class TestIdentifyNominalIndices(unittest.TestCase):

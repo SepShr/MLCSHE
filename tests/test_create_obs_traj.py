@@ -1,6 +1,6 @@
 import unittest
 
-from problem_utils import create_obs_traj
+from pylot.problem_utils import create_obs_traj
 
 
 class TestCreateObsTraj(unittest.TestCase):

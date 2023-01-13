@@ -13,7 +13,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from pathlib import Path
 
-import search_config as cfg
+import pylot.search_config as cfg
 from RandomSearch import RandomSearch
 from src.utils.utility import setup_logger
 

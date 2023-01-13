@@ -3,8 +3,8 @@ MLCSHE Runner.
 """
 
 import pathlib
-import problem
-import search_config as cfg
+import pylot.problem as problem
+import pylot.search_config as cfg
 from simulation_manager_cluster import ContainerSimManager
 from src.main.MLCSHE import MLCSHE
 from src.utils.PairwiseDistance import PairwiseDistance
@@ -64,14 +64,11 @@ def main():
     ]
 
     # Get current timestamp to use as a unique ID.
-    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # output_dir = pathlib.Path('results').joinpath(
-    #     timestamp + '_' + cfg.output_dir_name)
     output_dir = pathlib.Path('results').joinpath(cfg.output_dir_name)
     output_dir.mkdir(parents=True, exist_ok=True)  # Create the output folder.
 
     # Setup logger.
-    setup_logger(file_name='CCEA', output_directory=output_dir, file_log_level='DEBUG',
+    setup_logger(file_name='MLCSHE', output_directory=output_dir, file_log_level='DEBUG',
                  stream_log_level='INFO')
 
     # User does not need to modify anything but `problem.py`

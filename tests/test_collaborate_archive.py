@@ -1,6 +1,6 @@
 from deap import creator
 from src.utils.utility import collaborate_archive
-import problem
+import pylot.problem as problem
 import unittest
 
 

@@ -2,8 +2,9 @@ import random
 from copy import deepcopy
 from deap import base, creator
 import unittest
-from problem_utils import initialize_mlco, mutate_mlco, mutate_time
+from pylot.problem_utils import initialize_mlco, mutate_mlco, mutate_time
 from tqdm import trange
+
 
 class TestMutateMLCO(unittest.TestCase):
     def setUp(self) -> None:
@@ -71,4 +72,5 @@ class TestMutateMLCO(unittest.TestCase):
             # note that org_time can be the same as mutated_time
             self.assertTrue(0 <= mutated_time[0] <= self.duration)
             self.assertTrue(0 <= mutated_time[1] <= self.duration)
-            self.assertTrue(mutated_time[1] - mutated_time[0] >= self.min_duration)
+            self.assertTrue(mutated_time[1] -
+                            mutated_time[0] >= self.min_duration)

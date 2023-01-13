@@ -2,7 +2,7 @@ from deap import creator
 from src.main.MLCSHE import MLCSHE
 import random
 import unittest
-import problem
+import pylot.problem as problem
 
 
 class TestUpdateArchive(unittest.TestCase):

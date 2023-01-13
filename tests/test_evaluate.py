@@ -1,7 +1,7 @@
 from unittest.case import SkipTest, skip, skipIf
 from deap import creator
 from src.main.MLCSHE import MLCSHE
-import problem
+import pylot.problem as problem
 import unittest
 
 

@@ -12,8 +12,8 @@ from multiprocessing import cpu_count
 import numpy as np
 from deap import base, creator, tools
 
-import search_config as cfg
-from problem_utils import initialize_mlco
+import pylot.search_config as cfg
+from pylot.problem_utils import initialize_mlco
 from simulation_manager_cluster import (ContainerSimManager,
                                         prepare_for_computation,
                                         start_computation)

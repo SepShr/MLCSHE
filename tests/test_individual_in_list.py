@@ -1,8 +1,8 @@
 from src.main.MLCSHE import MLCSHE
 from deap import creator
 import unittest
-import problem
-import search_config as cfg
+import pylot.problem as problem
+import pylot.search_config as cfg
 from src.utils.PairwiseDistance import PairwiseDistance
 
 

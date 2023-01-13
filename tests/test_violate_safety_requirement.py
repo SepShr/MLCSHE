@@ -1,7 +1,7 @@
 from deap import creator
 from src.utils.utility import violate_safety_requirement
 import unittest
-import problem
+import pylot.problem as problem
 
 
 class TestViolateSafetyRequirement(unittest.TestCase):

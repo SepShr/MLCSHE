@@ -4,7 +4,7 @@ from pathlib import Path
 # Setup directories
 # Get current timestamp to use as a unique ID.
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-output_dir_name = str(timestamp) + '_CCEA_Pylot'
+output_dir_name = str(timestamp) + '_MLCSHE_Pylot'
 input_directory = Path.cwd().joinpath('temp').joinpath(output_dir_name)
 output_directory = Path.cwd().joinpath('results').joinpath(output_dir_name)
 
@@ -17,7 +17,7 @@ number_of_generations = 30
 random_seed = 10
 max_num_evals = 2500
 update_archive_strategy = 'bestRandom'
-finess_function_target_probability = 0.9
+fitness_function_target_probability = 0.9
 
 # Evolution hyperparameters
 tournament_selection = 3

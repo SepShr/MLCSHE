@@ -46,7 +46,7 @@ from deap import tools
 import logging
 from random import randint, random, uniform
 
-import search_config as cfg
+import pylot.search_config as cfg
 # from simulation_manager_cluster import prepare_for_computation, start_computation
 
 # from simulation_runner import run_simulation

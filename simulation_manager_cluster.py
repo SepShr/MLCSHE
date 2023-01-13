@@ -17,7 +17,7 @@ import platform
 import gc
 from collections import deque
 
-from problem_utils import mlco_to_obs_seq
+from pylot.problem_utils import mlco_to_obs_seq
 from simulation_utils import translate_scenario_list
 from tqdm import trange
 

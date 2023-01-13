@@ -1,6 +1,6 @@
 from deap import base, creator
 import unittest
-from problem_utils import mutate_scenario
+from pylot.problem_utils import mutate_scenario
 
 
 class TestMutateScenario(unittest.TestCase):

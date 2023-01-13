@@ -1,7 +1,7 @@
 import numpy as np
 from src.utils.utility import gather_values_in_np_array
 import unittest
-import problem
+import pylot.problem as problem
 
 
 class Test_TestGatherValuesInNpArray(unittest.TestCase):

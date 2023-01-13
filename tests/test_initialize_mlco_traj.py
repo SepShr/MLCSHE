@@ -2,7 +2,7 @@ from deap import base, creator
 
 import unittest
 
-from problem_utils import initialize_mlco
+from pylot.problem_utils import initialize_mlco
 
 
 class TestInitObsTraj(unittest.TestCase):
