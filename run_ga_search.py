@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pylot.search_config as cfg
-from GASearch import GASearch
+from pylot.GASearch import GASearch
 from src.utils.utility import setup_logger
 
 

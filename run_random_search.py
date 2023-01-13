@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pylot.search_config as cfg
-from RandomSearch import RandomSearch
+from pylot.RandomSearch import RandomSearch
 from src.utils.utility import setup_logger
 
 
