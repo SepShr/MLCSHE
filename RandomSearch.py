@@ -1,7 +1,7 @@
-from copy import deepcopy
 import logging
 import time
 from concurrent.futures import ProcessPoolExecutor
+from copy import deepcopy
 from itertools import repeat
 from multiprocessing import cpu_count
 
@@ -9,14 +9,15 @@ import numpy as np
 from deap import base, creator, tools
 
 import search_config as cfg
-from src.main.fitness_function import calculate_fitness
 from problem_utils import initialize_mlco
 from simulation_manager_cluster import (ContainerSimManager,
                                         prepare_for_computation,
                                         start_computation)
+from src.main.fitness_function import calculate_fitness
 from src.utils.PairwiseDistance import PairwiseDistance
 from src.utils.utility import (create_complete_solution,
-                               initialize_hetero_vector, log_and_pickle, setup_logbook_file)
+                               initialize_hetero_vector, log_and_pickle,
+                               setup_logbook_file)
 
 JOBS_QUEUE_SIZE = 10
 
@@ -162,8 +163,11 @@ class RandomSearch:
     def evaluate_joint_fitness(self, jobs=None):
         """Evaluates the joint fitness of a complete solution.
 
-        It takes the complete solution as input and returns its joint
-        fitness as output.
+        Parameters:
+        - jobs (list): list of jobs to evaluate the joint fitness on
+
+        Returns:
+        - None
         """
         self.sim_index, results = self.compute_safety_value_cs_list(
             self.simulator, jobs, self.sim_index)
