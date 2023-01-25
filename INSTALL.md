@@ -8,6 +8,7 @@ This document provides that installation guidelines on an ubuntu 20.04 LTS machi
 + Docker 20.10 or newer.
 + NVIDIA driver 525.60 or newer.
 + Free disk space of 150 GB or more.
++ 32 GB of RAM or more.
 
 ## AWS EC2 Instance
 
@@ -35,34 +36,7 @@ sudo systemctl restart docker
 docker pull sepshr/pylot:2.1
 ```
 
-(*Optional*) To test Carla and Pylot, create a test container using the following command:
-
-```bash
-nvidia-docker run -itd --name pylot -p 20022:22 sepshr/pylot:2.1 /bin/bash
-```
-
-(*Optional*) Then, run Carla in the container using the following command:
-
-```bash
-nvidia-docker exec -i -t pylot /home/erdos/workspace/pylot/scripts/run_simulator.sh
-```
-
-(*Optional*) Finally, in another terminal window, run Pylot in the container using the following command:
-
-```bash
-nvidia-docker exec -i -t pylot /bin/bash
-cd workspace/pylot/
-python3 pylot.py --flagfile=configs/detection.conf
-```
-
-*Note*: Remember to remove the test container by running the following commands in a separate terminal window:
-
-```bash
-docker stop pylot
-docker rm pylot
-```
-
-1. If you have not downloaded the code already (e.g., from FigShare), you can clone the MLCSHE project on your machine. For now, use the *Dev-Sepehr* branch. 
+3. If you have not downloaded the code already (e.g., from FigShare), you can clone the MLCSHE project on your machine. For now, use the *Dev-Sepehr* branch. 
 
 ```bash
 git clone -b Dev-Sepehr https://github.com/SepShr/MLCSHE.git
