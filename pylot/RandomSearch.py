@@ -58,7 +58,7 @@ class RandomSearch:
         self.sim_counter = 0
         self.jobs_size = JOBS_QUEUE_SIZE
 
-        self.ff_target_prob = cfg.finess_function_target_probability
+        self.ff_target_prob = cfg.fitness_function_target_probability
 
     def define_problem(self, cs_archive_size):
         # Define problem and individuals.
