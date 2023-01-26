@@ -4,9 +4,9 @@ We use Pylot to evaluate the effectiveness and efficiency of MLCSHE. The encodin
 
 # Reproducibility Instructions
 
-To run the experiments, you need to have set up the environment as described in the [installation guide](INSTALL.md).
+To run the experiments, you need to have set up the environment as described in the installation guide.
 
-To run MLCSHE, random search, or genetic algorithm, refer to the [usage section](USAGE.md).
+To run MLCSHE, random search, or genetic algorithm, refer to the usage section.
 
 # Evaluation Results
 
