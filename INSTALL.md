@@ -42,9 +42,10 @@ docker pull sepshr/pylot:2.1
 git clone -b Dev-Sepehr https://github.com/SepShr/MLCSHE.git
 ```
 
-4. Create a virtual environment and install the `requirements.txt` file.
+4. Navigate to the project's directory (in case of cloning the project, the `MLCSHE` directory) and create a virtual environment and install the `requirements.txt` file.
 
 ```bash
+cd MLCSHE
 python3 -m venv ./venv
 source venv/bin/activate
 python -m pip install --upgrade pip
