@@ -14,7 +14,7 @@ The details on setting up MLCSHE are provided in the [installation guide](INSTAL
 
 ## Usage
 
-The instructions for running MLCSHE and baseline search methods is provided in [USAGE.md](USAGE.md).
+The instructions for running MLCSHE and baseline search methods is provided in [usage guide](USAGE.md).
 
 ## Pylot Case Study
 
