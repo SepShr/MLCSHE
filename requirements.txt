@@ -8,3 +8,5 @@ scipy==1.8.0
 pytest>=7
 tqdm>=4
 docker
+pandas
+pingouin
