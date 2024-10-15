@@ -5,17 +5,21 @@ This document provides that installation guidelines on an ubuntu 20.04 LTS machi
 ## Prerequisites
 
 + Python 3.7 or newer.
++ Docker 20.10 or newer.
++ NVIDIA driver 525.60 or newer.
++ Free disk space of 150 GB or more.
++ 32 GB of RAM or more.
 
 ## AWS EC2 Instance
 
 If your ubuntu machine is running as an AWS EC2 instance, please follow these steps first to setup your machine.
 
-+ Choose a *g4dn* image.
-+ Choose a *NVidia Machine Learning AMI*.
++ Choose a *g4dn* image, with a minimum size of *xlarge* (for parallel execution of 2 simulations, a minimum size of *2xlarge* is required).
++ Choose a *NVidia GPU-optimized AMI*.
 
 ## Steps
 
-1.Install nvidia-docker2 using the following commands, or using the guide provided [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker):
+1. Install nvidia-docker2 using the following commands, or using the guide provided [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker):
 
 ```bash
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
@@ -26,30 +30,24 @@ sudo apt-get install -y nvidia-docker2
 sudo systemctl restart docker
 ```
 
-2.Pull the modified Pylot Docker image from Docker Hub:
+2. Pull the modified Pylot Docker image from Docker Hub:
 
 ```bash
-docker pull sepshr/pylot:1.0
-nvidia-docker run -itd --name pylot -p 20022:22 sepshr/pylot:1.0 /bin/bash
+docker pull sepshr/pylot:2.1
 ```
 
-*NOTE:* In the code, it is assumed that the name of the docker container is `pylot`. If you are using another name, please ensure that you update the `container_name` variable inside `/MLCSHE/simulation_config.py`.
-
-3.Next, setup SSH connection for the container. First, add your public ssh key to the `~/.ssh/authorized_keys` in the container:
+3. If you have not downloaded the code already (e.g., from FigShare), you can clone the MLCSHE project on your machine. For now, use the *Dev-Sepehr* branch. 
 
 ```bash
-nvidia-docker cp ~/.ssh/id_rsa.pub pylot:/home/erdos/.ssh/authorized_keys
-nvidia-docker exec -i -t pylot sudo chown erdos /home/erdos/.ssh/authorized_keys
+git clone -b Dev-Sepehr https://github.com/SepShr/MLCSHE.git
 ```
 
-4.Clone the MLCSHE project on your machine. For now, use the *Dev-Sepehr* branch.
-
-5.Make sure that you create a `results` folder in `MLCSHE`'s working directory with the `mkdir results` command.
-
-6.Create a virtual environment and install the `requirements.txt` file.
-
-7.To run the simulator, you can use the following command:
+4. Navigate to the project's directory (in case of cloning the project, the `MLCSHE` directory) and create a virtual environment and install the `requirements.txt` file.
 
 ```bash
-python3 run_iccea.py
+cd MLCSHE
+python3 -m venv ./venv
+source venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```

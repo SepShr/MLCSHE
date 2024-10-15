@@ -1,30 +1,28 @@
 """
-iCCEA Runner.
+MLCSHE Runner.
 """
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # nopep8
+sys.path.append(os.path.dirname(__file__))  # nopep8
 
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 from src.utils.utility import setup_logger
-import problem
-from simulation_runner import Simulator
-# from datetime import datetime
+from benchmark.griegwangk import problem
 
-import search_config as cfg
+import benchmark.griegwangk.search_config as cfg
 
 
-# NOTE: ICCEA is an algorithm, which is independent of a problem structure
-# FIXME: Refactor enumLimits
-
+# NOTE: MLCSHE is an algorithm, which is independent of a problem structure
 
 def main():
-    # Instantiate simulator instance.
-    simulator = Simulator()
-
-    solver = ICCEA(
+    solver = MLCSHE(
         creator=problem.creator,
         toolbox=problem.toolbox,
-        simulator=simulator,
+        simulator=None,
         # more parameters can be added to better define the problem
-        first_population_enumLimits=cfg.scenario_enumLimits
+        first_population_enumLimits=cfg.enumLimits,
+        second_population_enumLimits=cfg.enumLimits
     )
 
     hyperparameters = [
@@ -39,12 +37,12 @@ def main():
     ]
 
     # Setup logger.
-    setup_logger(file_name='CCEA', file_log_level='DEBUG',
+    setup_logger(file_name='CCEA_GRWGNK', file_log_level='DEBUG',
                  stream_log_level='INFO')
 
     # User does not need to modify anything but `problem.py`
     solution = solver.solve(
-        max_gen=cfg.number_of_generations, hyperparameters=hyperparameters, seed=cfg.random_seed)
+        max_gen=cfg.number_of_generations, hyperparameters=hyperparameters, max_num_evals=cfg.max_num_evals, seed=cfg.random_seed)
 
 
 if __name__ == "__main__":

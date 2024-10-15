@@ -1,17 +1,39 @@
 from deap import creator
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 import unittest
 import random
-import problem
+import pylot.problem as problem
+import pylot.search_config as cfg
+from src.utils.PairwiseDistance import PairwiseDistance
 
 
 class TestUpdateArchiveDiverseBestRandom(unittest.TestCase):
     def test_update_archive_diverse_best_random_testInput1(self):
         # make a solver instance
-        solver = ICCEA(
+        pdist_cs = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=[[0.0, 1.0]],
+            categorical_indices=[]
+        )
+        pairwise_distance_scen = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=cfg.scenario_numeric_ranges,
+            categorical_indices=cfg.scenario_catgorical_indices
+        )
+
+        pairwise_distance_mlco = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=cfg.mlco_numeric_ranges,
+            categorical_indices=cfg.mlco_categorical_indices
+        )
+        solver = MLCSHE(
             creator=problem.creator,
             toolbox=problem.toolbox,
-            enumLimits=problem.enumLimits
+            simulator=None,
+            pairwise_distance_cs=pdist_cs,
+            pairwise_distance_p1=pairwise_distance_scen,
+            pairwise_distance_p2=pairwise_distance_mlco,
+            first_population_enumLimits=cfg.scenario_enumLimits
         )
 
         # prepare test input
@@ -38,11 +60,11 @@ class TestUpdateArchiveDiverseBestRandom(unittest.TestCase):
         min_distance = 0.5
 
         output_archive_pScen_1 = solver.update_archive_diverse_best_random(
-            pScen, max_archive_size, min_distance
+            pScen, max_archive_size, min_distance, pairwise_distance_scen
         )
 
         output_archive_pMLCO_1 = solver.update_archive_diverse_best_random(
-            pMLCO, max_archive_size, min_distance
+            pMLCO, max_archive_size, min_distance, pairwise_distance_mlco
         )
 
         self.assertEqual(output_archive_pScen_1, [scen1])
@@ -54,11 +76,11 @@ class TestUpdateArchiveDiverseBestRandom(unittest.TestCase):
         max_archive_size = 2
 
         output_archive_pScen_2 = solver.update_archive_diverse_best_random(
-            pScen, max_archive_size, min_distance
+            pScen, max_archive_size, min_distance, pairwise_distance_scen
         )
 
         output_archive_pMLCO_2 = solver.update_archive_diverse_best_random(
-            pMLCO, max_archive_size, min_distance
+            pMLCO, max_archive_size, min_distance, pairwise_distance_mlco
         )
 
         for i in range(len(output_archive_pScen_2)):
@@ -74,11 +96,11 @@ class TestUpdateArchiveDiverseBestRandom(unittest.TestCase):
         min_distance = 1.0
 
         output_archive_pScen_3 = solver.update_archive_diverse_best_random(
-            pScen, max_archive_size, min_distance
+            pScen, max_archive_size, min_distance, pairwise_distance_scen
         )
 
         output_archive_pMLCO_3 = solver.update_archive_diverse_best_random(
-            pMLCO, max_archive_size, min_distance
+            pMLCO, max_archive_size, min_distance, pairwise_distance_mlco
         )
 
         self.assertEqual(output_archive_pScen_3, [scen1])

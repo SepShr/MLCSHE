@@ -1,6 +1,6 @@
 from src.utils.utility import gather_values_in_list
 import unittest
-import problem
+import pylot.problem as problem
 
 
 class TestGatherValuesInList(unittest.TestCase):

@@ -1,6 +1,6 @@
 from deap import creator
 from src.utils.utility import evaluate_individual
-import problem
+import pylot.problem as problem
 import unittest
 
 
@@ -18,6 +18,6 @@ class TestEvaluateIndividual(unittest.TestCase):
         index = 0
         output_value = evaluate_individual(ind1, css, index)
 
-        expected_value = (2.5,)
+        expected_value = (-7.5,)
 
         self.assertEqual(output_value, expected_value)

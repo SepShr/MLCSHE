@@ -1,16 +1,38 @@
 from deap import creator
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 import unittest
-import problem
+import pylot.problem as problem
+import pylot.search_config as cfg
+from src.utils.PairwiseDistance import PairwiseDistance
 
 
 class TestIsSimilar(unittest.TestCase):
     def test_is_similar_testInput1(self):
         # make a solver instance
-        solver = ICCEA(
+        pdist_cs = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=[[0.0, 1.0]],
+            categorical_indices=[]
+        )
+        pairwise_distance_scen = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=cfg.scenario_numeric_ranges,
+            categorical_indices=cfg.scenario_catgorical_indices
+        )
+
+        pairwise_distance_mlco = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=cfg.mlco_numeric_ranges,
+            categorical_indices=cfg.mlco_categorical_indices
+        )
+        solver = MLCSHE(
             creator=problem.creator,
             toolbox=problem.toolbox,
-            enumLimits=problem.enumLimits
+            pairwise_distance_cs=pdist_cs,
+            pairwise_distance_p1=pairwise_distance_scen,
+            pairwise_distance_p2=pairwise_distance_mlco,
+            simulator=None,
+            first_population_enumLimits=cfg.scenario_enumLimits
         )
 
         # Test values

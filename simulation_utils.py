@@ -6,6 +6,7 @@ import time
 import logging
 
 from datetime import datetime
+from pylot.problem_utils import mlco_to_obs_seq
 # from uuid import uuid4
 
 import simulation_config as cfg
@@ -74,7 +75,7 @@ def translate_scenario_list(scenario_list):
             weather = "HardRainSunset"
         if (scenario_list[1] == 6):  # clear
             weather = "SoftRainSunset"
-    if (scenario_list[0] == 2):  # sunset
+    if (scenario_list[0] == 2):  # night
 
         if (scenario_list[1] == 0):  # clear
             weather = "ClearSunset"
@@ -160,16 +161,15 @@ def translate_mlco_list(mlco_list, container_name=cfg.container_name, file_name=
 def pickle_to_file(item_to_be_pickled, file_name: str):
     """Pickles an object and adds it to a file.
     """
-    file = open(file_name, 'wb')
-    pickle.dump(item_to_be_pickled, file)
-    file.close()
+    with open(file_name, 'wb') as file:
+        pickle.dump(item_to_be_pickled, file)
 
 
 def start_container(container_name: str = cfg.container_name):
     """Starts a docker container with the name `container_name`.
     """
     cmd = ['docker', 'start', container_name]
-    docker_start_proc = sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    docker_start_proc = sub.run(cmd, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     # Log the container's successful start or failure.
     return docker_start_proc.returncode
 
@@ -178,7 +178,7 @@ def stop_container(container_name: str = cfg.container_name):
     """Starts a docker container with the name `container_name`.
     """
     cmd = ['docker', 'stop', container_name]
-    docker_start_proc = sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    docker_start_proc = sub.run(cmd, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     return docker_start_proc.returncode
 
 
@@ -206,7 +206,7 @@ def copy_to_host(container_name: str, file_name: str, source_path: str, destinat
     container_name_with_path = container_name + \
         ":" + source_path + file_name + "_ex.log"
     copy_cmd = ['docker', 'cp', container_name_with_path, destination_path]
-    sub.run(copy_cmd, stderr=sub.PIPE)
+    sub.run(copy_cmd, stderr=sub.DEVNULL)
 
 
 def find_container_id(container_name: str):
@@ -234,18 +234,15 @@ def update_config_file(
     pathlib.Path('temp/').mkdir(parents=True, exist_ok=True)
     simulation_config_file = os.path.join('temp', simulation_config_file_name)
     # Find the lines that contain proper flags and updates them.
-    base_config = open(base_config_file, 'rt')
-    simulation_config = open(simulation_config_file, 'wt')
-    for line in base_config:
-        for key in simulation_flag:
-            if line.__contains__(key):
-                simulation_config.write(simulation_flag[key])
-                break
-        else:
-            simulation_config.write(line)
-
-    base_config.close()
-    simulation_config.close()
+    with open(base_config_file, 'rt') as base_config:
+        with open(simulation_config_file, 'wt') as simulation_config:
+            for line in base_config:
+                for key in simulation_flag:
+                    if line.__contains__(key):
+                        simulation_config.write(simulation_flag[key])
+                        break
+                else:
+                    simulation_config.write(line)
 
 # FIXME: Maybe add the simulation ID (counter) to the log file's name.
 
@@ -257,7 +254,7 @@ def update_sim_config(scenario_list, mlco_list, simulation_id: str, container_na
     """
     # Set flags based on scenario_list and mlco_list.
     scenario_flag = translate_scenario_list(scenario_list)
-    mlco_flag = translate_mlco_list(mlco_list)
+    mlco_flag = translate_mlco_list(mlco_to_obs_seq(mlco_list))
 
     # Update the simulation flags.
     simulation_flag = {}
@@ -295,7 +292,8 @@ def run_command_in_shell(command):
     """
     logger.debug(f'Running {command} in shell.')
 
-    proc = sub.Popen(command, stdout=sub.PIPE, stderr=sub.PIPE, shell=True)
+    proc = sub.Popen(command, stdout=sub.DEVNULL,
+                     stderr=sub.DEVNULL, shell=True)
 
     # # Verify successful execution of the command.
     # if proc.returncode != 0:
@@ -329,7 +327,8 @@ def run_pylot(run_pylot_path: str = CWD + cfg.pylot_runner_path):
     pylot_run_command = [run_pylot_path, cfg.container_name]
 
     # pylot_proc = run_command_in_shell(pylot_run_command)
-    pylot_proc = sub.Popen(pylot_run_command, stdout=sub.PIPE, stderr=sub.PIPE)
+    pylot_proc = sub.Popen(
+        pylot_run_command, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     return pylot_proc
 
 
@@ -338,7 +337,8 @@ def remove_finished_file(container_name: str = cfg.container_name, finished_file
     """
     cmd = ['docker', 'exec', container_name, 'rm', '-rf',
            finished_file_path]
-    rm_finished_file_proc = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    rm_finished_file_proc = sub.Popen(
+        cmd, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     if os.path.exists("finished.txt"):
         os.remove("finished.txt")
 
@@ -370,7 +370,7 @@ def scenario_finished():
     """
     cmd = [cfg.script_directory +
            'copy_pylot_finished_file.sh', cfg.container_name]
-    sub.run(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+    sub.run(cmd, stdout=sub.DEVNULL, stderr=sub.DEVNULL)
     if os.path.exists(cfg.base_directory + "finished.txt"):
         return True
     return False
@@ -404,7 +404,8 @@ def get_values(filename):
                     traffic_lights_max = 0
                 if "lane" in line_ex:
                     logger.info("lane invasion")
-                    DfC_min = 0
+                    # DfC_min = 0
+                    DfC_min = -1  # To record safety violation.
                 if "sidewalk" in line_ex:
                     logger.info("sidewalk invasion")
                     DfC_min = 0
@@ -452,6 +453,9 @@ def get_values(filename):
                 DfP_min = DfP
             if normalised_distance_travelled > DT_max:
                 DT_max = normalised_distance_travelled
+
+            if DfC_min == 0:
+                DfC_min = -1  # To record safety violation.
 
     return DfC_min, DfV_min, DfP_min, DfM_min, DT_max, traffic_lights_max
 

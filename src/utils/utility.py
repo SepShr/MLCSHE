@@ -2,11 +2,12 @@
 Set of utility functions which are independent from the `problem` structure.
 """
 
-from deap import tools
+import pickle
+from deap import tools, creator
 from datetime import datetime
 import logging
 import os
-import pathlib
+from pathlib import Path
 import random
 from copy import deepcopy
 
@@ -303,20 +304,18 @@ def evaluate_individual(individual, complete_solution_set, index):
     the complete solution; it returns the aggregate fitness value for
     `individual` as a real value.
     """
-    weights_joint_fitness_involved = []
     values_joint_fitness_involved = []
 
     # Add the joint fitness values of complete solutions in which
     # individual has been a part of.
     for cs in complete_solution_set:
         if cs[index] == individual:
-            weights_joint_fitness_involved += [cs.fitness.values]
-
-    for i in weights_joint_fitness_involved:
-        values_joint_fitness_involved += list([i[0]])
+            values_joint_fitness_involved.append(cs.fitness.values[0])
 
     # Aggregate the joint fitness values. For now, maximum values is used.
-    individual_fitness_value = max(values_joint_fitness_involved)
+    # individual_fitness_value = max(values_joint_fitness_involved)
+    # For testing the new fitness function!
+    individual_fitness_value = min(values_joint_fitness_involved)
 
     return (individual_fitness_value,)
 
@@ -590,12 +589,12 @@ def violate_safety_requirement(complete_solution):
         return False
 
 
-def setup_logger(file_name: str, file_log_level='DEBUG', stream_log_level='INFO'):
+def setup_logger(file_name: str, output_directory: Path = 'results', file_log_level='DEBUG', stream_log_level='INFO'):
     """Initilizes and formats the root logger. It also sets the log
     levels for the log file and stream handler.
     """
     # Create the results folder if it does not exist.
-    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+    Path(output_directory).mkdir(parents=True, exist_ok=True)
     # Setup logger.
     logger = logging.getLogger()
 
@@ -610,7 +609,7 @@ def setup_logger(file_name: str, file_log_level='DEBUG', stream_log_level='INFO'
     # parser.set()
 
     log_id = str(timestamp) + '_' + file_name + '.log'
-    log_file = os.path.join('results', log_id)
+    log_file = os.path.join(output_directory, log_id)
     logging.basicConfig(filename=log_file,
                         format='%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 
@@ -649,14 +648,73 @@ def setup_logger(file_name: str, file_log_level='DEBUG', stream_log_level='INFO'
     logger.addHandler(stream_handler)
 
 
-def setup_logbook_file():
+def setup_file(file_name: str, output_directory: Path = 'results', file_extension: str = '.log', add_timestamp: bool = True):
     # Create the results folder if it does not exist.
-    pathlib.Path('results/').mkdir(parents=True, exist_ok=True)
+    Path(output_directory).mkdir(parents=True, exist_ok=True)
 
-    # Get current timestamp to use as a unique ID.
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if add_timestamp:
+        # Get current timestamp to use as a unique ID.
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    logbook_id = str(timestamp) + '_logbook' + '.log'
-    logbook_file = os.path.join('results', logbook_id)
+        file_id = str(timestamp) + file_name + file_extension
+    else:
+        file_id = file_name + file_extension
 
-    return logbook_file
+    # file = output_directoty.joinpath(file_id)
+    file = os.path.join(output_directory, file_id)
+
+    return file
+
+
+def setup_logbook_file(output_dir: Path = 'results'):
+    return setup_file(file_name='_logbook', output_directory=output_dir)
+
+
+def flatten_list(nested_list):
+    """Flattens a nested list into a 1D list.
+    """
+    # return sum(map(flatten_list, nested_list), []) \
+    #     if (isinstance(nested_list, list) or
+    #         isinstance(nested_list, creator.Individual) or
+    #         isinstance(nested_list, creator.Scenario) or
+    #         isinstance(nested_list, creator.OutputMLC)) else [nested_list]
+    return sum(map(flatten_list, nested_list), []) \
+        if isinstance(nested_list, list) else [nested_list]
+
+
+def log_and_pickle(object, file_name: str, output_dir: Path = 'results'):
+    """dump `object` into a pickle file and a log file in the `output_dir`.
+    The name of the files should be `file_name` with a timestamp as a unique
+    identifier. 
+    If the `object` is a list, each of its items will be written into a line
+    in the log file along with their attributes. The items in the list must
+    not be a dictionary (to avoid problem with writing the logbook to a file).
+    """
+    # Create the results folder if it does not exist.
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Create a pickle file.
+    pickle_file = setup_file(
+        file_name=file_name, output_directory=output_dir, file_extension='.pkl', add_timestamp=False)
+    # Dump the object into the pickle file.
+    with open(pickle_file, 'wb') as f:
+        pickle.dump(object, f)
+
+    # Create a log file.
+    log_file = setup_file(file_name=file_name,
+                          output_directory=output_dir, file_extension='.log', add_timestamp=False)
+
+    # Log the object in string format.
+
+    if isinstance(object, list):
+        if not isinstance(object[0], dict):
+            # Log the object in string format.
+            with open(log_file, 'w') as f:
+                for item in object:
+                    f.write(str(item))
+                    f.write('|')
+                    f.write(str(item.__dict__))
+                    f.write('\n')
+        else:
+            with open(log_file, 'wt') as f:
+                print(object, file=f)

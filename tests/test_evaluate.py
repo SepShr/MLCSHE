@@ -1,7 +1,7 @@
 from unittest.case import SkipTest, skip, skipIf
 from deap import creator
-from src.main.ICCEA import ICCEA
-import problem
+from src.main.MLCSHE import MLCSHE
+import pylot.problem as problem
 import unittest
 
 

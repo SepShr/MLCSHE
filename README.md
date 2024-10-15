@@ -1,26 +1,25 @@
 # MLCSHE: Machine Learning Component Systemic Hazard Envelope
-This repository contains the ML-Component Systemic Hazard Envelope project, or *MLCSHE* (pronounced /'mɪlʃ/).
 
-## Authors
-- Sepehr Sharifi (sshar190@uottawa.ca)
-- Donghwan Shin (donghwan.shin@uni.lu)
-- Lionel Briand (lbriand@uottawa.ca)
+ML Component Systemic Hazard Envelope project, or *MLCSHE* (pronounced /'mɪlʃ/), is a cooperative coevolutionary search algorithm that automatically identifies the *hazard boundary* of a ML component in an ML-enabled Autonomous System (MLAS), given a system safety requirement.
 
-## Prerequisites
-- Python 3.7 or higher is recommended.
+This work is done at [Nanda Lab](https://www.nanda-lab.ca/), EECS Department, University of Ottawa.
 
-To install the required Python packages, first create a virtual environment and install the `requirement.txt` file.
-```shell script
-# For MacOS or Ubuntu
-python3 -m venv myvenv
+## Publications
 
-# For Windows
-python -m venv myvenv
+__Identifying the Hazard Boundary of ML-enabled Autonomous Systems__ by Sepehr Sharifi, Donghwan Shin, Lionel C. Briand, and Nathan Aschbacher, arXiv pre-prints, January 2023, DOI:XXXX
 
-source myvenv/bin/activate
-pip install -r requirements.txt
-```
+## Installation
 
+The details on setting up MLCSHE are provided in the [installation guide](INSTALL.md).
 
+## Usage
 
-This work is done at [Nanda Lab](https://www.nanda-lab.ca/), EECS, University of Ottawa in collaboration with [SVV Lab](https://wwwfr.uni.lu/snt/research/software_verification_and_validation_lab/), University of Luxembourg.
+The instructions for running MLCSHE and baseline search methods is provided in [usage guide](USAGE.md).
+
+## Pylot Case Study
+
+The project currently runs on Pylot case study. More details on the case study, the encodings, accessing and reproducing the results is provided in [pylot/README.md](pylot/README.md).
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

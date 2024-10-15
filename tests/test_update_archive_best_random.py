@@ -1,17 +1,39 @@
 from deap import creator
-from src.main.ICCEA import ICCEA
+from src.main.MLCSHE import MLCSHE
 import unittest
 import random
-import problem
+import pylot.problem as problem
+import pylot.search_config as cfg
+from src.utils.PairwiseDistance import PairwiseDistance
 
 
 class TestUpdateArchiveBestRandom(unittest.TestCase):
     def test_update_archive_best_random_testInput1(self):
         # make a solver instance
-        solver = ICCEA(
+        pdist_cs = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=[[0.0, 1.0]],
+            categorical_indices=[]
+        )
+        pairwise_distance_scen = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=cfg.scenario_numeric_ranges,
+            categorical_indices=cfg.scenario_catgorical_indices
+        )
+
+        pairwise_distance_mlco = PairwiseDistance(
+            cs_list=[],
+            numeric_ranges=cfg.mlco_numeric_ranges,
+            categorical_indices=cfg.mlco_categorical_indices
+        )
+        solver = MLCSHE(
             creator=problem.creator,
             toolbox=problem.toolbox,
-            enumLimits=problem.enumLimits
+            simulator=None,
+            pairwise_distance_cs=pdist_cs,
+            pairwise_distance_p1=pairwise_distance_scen,
+            pairwise_distance_p2=pairwise_distance_mlco,
+            first_population_enumLimits=cfg.scenario_enumLimits
         )
 
         # prepare test input
